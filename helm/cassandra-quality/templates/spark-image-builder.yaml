@@ -1,0 +1,58 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: spark-image
+  namespace: {{ .Values.namespace }}
+spec:
+  templates:
+  - name: spark-image-template
+    daemon: true
+    inputs:
+      parameters:
+      - name: registry_ip
+    container:
+      image: gcr.io/kaniko-project/executor:v1.0.0
+      args:
+      - --dockerfile=/workspace/kubernetes/dockerfiles/spark/Dockerfile
+      - --context=dir:///workspace
+      - {{`--destination={{inputs.parameters.registry_ip}}:30000/cassandra-quality/spark:latest`}}
+      - --insecure=true
+      volumeMounts:
+        - name: workspace
+          mountPath: /workspace
+    initContainers:
+    - name: clone-cassandra-diff
+      image: alpine/git
+      args:
+        - clone
+        - https://github.com/apache/cassandra-diff.git
+        - /download/cassandra-diff/
+      volumeMounts:
+      - name: download
+        mountPath: /download
+    - name: build-cassandra-diff
+      image: maven:3-openjdk-11
+      args:
+        - mvn
+        - clean
+        - package
+      volumeMounts:
+      - name: download
+        mountPath: /download
+      workingDir: /download/cassandra-diff
+    - name: download-spark
+      image: busybox
+      command: ["sh", "-c"]
+      args:
+        - wget {{ .Values.spark_download_url }} -O - | tar -xz --strip-components=1 -C /workspace;
+          cp /download/cassandra-diff/spark-uberjar/target/spark-uberjar-0.2-SNAPSHOT.jar /workspace/jars/;
+      volumeMounts:
+      - name: workspace
+        mountPath: /workspace
+      - name: download
+        mountPath: /download
+    volumes:
+    - name: workspace
+      emptyDir: {}
+    - name: download
+      emptyDir: {}

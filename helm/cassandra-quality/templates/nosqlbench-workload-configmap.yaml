@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nosqlbench-workload-configmap
+  namespace: {{ .Values.namespace }}
+data:
+  workload.yaml:
+    {{ toYaml .Values.nosqlbench_workload | indent 6 }}

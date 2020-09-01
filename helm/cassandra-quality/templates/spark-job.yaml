@@ -1,0 +1,71 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: spark-job
+  namespace: {{ .Values.namespace }}
+spec:
+  templates:
+  - name: spark-job-template
+    serviceAccountName: spark
+    metadata:
+      labels:
+        app: spark-driver
+    container:
+      image: localhost:30000/cassandra-quality/spark:latest
+      args: ["driver",
+                "--verbose",
+                "--conf", "spark.driver.bindAddress=0.0.0.0",
+                "--deploy-mode", "client",
+                "--master", "k8s://https://kubernetes.default.svc:443",
+                "--name", "cassandra-diff",
+                "--class", "org.apache.cassandra.diff.DiffJob",
+                "--conf", "spark.driver.host=spark-driver",
+                "--conf", "spark.driver.port=3939",
+                "--conf", "spark.blockManager.port=3838",
+                "--conf", "spark.driver.memory=5g",
+                "--conf", "spark.executor.memory=1g",
+                "--conf", "spark.executor.instances=3",
+                "--conf", "spark.kubernetes.container.image=localhost:30000/cassandra-quality/spark:latest",
+                "--conf", "spark.kubernetes.container.image.pullPolicy=Always",
+                "--conf", "spark.kubernetes.authenticate.driver.serviceAccountName=spark",
+                "--conf", "spark.kubernetes.namespace=cass-operator",
+                "--conf", "spark.kubernetes.context=cassandra-quality",
+                "--files", "/config/localconfig.yaml",
+                "local:///opt/spark/jars/spark-uberjar-0.2-SNAPSHOT.jar",
+                "localconfig.yaml"
+              ]
+      env:
+      - name: diff.cluster.source.cql_user
+        value: source-superuser
+      - name: diff.cluster.source.cql_password
+        valueFrom:
+          secretKeyRef:
+            name: source-superuser
+            key: password
+      - name: diff.cluster.target.cql_user
+        value: target-superuser
+      - name: diff.cluster.target.cql_password
+        valueFrom:
+          secretKeyRef:
+            name: target-superuser
+            key: password
+      - name: diff.cluster.metadata.cql_user
+        value: target-superuser
+      - name: diff.cluster.metadata.cql_password
+        valueFrom:
+          secretKeyRef:
+            name: target-superuser
+            key: password
+      ports:
+      - name: driver
+        containerPort: 3939
+      - name: block-manager
+        containerPort: 3838
+      volumeMounts:
+      - name: config
+        mountPath: /config/localconfig.yaml
+        subPath: localconfig.yaml
+    volumes:
+      - name: config
+        configMap:
+          name: cassandra-diff-configmap

@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cassandra-diff-configmap
+  namespace: {{ .Values.namespace }}
+data:
+  localconfig.yaml: |
+    splits: {{ .Values.cassandra_diff_config.splits }}
+    buckets: {{ .Values.cassandra_diff_config.buckets }}
+    rate_limit: {{ .Values.cassandra_diff_config.rate_limit }}
+    token_scan_fetch_size: {{ .Values.cassandra_diff_config.token_scan_fetch_size }}
+    partition_read_fetch_size: {{ .Values.cassandra_diff_config.partition_read_fetch_size }}
+    read_timeout_millis: {{ .Values.cassandra_diff_config.read_timeout_millis }}
+    reverse_read_probability: {{ .Values.cassandra_diff_config.reverse_read_probability }}
+    consistency_level: {{ .Values.cassandra_diff_config.consistency_level }}
+    metadata_options:
+      keyspace: {{ .Values.cassandra_diff_config.metadata_options.keyspace }}
+      replication: "{{ .Values.cassandra_diff_config.metadata_options.replication }}"
+      ttl: {{ int .Values.cassandra_diff_config.metadata_options.ttl }}
+      should_init: {{ .Values.cassandra_diff_config.metadata_options.should_init }}
+    cluster_config:
+      source:
+        impl: "org.apache.cassandra.diff.ContactPointsClusterProvider"
+        name: "{{ .Values.source.clusterName }}"
+        contact_points: "{{ .Values.source.clusterName }}-{{ .Values.source.dc }}-service"
+        port: "9042"
+        dc: "{{ .Values.source.dc }}"
+      target:
+        impl: "org.apache.cassandra.diff.ContactPointsClusterProvider"
+        name: "{{ .Values.target.clusterName }}"
+        contact_points: "{{ .Values.target.clusterName }}-{{ .Values.target.dc }}-service"
+        port: "9042"
+        dc: "{{ .Values.target.dc }}"
+      metadata:
+        impl: "org.apache.cassandra.diff.ContactPointsClusterProvider"
+        name: "{{ .Values.target.clusterName }}"
+        contact_points: "{{ .Values.target.clusterName }}-{{ .Values.target.dc }}-service"
+        port: "9042"
+        dc: "dc2"

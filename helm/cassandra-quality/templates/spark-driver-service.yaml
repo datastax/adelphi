@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: spark-driver
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    app: spark-driver
+  ports:
+    - name: driver
+      protocol: TCP
+      port: 3939
+      targetPort: 3939
+    - name: ui
+      protocol: TCP
+      port: 4040
+      targetPort: 4040
+    - name: block-manager
+      port: 3838
+      targetPort: 3838

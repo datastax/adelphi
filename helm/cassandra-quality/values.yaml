@@ -1,0 +1,131 @@
+namespace: cass-operator
+clusterSize: 1 # number of nodes per cluster
+allowMultipleNodesPerWorker: true
+
+storageClassName: local-path
+
+source:
+  dc: dc1
+  clusterName: source
+  version: "3.11.6"
+
+target:
+  dc: dc2
+  clusterName: target
+  version: "3.11.6"
+
+metadata:
+  dc: dc2
+  clusterName: target
+  version: "3.11.6"
+
+cassandra_diff_download_url: https://repository.apache.org/service/local/repositories/snapshots/content/org/apache/cassandra/diff/spark-uberjar/0.2-SNAPSHOT/spark-uberjar-0.2-20200325.160556-1.jar
+spark_download_url: https://archive.apache.org/dist/spark/spark-3.0.0/spark-3.0.0-bin-hadoop3.2.tgz
+
+cassandra_diff_config:
+  # This is how many parts we split the full token range in.
+  # Each of these splits is then compared between the clusters
+  splits: 10000
+
+  # Number of buckets - splits / buckets should be under 100k to avoid wide partitions when storing the metadata
+  buckets: 100
+
+  # global rate limit - this is how many q/s you think the target clusters can handle
+  rate_limit: 10000
+
+  # Fetch size to use for the query fetching the tokens in the cluster
+  token_scan_fetch_size: 1000
+  # Fetch size to use for the queries fetching the rows of each partition
+  partition_read_fetch_size: 1000
+
+  read_timeout_millis: 10000
+  reverse_read_probability: 0.5
+  consistency_level: ALL
+  metadata_options:
+    keyspace: cassandradiff
+    replication: "{'class':'SimpleStrategy', 'replication_factor':'1'}"
+    ttl: 31536000
+    should_init: true
+
+nosqlbench_workload: |-
+  scenarios:
+    default:
+      - run driver=cql tags==phase:schema threads==1 cycles==UNDEF
+      - run driver=cql tags==phase:rampup cycles===TEMPLATE(rampup-cycles,1000) threads=auto
+      - run driver=cql tags==phase:main cycles===TEMPLATE(main-cycles,1000) threads=auto
+  bindings:
+    seq_key: Mod(<<keycount:1000000000>>); ToString() -> String
+    seq_value: Hash(); Mod(<<valuecount:1000000000>>); ToString() -> String
+    rw_key: <<keydist:Uniform(0,1000000000)->int>>; ToString() -> String
+    rw_value: Hash(); <<valdist:Uniform(0,1000000000)->int>>; ToString() -> String
+
+  blocks:
+    - name: schema
+      tags:
+        phase: schema
+      params:
+        prepared: false
+      statements:
+      - create-keyspace: |
+          create keyspace if not exists <<keyspace:baselines>>
+          WITH replication = {'class': 'SimpleStrategy', 'replication_factor': '<<rf:1>>'}
+          AND durable_writes = true;
+        tags:
+           name: create-keyspace
+      - create-table: |
+          create table if not exists <<keyspace:baselines>>.<<table:keyvalue>> (
+          key text,
+           value text,
+           PRIMARY KEY (key)
+          );
+        tags:
+          name: create-table
+    - name: rampup
+      tags:
+        phase: rampup
+      params:
+        cl: <<write_cl:LOCAL_QUORUM>>
+      statements:
+        - rampup-insert: |
+            insert into <<keyspace:baselines>>.<<table:keyvalue>>
+            (key, value)
+            values ({seq_key},{seq_value});
+          tags:
+             name: rampup-insert
+    - name: verify
+      tags:
+        phase: verify
+        type: read
+      params:
+        cl: <<read_cl:LOCAL_QUORUM>>
+      statements:
+        - verify-select: |
+            select * from <<keyspace:baselines>>.<<table:keyvalue>> where key={seq_key};
+          verify-fields: key->seq_key, value->seq_value
+          tags:
+             name: verify
+    - name: main-read
+      tags:
+        phase: main
+        type: read
+      params:
+        ratio: 5
+        cl: <<read_cl:LOCAL_QUORUM>>
+      statements:
+        - main-select: |
+           select * from <<keyspace:baselines>>.<<table:keyvalue>> where key={rw_key};
+          tags:
+            name: main-select
+    - name: main-write
+      tags:
+        phase: main
+        type: write
+      params:
+        ratio: 5
+        cl: <<write_cl:LOCAL_QUORUM>>
+      statements:
+        - main-insert: |
+            insert into <<keyspace:baselines>>.<<table:keyvalue>>
+            (key, value) values ({rw_key}, {rw_value});
+          tags:
+             name: main-insert

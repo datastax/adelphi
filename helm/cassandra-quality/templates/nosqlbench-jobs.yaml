@@ -1,0 +1,69 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: nosqlbench-job
+  namespace: {{ .Values.namespace }}
+spec:
+  templates:
+  - name: nosqlbench-source
+    container:
+      image: nosqlbench/nosqlbench:latest
+      args: [
+        "--show-stacktraces",
+        "/config/workload.yaml",
+        "hosts={{ .Values.source.clusterName }}-{{ .Values.source.dc }}-service",
+        "username={{ .Values.source.clusterName }}-superuser",
+        "passfile=/secret/password"
+      ]
+      dnsConfig:
+        options:
+        - name: ndots
+          value: "1"
+      volumeMounts:
+      - name: secret-volume
+        mountPath: /secret
+        readOnly: true
+      - name: workload
+        mountPath: /config/workload.yaml
+        subPath: workload.yaml
+    volumes:
+    - name: secret-volume
+      secret:
+        secretName: {{ .Values.source.clusterName }}-superuser
+        items:
+        - key: password
+          path: password
+    - name: workload
+      configMap:
+        name: nosqlbench-workload-configmap
+  - name: nosqlbench-target
+    container:
+      image: nosqlbench/nosqlbench:latest
+      args: [
+        "--show-stacktraces",
+        "/config/workload.yaml",
+        "hosts={{ .Values.target.clusterName }}-{{ .Values.target.dc }}-service",
+        "username={{ .Values.target.clusterName }}-superuser",
+        "passfile=/secret/password"
+      ]
+      dnsConfig:
+        options:
+        - name: ndots
+          value: "1"
+      volumeMounts:
+      - name: secret-volume
+        mountPath: /secret
+        readOnly: true
+      - name: workload
+        mountPath: /config/workload.yaml
+        subPath: workload.yaml
+    volumes:
+    - name: secret-volume
+      secret:
+        secretName: {{ .Values.target.clusterName }}-superuser
+        items:
+        - key: password
+          path: password
+    - name: workload
+      configMap:
+        name: nosqlbench-workload-configmap

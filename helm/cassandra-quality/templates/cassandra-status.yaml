@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: cassandra-status
+  namespace: {{ .Values.namespace }}
+spec:
+  templates:
+  - name: ready
+    container:
+      image: alpine
+      command:
+        - /bin/sh
+        - -c
+        - |
+          # install kubectl
+          VERSION=$(wget -q -O - https://storage.googleapis.com/kubernetes-release/release/stable.txt 2> /dev/null)
+          wget -q https://storage.googleapis.com/kubernetes-release/release/$VERSION/bin/linux/amd64/kubectl -O /usr/sbin/kubectl
+          chmod +x /usr/sbin/kubectl
+          # wait for C* pods to be in the Ready state
+          sleep 10
+          kubectl wait pod --for=condition=Ready -l app.kubernetes.io/managed-by=cass-operator -n {{ .Values.namespace }} --timeout=10m
+          
