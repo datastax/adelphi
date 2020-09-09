@@ -43,13 +43,13 @@ Install it with (or check their website for other options):
 2. Now, create a k8s cluster with 3 worker nodes that we will use to test Cassandra:
 
     ```
-    k3d create -w 3 -n cassandra-quality
+    k3d cluster create cassandra-quality --servers 3 --wait
     ```
 
 3. When that completes, set the KUBECONFIG environment variable to make sure you're working in the right context:
 
     ```
-    export KUBECONFIG="$(k3d get-kubeconfig --name='cassandra-quality')"
+    export KUBECONFIG="$(k3d kubeconfig get cassandra-quality)"
     ```
 
 4. If you don't have [Helm](https://helm.sh/docs/intro/install/), you can obtain it with:
