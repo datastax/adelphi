@@ -123,13 +123,13 @@ cluster.shutdown()
 
 # filter out system keyspaces
 for sys_ks_name in system_keyspaces:
-    schema.keyspaces.pop(sys_ks_name)
+    schema.keyspaces.pop(sys_ks_name, None)
 
 # filter out non-selected keyspaces
 if selected_keyspaces is not None:
     to_remove = [ks for ks in schema.keyspaces.values() if ks.name not in selected_keyspaces]
     for ks in to_remove:
-        schema.keyspaces.pop(ks.name)
+        schema.keyspaces.pop(ks.name, None)
 
 # anonymize keyspace and its children
 [anonymize_keyspace(ks) for ks in schema.keyspaces.values()]
