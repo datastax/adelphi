@@ -1,0 +1,73 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: gemini-job
+  namespace: {{ .Values.namespace }}
+spec:
+  templates:
+  - name: gemini-oracle-sut
+    container:
+      image: golang
+      workingDir: /workspace/gemini
+      command:
+        - sh
+        - -c
+      args:
+        - /workspace/gemini/gemini
+          --oracle-cluster={{ .Values.source.clusterName }}-{{ .Values.source.dc }}-service
+          --oracle-username={{ .Values.source.clusterName }}-superuser
+          --oracle-password="`cat /source-secret/password`"
+          --test-cluster={{ .Values.target.clusterName }}-{{ .Values.target.dc }}-service
+          --test-username={{ .Values.target.clusterName }}-superuser
+          --test-password="`cat /target-secret/password`"
+          --duration=10m
+          --fail-fast
+      dnsConfig:
+        options:
+        - name: ndots
+          value: "1"
+      volumeMounts:
+      - name: workspace
+        mountPath: /workspace
+      - name: source-secret-volume
+        mountPath: /source-secret
+        readOnly: true
+      - name: target-secret-volume
+        mountPath: /target-secret
+        readOnly: true
+    initContainers:
+    - name: clone-gemini
+      image: alpine/git
+      command: ["sh", "-c"]
+      workingDir: /workspace/gemini
+      args:
+        - git clone https://github.com/grighetto/gemini.git .;
+          git checkout add-authenticator-options;
+      volumeMounts:
+      - name: workspace
+        mountPath: /workspace
+    - name: build-gemini
+      image: golang
+      command: ["sh", "-c"]
+      workingDir: /workspace/gemini
+      args:
+        - go mod download;
+          go build ./cmd/gemini;
+      volumeMounts:
+      - name: workspace
+        mountPath: /workspace
+    volumes:
+    - name: workspace
+      emptyDir: {}
+    - name: source-secret-volume
+      secret:
+        secretName: {{ .Values.source.clusterName }}-superuser
+        items:
+        - key: password
+          path: password
+    - name: target-secret-volume
+      secret:
+        secretName: {{ .Values.target.clusterName }}-superuser
+        items:
+        - key: password
+          path: password

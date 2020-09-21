@@ -45,3 +45,8 @@ spec:
         templateRef:
           name: spark-job
           template: spark-job-template
+      - name: gemini-oracle-sut
+        depends: "run-diff"
+        templateRef:
+          name: gemini-job
+          template: gemini-oracle-sut
