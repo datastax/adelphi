@@ -1,0 +1,46 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: schema-job
+  namespace: {{ .Values.namespace }}
+spec:
+  templates:
+  - name: configure-schema
+    container:
+      image: alpine
+      command: ["sh", "-c", "-e"]
+      args:
+        - VERSION=$(wget -q -O - https://storage.googleapis.com/kubernetes-release/release/stable.txt 2> /dev/null);
+          wget -q -O /usr/sbin/kubectl https://storage.googleapis.com/kubernetes-release/release/$VERSION/bin/linux/amd64/kubectl;
+          chmod +x /usr/sbin/kubectl;
+          echo "Configuring schema on the source cluster...";
+          cat /schema/schema.cql | kubectl exec -n {{ .Values.namespace }} -i -t -c cassandra {{ .Values.source.clusterName }}-{{ .Values.source.dc }}-default-sts-0 -- sh -c "cqlsh -u {{ .Values.source.clusterName }}-superuser -p $(cat /secret-source/password)";
+          echo "Configuring schema on the target cluster...";
+          cat /schema/schema.cql | kubectl exec -n {{ .Values.namespace }} -i -t -c cassandra {{ .Values.target.clusterName }}-{{ .Values.target.dc }}-default-sts-0 -- sh -c "cqlsh -u {{ .Values.target.clusterName }}-superuser -p $(cat /secret-target/password)";
+          echo "Done";
+      volumeMounts:
+        - name: schema
+          mountPath: /schema
+          readOnly: true
+        - name: target-secret-volume
+          mountPath: /secret-target
+          readOnly: true
+        - name: source-secret-volume
+          mountPath: /secret-source
+          readOnly: true
+    volumes:
+    - name: schema
+      configMap:
+        name: schema-configmap
+    - name: source-secret-volume
+      secret:
+        secretName: {{ .Values.source.clusterName }}-superuser
+        items:
+        - key: password
+          path: password
+    - name: target-secret-volume
+      secret:
+        secretName: {{ .Values.target.clusterName }}-superuser
+        items:
+        - key: password
+          path: password
