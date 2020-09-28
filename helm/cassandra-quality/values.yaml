@@ -21,6 +21,7 @@ metadata:
 
 cassandra_diff_download_url: https://repository.apache.org/service/local/repositories/snapshots/content/org/apache/cassandra/diff/spark-uberjar/0.2-SNAPSHOT/spark-uberjar-0.2-20200325.160556-1.jar
 spark_download_url: https://archive.apache.org/dist/spark/spark-3.0.0/spark-3.0.0-bin-hadoop3.2.tgz
+gemini_download_url: https://github.com/scylladb/gemini/releases/download/v1.7.3/gemini_1.7.3_Linux_x86_64.tar.gz
 
 cassandra_diff_config:
   # This is how many parts we split the full token range in.
