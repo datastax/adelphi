@@ -47,6 +47,17 @@ cassandra_diff_config:
     ttl: 31536000
     should_init: true
 
+cql_schema: |-
+  CREATE KEYSPACE IF NOT EXISTS testkeyspace
+    WITH replication = {'class': 'SimpleStrategy', 'replication_factor': '1'}
+    AND durable_writes = true;
+
+  CREATE TABLE IF NOT EXISTS testkeyspace.testtable (
+    key text,
+    value text,
+    PRIMARY KEY (key)
+  );
+
 nosqlbench_workload: |-
   scenarios:
     default:

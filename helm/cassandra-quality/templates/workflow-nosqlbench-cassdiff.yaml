@@ -26,6 +26,11 @@ spec:
         templateRef:
           name: spark-image
           template: spark-image-template
+      - name: configure-schema
+        depends: "cassandra-ready"
+        templateRef:
+          name: schema-job
+          template: configure-schema
       - name: nosqlbench-source
         depends: "cassandra-ready"
         templateRef:
