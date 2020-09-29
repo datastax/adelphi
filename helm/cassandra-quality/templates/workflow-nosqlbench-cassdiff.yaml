@@ -4,12 +4,21 @@ metadata:
   name: workflow-nosqlbench-cassdiff-{{ .Release.Revision }}
 spec:
   entrypoint: execute
-  serviceAccountName: argo
+  serviceAccountName: cass-operator
   templates:
   - name: execute
     dag:
       tasks:
+      - name: cassandra-source
+        templateRef:
+          name: cassandra-clusters
+          template: start-source-cluster
+      - name: cassandra-target
+        templateRef:
+          name: cassandra-clusters
+          template: start-target-cluster
       - name: cassandra-ready
+        depends: "cassandra-source && cassandra-target"
         templateRef:                  
           name: cassandra-status
           template: ready
