@@ -8,12 +8,12 @@ spec:
   - name: gemini-oracle-sut
     container:
       image: golang
-      workingDir: /workspace/gemini
+      workingDir: /workspace
       command:
         - sh
         - -c
       args:
-        - /workspace/gemini/gemini
+        - /workspace/gemini
           --oracle-cluster={{ .Values.source.clusterName }}-{{ .Values.source.dc }}-service
           --oracle-username={{ .Values.source.clusterName }}-superuser
           --oracle-password="`cat /source-secret/password`"
@@ -36,23 +36,12 @@ spec:
         mountPath: /target-secret
         readOnly: true
     initContainers:
-    - name: clone-gemini
-      image: alpine/git
+    - name: download-gemini
+      image: alpine
       command: ["sh", "-c"]
-      workingDir: /workspace/gemini
+      workingDir: /workspace
       args:
-        - git clone https://github.com/grighetto/gemini.git .;
-          git checkout add-authenticator-options;
-      volumeMounts:
-      - name: workspace
-        mountPath: /workspace
-    - name: build-gemini
-      image: golang
-      command: ["sh", "-c"]
-      workingDir: /workspace/gemini
-      args:
-        - go mod download;
-          go build ./cmd/gemini;
+        - wget -O - {{ .Values.gemini_download_url }} | tar -zxvf -
       volumeMounts:
       - name: workspace
         mountPath: /workspace
