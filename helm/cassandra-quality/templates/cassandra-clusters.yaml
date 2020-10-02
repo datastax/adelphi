@@ -14,6 +14,12 @@ spec:
         metadata:
           name: {{ .Values.source.dc }}
           namespace: {{ .Values.namespace }}
+          ownerReferences:
+          - apiVersion: argoproj.io/v1alpha1
+            blockOwnerDeletion: true
+            kind: Workflow
+            name: "{{`{{workflow.name}}`}}"
+            uid: "{{`{{workflow.uid}}`}}"
         spec:
           allowMultipleNodesPerWorker: {{ .Values.allowMultipleNodesPerWorker }}
           clusterName: {{ .Values.source.clusterName }}
@@ -55,6 +61,12 @@ spec:
         metadata:
           name: {{ .Values.target.dc }}
           namespace: {{ .Values.namespace }}
+          ownerReferences:
+          - apiVersion: argoproj.io/v1alpha1
+            blockOwnerDeletion: true
+            kind: Workflow
+            name: "{{`{{workflow.name}}`}}"
+            uid: "{{`{{workflow.uid}}`}}"
         spec:
           allowMultipleNodesPerWorker: {{ .Values.allowMultipleNodesPerWorker }}
           clusterName: {{ .Values.target.clusterName }}
