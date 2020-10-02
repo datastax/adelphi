@@ -3,6 +3,8 @@ kind: WorkflowTemplate
 metadata:
   name: spark-image
   namespace: {{ .Values.namespace }}
+  annotations:
+    "helm.sh/hook": pre-install
 spec:
   templates:
   - name: spark-image-template
