@@ -3,6 +3,8 @@ kind: WorkflowTemplate
 metadata:
   name: schema-job
   namespace: {{ .Values.namespace }}
+  annotations:
+    "helm.sh/hook": pre-install
 spec:
   templates:
   - name: configure-schema

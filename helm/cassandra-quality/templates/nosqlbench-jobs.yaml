@@ -3,6 +3,8 @@ kind: WorkflowTemplate
 metadata:
   name: nosqlbench-job
   namespace: {{ .Values.namespace }}
+  annotations:
+    "helm.sh/hook": pre-install
 spec:
   templates:
   - name: nosqlbench-source

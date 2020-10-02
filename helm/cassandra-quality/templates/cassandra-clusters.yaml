@@ -3,6 +3,8 @@ kind: WorkflowTemplate
 metadata:
   name: cassandra-clusters
   namespace: {{ .Values.namespace }}
+  annotations:
+    "helm.sh/hook": pre-install
 spec:
   templates:
   - name: start-source-cluster

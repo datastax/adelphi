@@ -3,6 +3,8 @@ kind: WorkflowTemplate
 metadata:
   name: spark-job
   namespace: {{ .Values.namespace }}
+  annotations:
+    "helm.sh/hook": pre-install
 spec:
   templates:
   - name: spark-job-template
