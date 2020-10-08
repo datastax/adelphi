@@ -13,6 +13,7 @@ target:
   dc: dc2
   clusterName: target
   version: "3.11.6"
+  commit_hash:
 
 metadata:
   dc: dc2
