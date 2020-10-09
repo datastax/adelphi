@@ -27,12 +27,13 @@ spec:
     initContainers:
     - name: clone-cassandra
       image: alpine/git
-      workingDir: /download/cassandra
+      workingDir: /download
       command:
         - sh
         - -c
       args:
-        - git clone https://github.com/apache/cassandra.git .;
+        - git clone https://github.com/apache/cassandra.git cassandra;
+          cd cassandra;
           git checkout {{`{{inputs.parameters.commit_hash}}`}};
       volumeMounts:
       - name: download
@@ -48,10 +49,9 @@ spec:
           ln -s /apache-ant-1.9.15/bin/ant /usr/bin/ant;
           cd /download/cassandra;
           export CASSANDRA_USE_JDK11=true;
-          ant -Dant.gen-doc.skip artifacts;
+          ant artifacts -Dant.gen-doc.skip=true -Dno-javadoc=true;
           mkdir /workspace/cassandra;
-          tar -zxvf build/apache-cassandra-*-bin.tar.gz --strip-components=1 -C /workspace/cassandra;
-          ls /workspace;
+          tar -zxvf ./build/apache-cassandra-*-bin.tar.gz --strip-components=1 -C /workspace/cassandra;
       volumeMounts:
       - name: download
         mountPath: /download
