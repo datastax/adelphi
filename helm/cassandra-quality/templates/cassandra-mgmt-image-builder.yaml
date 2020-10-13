@@ -1,0 +1,53 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: cassandra-mgmt-image
+  namespace: {{ .Values.namespace }}
+  annotations:
+    "helm.sh/hook": pre-install
+spec:
+  templates:
+  - name: cassandra-mgmt-image-template
+    inputs:
+      parameters:
+      - name: registry_ip
+    container:
+      image: gcr.io/kaniko-project/executor:v1.0.0
+      args:
+      - --dockerfile=/dockerfile/Dockerfile
+      - --context=dir:///builder
+      - {{`--destination={{inputs.parameters.registry_ip}}:30000/cassandra-quality/management-api-for-apache-cassandra`}}
+      - --insecure=true
+      volumeMounts:
+        - name: builder
+          mountPath: /builder
+        - name: dockerfile
+          mountPath: /dockerfile
+    initContainers:
+    - name: clone-cassandra-mgmt-api
+      image: alpine/git
+      workingDir: /builder
+      args:
+        - clone
+        - https://github.com/datastax/management-api-for-apache-cassandra 
+        - .
+      volumeMounts:
+      - name: builder
+        mountPath: /builder
+    - name: build-cassandra-mgmt-api
+      image: maven:3-openjdk-11
+      workingDir: /builder
+      args:
+        - mvn
+        - clean
+        - package
+        - -DskipTests
+      volumeMounts:
+      - name: builder
+        mountPath: /builder
+    volumes:
+    - name: builder
+      emptyDir: {}
+    - name: dockerfile
+      configMap:
+        name: cassandra-mgmt-dockerfile-configmap

@@ -17,7 +17,7 @@ spec:
       args:
       - --dockerfile=/dockerfile/Dockerfile
       - --context=dir:///workspace
-      - {{`--destination={{inputs.parameters.registry_ip}}:30000/cassandra-quality/cassandra:{{inputs.parameters.commit_hash}}`}}
+      - {{`--destination={{inputs.parameters.registry_ip}}:30000/cassandra-quality/cassandra`}}
       - --insecure=true
       volumeMounts:
         - name: workspace

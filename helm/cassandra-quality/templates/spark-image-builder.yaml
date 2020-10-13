@@ -37,6 +37,7 @@ spec:
         - mvn
         - clean
         - package
+        - -DskipTests
       volumeMounts:
       - name: download
         mountPath: /download
