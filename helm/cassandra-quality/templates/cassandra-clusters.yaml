@@ -74,6 +74,7 @@ spec:
           clusterName: {{ .Values.target.clusterName }}
           serverType: cassandra
           serverVersion: {{ .Values.target.version }}
+          serverImage: docker-registry:30000/cassandra-quality/management-api-for-apache-cassandra
           managementApiAuth:
             insecure: {}
           # Limit each pod to a fixed 1 CPU cores and 2 GB of RAM.
