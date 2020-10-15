@@ -14,40 +14,54 @@ spec:
     container:
       image: gcr.io/kaniko-project/executor:v1.0.0
       args:
-      - --dockerfile=/dockerfile/Dockerfile
-      - --context=dir:///builder
+      - --dockerfile=/generated/Dockerfile
+      - --context=dir:///build
       - {{`--destination={{inputs.parameters.registry_ip}}:30000/cassandra-quality/management-api-for-apache-cassandra`}}
       - --insecure=true
       volumeMounts:
-        - name: builder
-          mountPath: /builder
-        - name: dockerfile
-          mountPath: /dockerfile
+        - name: build
+          mountPath: /build
+        - name: generated
+          mountPath: /generated
     initContainers:
+    - name: generate-dockerfile
+      image: alpine
+      command:
+        - sh
+        - -c
+      args:
+        - echo "FROM {{`{{inputs.parameters.registry_ip}}`}}:30000/cassandra-quality/cassandra" | cat - /configmap/Dockerfile > /generated/Dockerfile
+      volumeMounts:
+      - name: generated
+        mountPath: /generated
+      - name: configmap
+        mountPath: /configmap
     - name: clone-cassandra-mgmt-api
       image: alpine/git
-      workingDir: /builder
+      workingDir: /build
       args:
         - clone
         - https://github.com/datastax/management-api-for-apache-cassandra 
         - .
       volumeMounts:
-      - name: builder
-        mountPath: /builder
+      - name: build
+        mountPath: /build
     - name: build-cassandra-mgmt-api
       image: maven:3-openjdk-11
-      workingDir: /builder
+      workingDir: /build
       args:
         - mvn
         - clean
         - package
         - -DskipTests
       volumeMounts:
-      - name: builder
-        mountPath: /builder
+      - name: build
+        mountPath: /build
     volumes:
-    - name: builder
+    - name: build
       emptyDir: {}
-    - name: dockerfile
+    - name: generated
+      emptyDir: {}
+    - name: configmap
       configMap:
         name: cassandra-mgmt-dockerfile-configmap
