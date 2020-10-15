@@ -13,7 +13,7 @@ spec:
       labels:
         app: spark-driver
     container:
-      image: localhost:30000/cassandra-quality/spark:latest
+      image: localhost:30000/adelphi/spark:latest
       args: ["driver",
                 "--verbose",
                 "--conf", "spark.driver.bindAddress=0.0.0.0",
@@ -27,11 +27,11 @@ spec:
                 "--conf", "spark.driver.memory=5g",
                 "--conf", "spark.executor.memory=1g",
                 "--conf", "spark.executor.instances=3",
-                "--conf", "spark.kubernetes.container.image=localhost:30000/cassandra-quality/spark:latest",
+                "--conf", "spark.kubernetes.container.image=localhost:30000/adelphi/spark:latest",
                 "--conf", "spark.kubernetes.container.image.pullPolicy=Always",
                 "--conf", "spark.kubernetes.authenticate.driver.serviceAccountName=spark",
                 "--conf", "spark.kubernetes.namespace=cass-operator",
-                "--conf", "spark.kubernetes.context=cassandra-quality",
+                "--conf", "spark.kubernetes.context=adelphi",
                 "--files", "/config/localconfig.yaml",
                 "local:///opt/spark/jars/spark-uberjar-0.2-SNAPSHOT.jar",
                 "localconfig.yaml"

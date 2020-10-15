@@ -17,7 +17,7 @@ spec:
       args:
       - --dockerfile=/workspace/kubernetes/dockerfiles/spark/Dockerfile
       - --context=dir:///workspace
-      - {{`--destination={{inputs.parameters.registry_ip}}:30000/cassandra-quality/spark:latest`}}
+      - {{`--destination={{inputs.parameters.registry_ip}}:30000/adelphi/spark:latest`}}
       - --insecure=true
       volumeMounts:
         - name: workspace
