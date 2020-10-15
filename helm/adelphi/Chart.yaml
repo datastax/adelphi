@@ -1,5 +1,5 @@
 apiVersion: v3
-name: cassandra-quality
+name: adelphi
 description: Assembly of automated C* testing tools for Quality Assurance
 
 type: application

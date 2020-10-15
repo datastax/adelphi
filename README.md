@@ -1,15 +1,15 @@
 ## TL;DR
 
 ```
-git clone https://github.com/riptano/cassandra-quality
-cd cassandra-quality
-helm install cassandra-quality helm/cassandra-quality -n cass-operator
+git clone https://github.com/datastax/adelphi
+cd adelphi
+helm install adelphi helm/adelphi -n cass-operator
 ```
 
 > :warning: This assumes your KUBECONFIG is set to the right k8s cluster and that you have the Helm package manager installed.
 For complete setup instructions, check [Local Setup](#local-setup).
                                      
-## What is cassandra-quality?
+## What is Adelphi?
 It is an automation tool for testing C* OSS that assembles NoSQLBench and cassandra-diff (other tools coming soon to the mix).
 
 It consists of a set of Kubernetes templates orchestrated by an Argo workflow, which allows for easily deploying a test
@@ -24,7 +24,7 @@ Kubernetes environment for testing.
 
 ## Pre-requisites
 
-In order to run cassandra-quality, you will need:
+In order to run Adelphi, you will need:
 
 - A running Kubernetes cluster (you can start one locally with [k3d](https://k3d.io/))
 - [Helm](https://helm.sh/docs/intro/install/) cli (a k8s package manager)
@@ -43,13 +43,13 @@ Install it with (or check their website for other options):
 2. Now, create a k8s cluster with 3 worker nodes that we will use to test Cassandra:
 
     ```
-    k3d cluster create cassandra-quality --servers 3 --wait
+    k3d cluster create adelphi --servers 3 --wait
     ```
 
 3. When that completes, set the KUBECONFIG environment variable to make sure you're working in the right context:
 
     ```
-    export KUBECONFIG="$(k3d kubeconfig get cassandra-quality)"
+    export KUBECONFIG="$(k3d kubeconfig get adelphi)"
     ```
 
 4. If you don't have [Helm](https://helm.sh/docs/intro/install/), you can obtain it with:
@@ -58,10 +58,10 @@ Install it with (or check their website for other options):
     curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
     ``` 
    
-5. At this point, you should be ready to install the cassandra-quality chart into your cluster. From the project root folder, execute:
+5. At this point, you should be ready to install the Adelphi chart into your cluster. From the project root folder, execute:
 
     ```
-   helm install cassandra-quality helm/cassandra-quality -n cass-operator
+   helm install adelphi helm/adelphi -n cass-operator
     ```
    
 6. (Optional) Install the Argo cli: https://github.com/argoproj/argo/releases, then track the workflow progress with:
