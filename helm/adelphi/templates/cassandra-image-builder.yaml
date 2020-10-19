@@ -52,11 +52,14 @@ spec:
           ant artifacts -Dant.gen-doc.skip=true -Dno-javadoc=true;
           mkdir /workspace/cassandra;
           tar -zxvf ./build/apache-cassandra-*-bin.tar.gz --strip-components=1 -C /workspace/cassandra;
+          cp /dockerfile/docker-entrypoint.sh /workspace; 
       volumeMounts:
       - name: download
         mountPath: /download
       - name: workspace
         mountPath: /workspace
+      - name: dockerfile
+        mountPath: /dockerfile
     volumes:
     - name: workspace
       emptyDir: {}

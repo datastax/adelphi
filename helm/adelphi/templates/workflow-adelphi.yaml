@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: workflow-nosqlbench-cassdiff-{{ .Release.Revision }}
+  name: workflow-adelphi-{{ .Release.Revision }}
 spec:
   entrypoint: execute
   serviceAccountName: cass-operator

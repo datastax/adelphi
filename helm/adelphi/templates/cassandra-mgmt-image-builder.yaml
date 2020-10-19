@@ -39,13 +39,18 @@ spec:
     - name: clone-cassandra-mgmt-api
       image: alpine/git
       workingDir: /build
+      command:
+        - sh
+        - -c
       args:
-        - clone
-        - https://github.com/datastax/management-api-for-apache-cassandra 
-        - .
+        - git clone https://github.com/datastax/management-api-for-apache-cassandra .;
+          git checkout v0.1.13;
+          cp /configmap/docker-entrypoint.sh /build;
       volumeMounts:
       - name: build
         mountPath: /build
+      - name: configmap
+        mountPath: /configmap
     - name: build-cassandra-mgmt-api
       image: maven:3-openjdk-11
       workingDir: /build
