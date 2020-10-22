@@ -48,8 +48,7 @@ spec:
           chmod +x /apache-ant-1.9.15/bin/ant;
           ln -s /apache-ant-1.9.15/bin/ant /usr/bin/ant;
           cd /download/cassandra;
-          export CASSANDRA_USE_JDK11=true;
-          ant artifacts -Dant.gen-doc.skip=true -Dno-javadoc=true;
+          ant artifacts -Duse.jdk11=true -Dant.gen-doc.skip=true -Dno-javadoc=true;
           mkdir /workspace/cassandra;
           tar -zxvf ./build/apache-cassandra-*-bin.tar.gz --strip-components=1 -C /workspace/cassandra;
           cp /dockerfile/docker-entrypoint.sh /workspace; 
