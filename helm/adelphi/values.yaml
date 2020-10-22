@@ -1,8 +1,8 @@
 namespace: cass-operator
-clusterSize: 1 # number of nodes per cluster
-allowMultipleNodesPerWorker: true
+clusterSize: 3 # number of nodes per cluster
+allowMultipleNodesPerWorker: false
 
-storageClassName: local-path
+storageClassName: standard
 
 source:
   dc: dc1
@@ -64,8 +64,8 @@ nosqlbench_workload: |-
   scenarios:
     default:
       - run driver=cql tags==phase:schema threads==1 cycles==UNDEF
-      - run driver=cql tags==phase:rampup cycles===TEMPLATE(rampup-cycles,1000) threads=auto
-      - run driver=cql tags==phase:main cycles===TEMPLATE(main-cycles,1000) threads=auto
+      - run driver=cql tags==phase:rampup cycles===TEMPLATE(rampup-cycles,1000000) threads=auto
+      - run driver=cql tags==phase:main cycles===TEMPLATE(main-cycles,1000000) threads=auto
   bindings:
     seq_key: Mod(<<keycount:1000000000>>); ToString() -> String
     seq_value: Hash(); Mod(<<valuecount:1000000000>>); ToString() -> String
