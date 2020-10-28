@@ -1,0 +1,69 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: cassandra-image
+  namespace: {{ .Values.namespace }}
+  annotations:
+    "helm.sh/hook": pre-install
+spec:
+  templates:
+  - name: cassandra-image-template
+    inputs:
+      parameters:
+      - name: registry_ip
+      - name: commit_hash
+    container:
+      image: gcr.io/kaniko-project/executor:v1.0.0
+      args:
+      - --dockerfile=/dockerfile/Dockerfile
+      - --context=dir:///workspace
+      - {{`--destination={{inputs.parameters.registry_ip}}:30000/cassandra-quality/cassandra`}}
+      - --insecure=true
+      volumeMounts:
+        - name: workspace
+          mountPath: /workspace
+        - name: dockerfile
+          mountPath: /dockerfile
+    initContainers:
+    - name: clone-cassandra
+      image: alpine/git
+      workingDir: /download
+      command:
+        - sh
+        - -c
+      args:
+        - git clone https://github.com/apache/cassandra.git cassandra;
+          cd cassandra;
+          git checkout {{`{{inputs.parameters.commit_hash}}`}};
+      volumeMounts:
+      - name: download
+        mountPath: /download
+    - name: build-cassandra
+      image: openjdk:11
+      command:
+        - sh
+        - -c
+      args:
+        - wget -O - https://downloads.apache.org/ant/binaries/apache-ant-1.9.15-bin.tar.gz | tar -zxvf -;
+          chmod +x /apache-ant-1.9.15/bin/ant;
+          ln -s /apache-ant-1.9.15/bin/ant /usr/bin/ant;
+          cd /download/cassandra;
+          ant artifacts -Duse.jdk11=true -Dant.gen-doc.skip=true -Dno-javadoc=true;
+          mkdir /workspace/cassandra;
+          tar -zxvf ./build/apache-cassandra-*-bin.tar.gz --strip-components=1 -C /workspace/cassandra;
+          cp /dockerfile/docker-entrypoint.sh /workspace; 
+      volumeMounts:
+      - name: download
+        mountPath: /download
+      - name: workspace
+        mountPath: /workspace
+      - name: dockerfile
+        mountPath: /dockerfile
+    volumes:
+    - name: workspace
+      emptyDir: {}
+    - name: download
+      emptyDir: {}
+    - name: dockerfile
+      configMap:
+        name: cassandra-dockerfile-configmap

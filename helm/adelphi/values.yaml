@@ -12,7 +12,8 @@ source:
 target:
   dc: dc2
   clusterName: target
-  version: "3.11.6"
+  version: "4.0.0"
+  commit_hash: cassandra-4.0-beta2
 
 metadata:
   dc: dc2

@@ -8,7 +8,6 @@ metadata:
 spec:
   templates:
   - name: spark-image-template
-    daemon: true
     inputs:
       parameters:
       - name: registry_ip
@@ -38,7 +37,7 @@ spec:
         - mvn
         - clean
         - package
-        - -DskipTests=true
+        - -DskipTests
       volumeMounts:
       - name: download
         mountPath: /download
