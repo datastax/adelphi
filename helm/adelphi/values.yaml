@@ -58,6 +58,7 @@ cql_schema: |-
     value text,
     PRIMARY KEY (key)
   );
+gemini_schema_keyspace: testkeyspace
 
 nosqlbench_workload: |-
   scenarios:

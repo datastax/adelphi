@@ -9,7 +9,7 @@ spec:
   templates:
   - name: configure-schema
     container:
-      image: alpine
+      image: frolvlad/alpine-python2
       command: ["sh", "-c", "-e"]
       args:
         - VERSION=$(wget -q -O - https://storage.googleapis.com/kubernetes-release/release/stable.txt 2> /dev/null);
@@ -20,6 +20,9 @@ spec:
           echo "Configuring schema on the target cluster...";
           cat /schema/schema.cql | kubectl exec -n {{ .Values.namespace }} -i -t -c cassandra {{ .Values.target.clusterName }}-{{ .Values.target.dc }}-default-sts-0 -- /opt/cassandra/bin/cqlsh -u {{ .Values.target.clusterName }}-superuser -p $(cat /secret-target/password);
           echo "Done";
+          pip install cassandra-driver;
+          wget -q https://raw.githubusercontent.com/datastax/adelphi/master/schema-anonymizer/anonymizer.py;
+          python anonymizer.py --hosts="{{ .Values.source.clusterName }}-{{ .Values.source.dc }}-service" --username="{{ .Values.source.clusterName }}-superuser" --password="`cat /secret-source/password`" --keyspaces="{{ .Values.gemini_schema_keyspace }}" --format=gemini;
       volumeMounts:
         - name: schema
           mountPath: /schema
