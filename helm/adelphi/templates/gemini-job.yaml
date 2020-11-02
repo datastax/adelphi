@@ -48,6 +48,21 @@ spec:
       volumeMounts:
       - name: workspace
         mountPath: /workspace
+    - name: extract-schema
+      image: frolvlad/alpine-python2
+      command: ["sh", "-c", "-e"]
+      args:
+        - echo "Extract Gemini schema using anonymizer script";
+          pip install cassandra-driver;
+          wget -q https://raw.githubusercontent.com/datastax/adelphi/master/schema-anonymizer/anonymizer.py;
+          python anonymizer.py --hosts="{{ .Values.source.clusterName }}-{{ .Values.source.dc }}-service" --username="{{ .Values.source.clusterName }}-superuser" --password="`cat /source-secret/password`" --keyspaces="{{ .Values.gemini_schema_keyspace }}" --format=gemini > /workspace/gemini_schema.json;
+          echo "Done";
+      volumeMounts:
+      - name: workspace
+        mountPath: /workspace
+      - name: source-secret-volume
+        mountPath: /source-secret
+        readOnly: true
     volumes:
     - name: workspace
       emptyDir: {}
