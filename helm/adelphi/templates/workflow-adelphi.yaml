@@ -15,6 +15,7 @@ spec:
           template: registry-template
       - name: build-cassandra
         depends: "start-registry"
+        when: "{{ default false .Values.target.commit_hash }}"
         arguments:
           parameters:
           - name: registry_ip
@@ -26,6 +27,7 @@ spec:
           template: cassandra-image-template
       - name: build-cassandra-mgmt-api
         depends: "build-cassandra"
+        when: "{{ default false .Values.target.commit_hash }}"
         arguments:
           parameters:
           - name: registry_ip
