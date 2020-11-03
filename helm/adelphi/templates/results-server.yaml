@@ -12,6 +12,18 @@ spec:
         mountPath: /etc/nginx/conf.d
       - name: results-pv
         mountPath: /results
+  initContainers:
+  - name: clear-index
+    image: alpine
+    command:
+      - sh
+      - -c
+    args:
+      # remove sample index created by the NFS server
+      - rm /results/index.html
+    volumeMounts:
+    - name: results-pv
+      mountPath: /results
   volumes:
   - name: config
     configMap:
