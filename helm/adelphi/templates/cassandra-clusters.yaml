@@ -55,6 +55,9 @@ spec:
               initial_heap_size: "800M"
               max_heap_size: "800M"
   - name: start-target-cluster
+    inputs:
+      parameters:
+      - name: registry_ip
     resource:
       action: create
       manifest: |
@@ -74,7 +77,7 @@ spec:
           clusterName: {{ .Values.target.clusterName }}
           serverType: cassandra
           serverVersion: {{ .Values.target.version }}
-          serverImage: localhost:30000/cassandra-quality/management-api-for-apache-cassandra
+          serverImage: {{`{{inputs.parameters.registry_ip}}`}}:30000/adelphi/management-api-for-apache-cassandra
           managementApiAuth:
             insecure: {}
           # Limit each pod to a fixed 1 CPU cores and 2 GB of RAM.

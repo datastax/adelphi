@@ -22,7 +22,7 @@ spec:
           --test-cluster={{ .Values.target.clusterName }}-{{ .Values.target.dc }}-service
           --test-username={{ .Values.target.clusterName }}-superuser
           --test-password="`cat /target-secret/password`"
-          --duration=10m
+          --duration={{ .Values.gemini_test_duration }}
           --fail-fast
       dnsConfig:
         options:

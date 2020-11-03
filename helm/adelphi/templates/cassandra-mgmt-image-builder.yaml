@@ -16,7 +16,7 @@ spec:
       args:
       - --dockerfile=/generated/Dockerfile
       - --context=dir:///build
-      - {{`--destination={{inputs.parameters.registry_ip}}:30000/cassandra-quality/management-api-for-apache-cassandra`}}
+      - {{`--destination={{inputs.parameters.registry_ip}}:30000/adelphi/management-api-for-apache-cassandra`}}
       - --insecure=true
       volumeMounts:
         - name: build
@@ -30,7 +30,7 @@ spec:
         - sh
         - -c
       args:
-        - echo "FROM {{`{{inputs.parameters.registry_ip}}`}}:30000/cassandra-quality/cassandra" | cat - /configmap/Dockerfile > /generated/Dockerfile
+        - echo "FROM {{`{{inputs.parameters.registry_ip}}`}}:30000/adelphi/cassandra" | cat - /configmap/Dockerfile > /generated/Dockerfile
       volumeMounts:
       - name: generated
         mountPath: /generated
