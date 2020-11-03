@@ -41,6 +41,10 @@ spec:
           template: start-source-cluster
       - name: cassandra-target
         depends: "build-cassandra-mgmt-api"
+        arguments:
+          parameters:
+          - name: registry_ip
+            value: "{{`{{tasks.start-registry.ip}}`}}"
         templateRef:
           name: cassandra-clusters
           template: start-target-cluster
@@ -64,12 +68,12 @@ spec:
           name: schema-job
           template: configure-schema
       - name: nosqlbench-source
-        depends: "cassandra-ready"
+        depends: "configure-schema"
         templateRef:
           name: nosqlbench-job
           template: nosqlbench-source
       - name: nosqlbench-target
-        depends: "cassandra-ready"
+        depends: "configure-schema"
         templateRef:
           name: nosqlbench-job
           template: nosqlbench-target

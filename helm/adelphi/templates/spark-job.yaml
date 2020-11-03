@@ -8,12 +8,15 @@ metadata:
 spec:
   templates:
   - name: spark-job-template
+    inputs:
+      parameters:
+      - name: registry_ip
     serviceAccountName: spark
     metadata:
       labels:
         app: spark-driver
     container:
-      image: localhost:30000/adelphi/spark:latest
+      image: "{{`{{inputs.parameters.registry_ip}}`}}:30000/adelphi/spark"
       args: ["driver",
                 "--verbose",
                 "--conf", "spark.driver.bindAddress=0.0.0.0",
@@ -27,7 +30,7 @@ spec:
                 "--conf", "spark.driver.memory=5g",
                 "--conf", "spark.executor.memory=1g",
                 "--conf", "spark.executor.instances=3",
-                "--conf", "spark.kubernetes.container.image=localhost:30000/adelphi/spark:latest",
+                "--conf", "spark.kubernetes.container.image={{`{{inputs.parameters.registry_ip}}`}}:30000/adelphi/spark",
                 "--conf", "spark.kubernetes.container.image.pullPolicy=Always",
                 "--conf", "spark.kubernetes.authenticate.driver.serviceAccountName=spark",
                 "--conf", "spark.kubernetes.namespace=cass-operator",

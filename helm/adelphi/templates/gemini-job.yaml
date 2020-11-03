@@ -22,7 +22,8 @@ spec:
           --test-cluster={{ .Values.target.clusterName }}-{{ .Values.target.dc }}-service
           --test-username={{ .Values.target.clusterName }}-superuser
           --test-password="`cat /target-secret/password`"
-          --duration=1m
+          --duration={{ .Values.gemini_test_duration }}
+          --schema=/workspace/gemini_schema.json
           --outfile=/results/gemini/results.txt
       dnsConfig:
         options:
@@ -49,6 +50,21 @@ spec:
       volumeMounts:
       - name: workspace
         mountPath: /workspace
+    - name: extract-schema
+      image: python:3.10.0a1-alpine3.12
+      command: ["sh", "-c", "-e"]
+      args:
+        - echo "Extract Gemini schema using anonymizer script";
+          pip install cassandra-driver;
+          wget -q https://raw.githubusercontent.com/datastax/adelphi/master/schema-anonymizer/anonymizer.py;
+          python anonymizer.py --hosts="{{ .Values.source.clusterName }}-{{ .Values.source.dc }}-service" --username="{{ .Values.source.clusterName }}-superuser" --password="`cat /source-secret/password`" --keyspaces="{{ .Values.gemini_schema_keyspace }}" --format=gemini > /workspace/gemini_schema.json;
+          echo "Done";
+      volumeMounts:
+      - name: workspace
+        mountPath: /workspace
+      - name: source-secret-volume
+        mountPath: /source-secret
+        readOnly: true
     volumes:
     - name: workspace
       emptyDir: {}
