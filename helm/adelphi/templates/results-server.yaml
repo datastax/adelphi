@@ -1,0 +1,22 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: results
+  namespace: {{ .Values.namespace }}
+  annotations:
+    "helm.sh/hook": pre-install
+spec:
+  templates:
+  - name: start-results-server
+    daemon: true
+    container:
+      image: nginx
+      volumeMounts:
+      - name: config
+        mountPath: /etc/nginx/conf.d
+      - name: results
+        mountPath: /results
+    volumes:
+    - name: config
+      configMap:
+        name: results-server-configmap

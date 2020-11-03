@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: results-server-configmap
+  namespace: {{ .Values.namespace }}
+data:
+  default.conf: |
+    server {
+      listen        8080;
+      location / {
+        autoindex on;
+        root  /results;
+      } 
+    }

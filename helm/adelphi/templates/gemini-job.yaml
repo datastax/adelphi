@@ -22,8 +22,8 @@ spec:
           --test-cluster={{ .Values.target.clusterName }}-{{ .Values.target.dc }}-service
           --test-username={{ .Values.target.clusterName }}-superuser
           --test-password="`cat /target-secret/password`"
-          --duration=10m
-          --fail-fast
+          --duration=1m
+          --outfile=/results/gemini/results.txt
       dnsConfig:
         options:
         - name: ndots
@@ -37,6 +37,8 @@ spec:
       - name: target-secret-volume
         mountPath: /target-secret
         readOnly: true
+      - name: results
+        mountPath: /results
     initContainers:
     - name: download-gemini
       image: alpine
@@ -62,3 +64,6 @@ spec:
         items:
         - key: password
           path: password
+    - name: results
+      persistentVolumeClaim:
+        claimName: results-pvc

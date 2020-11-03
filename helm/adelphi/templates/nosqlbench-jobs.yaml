@@ -12,6 +12,7 @@ spec:
       image: nosqlbench/nosqlbench:latest
       args: [
         "--show-stacktraces",
+        "--report-csv-to=/results/nosqlbench-source",
         "/config/workload.yaml",
         "hosts={{ .Values.source.clusterName }}-{{ .Values.source.dc }}-service",
         "username={{ .Values.source.clusterName }}-superuser",
@@ -28,6 +29,8 @@ spec:
       - name: workload
         mountPath: /config/workload.yaml
         subPath: workload.yaml
+      - name: results
+        mountPath: /results
     volumes:
     - name: secret-volume
       secret:
@@ -38,11 +41,15 @@ spec:
     - name: workload
       configMap:
         name: nosqlbench-workload-configmap
+    - name: results
+      persistentVolumeClaim:
+        claimName: results-pvc
   - name: nosqlbench-target
     container:
       image: nosqlbench/nosqlbench:latest
       args: [
         "--show-stacktraces",
+        "--report-csv-to=/results/nosqlbench-target",
         "/config/workload.yaml",
         "hosts={{ .Values.target.clusterName }}-{{ .Values.target.dc }}-service",
         "username={{ .Values.target.clusterName }}-superuser",
@@ -59,6 +66,8 @@ spec:
       - name: workload
         mountPath: /config/workload.yaml
         subPath: workload.yaml
+      - name: results
+        mountPath: /results
     volumes:
     - name: secret-volume
       secret:
@@ -69,3 +78,6 @@ spec:
     - name: workload
       configMap:
         name: nosqlbench-workload-configmap
+    - name: results
+      persistentVolumeClaim:
+        claimName: results-pvc
