@@ -8,7 +8,6 @@ metadata:
 spec:
   templates:
   - name: spark-image-template
-    daemon: true
     inputs:
       parameters:
       - name: registry_ip
@@ -17,7 +16,7 @@ spec:
       args:
       - --dockerfile=/workspace/kubernetes/dockerfiles/spark/Dockerfile
       - --context=dir:///workspace
-      - {{`--destination={{inputs.parameters.registry_ip}}:30000/adelphi/spark:latest`}}
+      - {{`--destination={{inputs.parameters.registry_ip}}:30000/adelphi/spark`}}
       - --insecure=true
       volumeMounts:
         - name: workspace
@@ -38,7 +37,7 @@ spec:
         - mvn
         - clean
         - package
-        - -DskipTests=true
+        - -DskipTests
       volumeMounts:
       - name: download
         mountPath: /download

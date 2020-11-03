@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: workflow-nosqlbench-cassdiff-{{ .Release.Revision }}
+  name: workflow-adelphi-{{ .Release.Revision }}
 spec:
   entrypoint: execute
   serviceAccountName: cass-operator
@@ -9,11 +9,40 @@ spec:
   - name: execute
     dag:
       tasks:
+      - name: start-registry
+        templateRef:                  
+          name: registry
+          template: registry-template
+      - name: build-cassandra
+        depends: "start-registry"
+        arguments:
+          parameters:
+          - name: registry_ip
+            value: "{{`{{tasks.start-registry.ip}}`}}"
+          - name: commit_hash
+            value: "{{ .Values.target.commit_hash }}"
+        templateRef:
+          name: cassandra-image
+          template: cassandra-image-template
+      - name: build-cassandra-mgmt-api
+        depends: "build-cassandra"
+        arguments:
+          parameters:
+          - name: registry_ip
+            value: "{{`{{tasks.start-registry.ip}}`}}"
+        templateRef:
+          name: cassandra-mgmt-image
+          template: cassandra-mgmt-image-template
       - name: cassandra-source
         templateRef:
           name: cassandra-clusters
           template: start-source-cluster
       - name: cassandra-target
+        depends: "build-cassandra-mgmt-api"
+        arguments:
+          parameters:
+          - name: registry_ip
+            value: "{{`{{tasks.start-registry.ip}}`}}"
         templateRef:
           name: cassandra-clusters
           template: start-target-cluster
@@ -22,10 +51,6 @@ spec:
         templateRef:                  
           name: cassandra-status
           template: ready
-      - name: start-registry
-        templateRef:                  
-          name: registry
-          template: registry-template
       - name: build-spark
         depends: "start-registry"
         arguments:
@@ -41,12 +66,12 @@ spec:
           name: schema-job
           template: configure-schema
       - name: nosqlbench-source
-        depends: "cassandra-ready"
+        depends: "configure-schema"
         templateRef:
           name: nosqlbench-job
           template: nosqlbench-source
       - name: nosqlbench-target
-        depends: "cassandra-ready"
+        depends: "configure-schema"
         templateRef:
           name: nosqlbench-job
           template: nosqlbench-target
