@@ -1,12 +1,12 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: results-pvc
+  name: nfs-pvc
   namespace: {{ .Values.namespace }}
 spec:
   accessModes:
-    - ReadWriteMany
-  storageClassName: ""
+    - ReadWriteOnce
+  storageClassName: {{ .Values.storageClassName }}
   resources:
     requests:
-      storage: 100Mi
+      storage: 10Gi

@@ -15,7 +15,8 @@ spec:
         - sh
         - -c
       args:
-        - /workspace/gemini
+        - mkdir /results/gemini;
+          /workspace/gemini
           --oracle-cluster={{ .Values.source.clusterName }}-{{ .Values.source.dc }}-service
           --oracle-username={{ .Values.source.clusterName }}-superuser
           --oracle-password="`cat /source-secret/password`"
@@ -38,7 +39,7 @@ spec:
       - name: target-secret-volume
         mountPath: /target-secret
         readOnly: true
-      - name: results
+      - name: results-pv
         mountPath: /results
     initContainers:
     - name: download-gemini
@@ -80,6 +81,6 @@ spec:
         items:
         - key: password
           path: password
-    - name: results
+    - name: results-pv
       persistentVolumeClaim:
         claimName: results-pvc

@@ -29,7 +29,7 @@ spec:
       - name: workload
         mountPath: /config/workload.yaml
         subPath: workload.yaml
-      - name: results
+      - name: results-pv
         mountPath: /results
     volumes:
     - name: secret-volume
@@ -41,7 +41,7 @@ spec:
     - name: workload
       configMap:
         name: nosqlbench-workload-configmap
-    - name: results
+    - name: results-pv
       persistentVolumeClaim:
         claimName: results-pvc
   - name: nosqlbench-target
@@ -66,7 +66,7 @@ spec:
       - name: workload
         mountPath: /config/workload.yaml
         subPath: workload.yaml
-      - name: results
+      - name: results-pv
         mountPath: /results
     volumes:
     - name: secret-volume
@@ -78,6 +78,6 @@ spec:
     - name: workload
       configMap:
         name: nosqlbench-workload-configmap
-    - name: results
+    - name: results-pv
       persistentVolumeClaim:
         claimName: results-pvc
