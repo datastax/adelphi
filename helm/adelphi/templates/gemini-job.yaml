@@ -49,7 +49,7 @@ spec:
       - name: workspace
         mountPath: /workspace
     - name: extract-schema
-      image: frolvlad/alpine-python2
+      image: python:3.10.0a1-alpine3.12
       command: ["sh", "-c", "-e"]
       args:
         - echo "Extract Gemini schema using anonymizer script";
