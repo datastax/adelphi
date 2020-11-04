@@ -4,6 +4,27 @@ metadata:
   name: cassandra-diff-configmap
   namespace: {{ .Values.namespace }}
 data:
+  collect.sh: |
+    #!/bin/sh
+    # Read the cassandra-diff tables and store the results in the shared volume
+    mkdir /results/cassandra-diff
+    collect() {
+      table="$1";
+      kubectl exec -n {{ .Values.namespace }} -i -t -c cassandra \
+      {{ .Values.target.clusterName }}-{{ .Values.target.dc }}-default-sts-0 -- \
+      /opt/cassandra/bin/cqlsh -u {{ .Values.target.clusterName }}-superuser \
+      -p $(cat /secret-target/password) --execute "SELECT JSON * FROM cassandradiff.$table;" > /results/cassandra-diff/$table.txt 2>/dev/null;
+    }
+    collect "job_results"
+    collect "job_start_index"
+    collect "job_summary"
+    collect "keyspace_index"
+    collect "mismatches"
+    collect "partition_errors"
+    collect "running_jobs"
+    collect "source_cluster_index"
+    collect "target_cluster_index"
+    collect "task_errors"
   localconfig.yaml: |
     splits: {{ .Values.cassandra_diff_config.splits }}
     buckets: {{ .Values.cassandra_diff_config.buckets }}

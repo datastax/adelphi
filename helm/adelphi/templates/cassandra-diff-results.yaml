@@ -1,0 +1,41 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: cassandra-diff
+  namespace: {{ .Values.namespace }}
+  annotations:
+    "helm.sh/hook": pre-install
+spec:
+  templates:
+  - name: collect-results
+    container:
+      image: alpine
+      command: ["sh", "-c", "-e"]
+      args:
+        - VERSION=$(wget -q -O - https://storage.googleapis.com/kubernetes-release/release/stable.txt 2> /dev/null);
+          wget -q -O /usr/sbin/kubectl https://storage.googleapis.com/kubernetes-release/release/$VERSION/bin/linux/amd64/kubectl;
+          cp /config/collect.sh /collect.sh;
+          chmod +x /usr/sbin/kubectl /collect.sh;
+          /collect.sh;          
+      volumeMounts:
+        - name: results-pv
+          mountPath: /results
+        - name: target-secret-volume
+          mountPath: /secret-target
+          readOnly: true
+        - name: config
+          mountPath: /config/collect.sh
+          subPath: collect.sh
+    volumes:
+    - name: target-secret-volume
+      secret:
+        secretName: {{ .Values.target.clusterName }}-superuser
+        items:
+        - key: password
+          path: password
+    - name: results-pv
+      persistentVolumeClaim:
+        claimName: results-pvc
+    - name: config
+      configMap:
+        name: cassandra-diff-configmap

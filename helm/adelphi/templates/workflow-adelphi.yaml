@@ -86,8 +86,13 @@ spec:
         templateRef:
           name: spark-job
           template: spark-job-template
-      - name: gemini-oracle-sut
+      - name: collect-diff-results
         depends: "run-diff"
+        templateRef:
+          name: cassandra-diff
+          template: collect-results
+      - name: gemini-oracle-sut
+        depends: "collect-diff-results"
         templateRef:
           name: gemini-job
           template: gemini-oracle-sut
