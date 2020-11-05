@@ -15,6 +15,7 @@ spec:
           template: registry-template
       - name: build-cassandra
         depends: "start-registry"
+        when: "{{ default false .Values.target.commit_hash }}"
         arguments:
           parameters:
           - name: registry_ip
@@ -26,6 +27,7 @@ spec:
           template: cassandra-image-template
       - name: build-cassandra-mgmt-api
         depends: "build-cassandra"
+        when: "{{ default false .Values.target.commit_hash }}"
         arguments:
           parameters:
           - name: registry_ip
@@ -84,8 +86,13 @@ spec:
         templateRef:
           name: spark-job
           template: spark-job-template
-      - name: gemini-oracle-sut
+      - name: collect-diff-results
         depends: "run-diff"
+        templateRef:
+          name: cassandra-diff
+          template: collect-results
+      - name: gemini-oracle-sut
+        depends: "collect-diff-results"
         templateRef:
           name: gemini-job
           template: gemini-oracle-sut

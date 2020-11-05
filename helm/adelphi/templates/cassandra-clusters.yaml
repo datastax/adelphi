@@ -77,7 +77,9 @@ spec:
           clusterName: {{ .Values.target.clusterName }}
           serverType: cassandra
           serverVersion: {{ .Values.target.version }}
+          {{- if .Values.target.commit_hash }}
           serverImage: {{`{{inputs.parameters.registry_ip}}`}}:30000/adelphi/management-api-for-apache-cassandra
+          {{- end }}
           managementApiAuth:
             insecure: {}
           # Limit each pod to a fixed 1 CPU cores and 2 GB of RAM.

@@ -4,6 +4,32 @@ metadata:
   name: cassandra-diff-configmap
   namespace: {{ .Values.namespace }}
 data:
+  collect.py: |
+    import sys
+    from cassandra.cluster import Cluster
+    from cassandra.auth import PlainTextAuthProvider
+
+    hosts = ["{{ .Values.target.clusterName }}-{{ .Values.target.dc }}-service"]
+    username = "{{ .Values.target.clusterName }}-superuser"
+    password = sys.argv[1]
+    outputFolder = sys.argv[2]
+
+    auth_provider = PlainTextAuthProvider(username=username, password=password)
+
+    cluster = Cluster(hosts, auth_provider=auth_provider)
+    session = cluster.connect("cassandradiff")
+
+    tables = ["job_results", "job_start_index", "keyspace_index", "job_summary", "mismatches",
+      "running_jobs", "partition_errors", "partition_errors", "source_cluster_index",
+      "task_errors", "target_cluster_index"]
+
+    for table in tables:
+      with open(outputFolder + "/" + table + ".json", "w") as jsonFile:
+        rows = session.execute("SELECT JSON * FROM " + table)
+        for row in rows:
+          jsonFile.write(row.json + "\n")
+
+    cluster.shutdown()
   localconfig.yaml: |
     splits: {{ .Values.cassandra_diff_config.splits }}
     buckets: {{ .Values.cassandra_diff_config.buckets }}

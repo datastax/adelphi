@@ -1,0 +1,43 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: cassandra-diff
+  namespace: {{ .Values.namespace }}
+  annotations:
+    "helm.sh/hook": pre-install
+spec:
+  templates:
+  - name: collect-results
+    container:
+      image: python:3.10.0a1-alpine3.12
+      command: ["sh", "-c", "-e"]
+      args:
+        - VERSION=$(wget -q -O - https://storage.googleapis.com/kubernetes-release/release/stable.txt 2> /dev/null);
+          OUTPUT=/results/cassandra-diff;
+          wget -q -O /usr/sbin/kubectl https://storage.googleapis.com/kubernetes-release/release/$VERSION/bin/linux/amd64/kubectl;
+          pip install cassandra-driver;
+          chmod +x /usr/sbin/kubectl;
+          mkdir -p $OUTPUT;
+          python /config/collect.py "$(cat /secret-target/password)" $OUTPUT;
+      volumeMounts:
+        - name: results-pv
+          mountPath: /results
+        - name: target-secret-volume
+          mountPath: /secret-target
+          readOnly: true
+        - name: config
+          mountPath: /config/collect.py
+          subPath: collect.py
+    volumes:
+    - name: target-secret-volume
+      secret:
+        secretName: {{ .Values.target.clusterName }}-superuser
+        items:
+        - key: password
+          path: password
+    - name: results-pv
+      persistentVolumeClaim:
+        claimName: results-pvc
+    - name: config
+      configMap:
+        name: cassandra-diff-configmap
