@@ -9,14 +9,16 @@ spec:
   templates:
   - name: collect-results
     container:
-      image: alpine
+      image: python:3.10.0a1-alpine3.12
       command: ["sh", "-c", "-e"]
       args:
         - VERSION=$(wget -q -O - https://storage.googleapis.com/kubernetes-release/release/stable.txt 2> /dev/null);
+          OUTPUT=/results/cassandra-diff;
           wget -q -O /usr/sbin/kubectl https://storage.googleapis.com/kubernetes-release/release/$VERSION/bin/linux/amd64/kubectl;
-          cp /config/collect.sh /collect.sh;
-          chmod +x /usr/sbin/kubectl /collect.sh;
-          /collect.sh;          
+          pip install cassandra-driver;
+          chmod +x /usr/sbin/kubectl;
+          mkdir -p $OUTPUT;
+          python /config/collect.py "$(cat /secret-target/password)" $OUTPUT;
       volumeMounts:
         - name: results-pv
           mountPath: /results
@@ -24,8 +26,8 @@ spec:
           mountPath: /secret-target
           readOnly: true
         - name: config
-          mountPath: /config/collect.sh
-          subPath: collect.sh
+          mountPath: /config/collect.py
+          subPath: collect.py
     volumes:
     - name: target-secret-volume
       secret:
