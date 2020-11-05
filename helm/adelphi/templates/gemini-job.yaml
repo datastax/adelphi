@@ -58,7 +58,7 @@ spec:
         - echo "Extract Gemini schema using anonymizer script";
           pip install cassandra-driver;
           wget -q https://raw.githubusercontent.com/datastax/adelphi/master/schema-anonymizer/anonymizer.py;
-          python anonymizer.py --hosts="{{ .Values.source.clusterName }}-{{ .Values.source.dc }}-service" --username="{{ .Values.source.clusterName }}-superuser" --password="`cat /source-secret/password`" --keyspaces="{{ .Values.gemini_schema_keyspace }}" --format=gemini > /workspace/gemini_schema.json;
+          python anonymizer.py --hosts="{{ .Values.source.clusterName }}-{{ .Values.source.dc }}-service" --username="{{ .Values.source.clusterName }}-superuser" --password="`cat /source-secret/password`" --keyspaces="{{ .Values.gemini_schema_keyspace }}" --format=gemini --no-anonymize > /workspace/gemini_schema.json;
           echo "Done";
       volumeMounts:
       - name: workspace
