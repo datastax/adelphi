@@ -138,7 +138,7 @@ def get_name(original_name, prefix):
     """
     Looks up the anonymized name for the provided original name in the cache.
     If not present, one is created, inserted into the cache and returned.
-    If schema anonymization is not requested simply return the  originl name.
+    If schema anonymization is not requested simply return the original name.
     """
     if not anonymize:
         return original_name
