@@ -6,7 +6,7 @@ setup(
    author='Gianluca Righetto',
    author_email='gianluca.righetto@datastax.com',
    packages=['adelphi'],
-   scripts=['bin/anonymizer'],
+   scripts=['bin/adelphi'],
    #url='http://pypi.python.org/pypi/PackageName/',
    url='https://github.com/datastax/adelphi',
    #license='LICENSE.txt',
