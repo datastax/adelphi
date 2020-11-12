@@ -138,7 +138,10 @@ def get_name(original_name, prefix):
     """
     Looks up the anonymized name for the provided original name in the cache.
     If not present, one is created, inserted into the cache and returned.
+    If schema anonymization is not requested simply return the original name.
     """
+    if not anonymize:
+        return original_name
     count = len(name_map[prefix])
     anonymized_named_prefixed = "%s_%s" % (prefix, count)
     return name_map[prefix].setdefault(original_name, anonymized_named_prefixed)
@@ -273,6 +276,8 @@ parser.add_argument('--replication-factor', metavar='3', type=int,
                     help='Replication factor to override original setting. Optional.')
 parser.add_argument('--format', metavar='cql', default='cql', choices=['cql', 'gemini'],
                     help='Output format for the schema. cql or gemini (json). Default is cql.')
+parser.add_argument('--no-anonymize', dest='anonymize', action='store_false', help='Disable anonymization functions')
+parser.set_defaults(anonymize=True)
 
 # extract command-line args
 args = parser.parse_args()
@@ -282,6 +287,7 @@ selected_keyspaces = args.keyspaces.split(',') if args.keyspaces is not None els
 output_format = args.format
 username = args.username
 password = args.password
+anonymize = args.anonymize
 
 options = dict()
 options['rf'] = args.replication_factor
