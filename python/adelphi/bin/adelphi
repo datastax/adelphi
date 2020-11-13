@@ -51,13 +51,12 @@ def build_keyspaces_metadata(keyspaces, schema):
 @click.option('--keyspaces', help='Comma-separated list of keyspaces to include. If not specified, all keypaces will '
                          'be included, except system keypaces')
 @click.option('--rf', type=int, default=3, help='Replication factor to override original setting. Optional.')
+@click.option('--anonymize/--no-anonymize', default=True)
 @click.pass_context
-def export(ctx, hosts, port, username, password, keyspaces, rf):
+def export(ctx, hosts, port, username, password, keyspaces, rf, anonymize):
 
     ctx.ensure_object(dict)
 
-    # TODO: fix anonymize support here
-    options = {'rf':rf, 'anonymize':False}
     schema = get_schema(hosts.split(','), port, username, password)
     keyspaces_metadata = build_keyspaces_metadata(keyspaces, schema)
 
@@ -69,7 +68,7 @@ def export(ctx, hosts, port, username, password, keyspaces, rf):
 
     ctx.obj['keyspaces_metadata'] = keyspaces_metadata
     ctx.obj['schema'] = schema
-    ctx.obj['options'] = options
+    ctx.obj['options'] = {'rf':rf, 'anonymize':anonymize}
 
 
 @export.command()
