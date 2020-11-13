@@ -1,0 +1,63 @@
+# Functions to facilitate interactions with the underlying data store
+
+import logging
+
+from adelphi import system_keyspaces
+
+from cassandra.cluster import Cluster, ExecutionProfile, EXEC_PROFILE_DEFAULT, default_lbp_factory
+from cassandra.auth import PlainTextAuthProvider
+
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger('adelphi')
+
+def build_auth_provider(username = None,password = None):
+    # instantiate auth provider if credentials have been provided
+    auth_provider = None
+    if username is not None and password is not None:
+        auth_provider = PlainTextAuthProvider(username=username, password=password)
+    return auth_provider
+
+
+def get_schema(hosts, port, username = None,password = None):
+    ep = ExecutionProfile(load_balancing_policy=default_lbp_factory())
+    cluster = Cluster(hosts, port=port, auth_provider=build_auth_provider(username,password), execution_profiles={EXEC_PROFILE_DEFAULT: ep})
+    log.info("Connecting to the cluster to get metadata...")
+    session = cluster.connect()
+    schema = cluster.metadata
+    cluster.shutdown()
+    return schema
+
+
+def build_keyspaces_metadata(keyspaces, schema):
+    selected_keyspaces = keyspaces.split(',') if keyspaces is not None else None
+    if selected_keyspaces is not None:
+        [schema.keyspaces[k] for k in selected_keyspaces]
+    else:
+        # filter out system keyspaces
+        return [k for k in schema.keyspaces.values() if k.name not in system_keyspaces]
+
+
+def get_standard_columns_from_table_metadata(table_metadata):
+    """
+    Return the standard columns and ensure to exclude pk and ck ones.
+    """
+    partition_column_names = [c.name for c in table_metadata.partition_key]
+    clustering_column_names = [c.name for c in table_metadata.clustering_key]
+    standard_columns = []
+    for c in list(table_metadata.columns.values()):
+        if 'udt' in c.cql_type:
+            log.warning("Ignoring column %s since udt are not supported." % c.name)
+            del table_metadata.columns[c.name]
+            continue
+        if (c.name not in clustering_column_names
+                and c.name not in partition_column_names):
+            standard_columns.append(c)
+
+    return standard_columns
+
+
+def set_replication_factor(db_schema, factor):
+    if factor:
+        for ks in db_schema.keyspaces.values():
+            strategy = ks.replication_strategy
+            strategy.replication_factor_info = factor
