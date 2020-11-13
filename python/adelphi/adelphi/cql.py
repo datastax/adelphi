@@ -14,6 +14,8 @@ def export_cql_schema(keyspaces_metadata, schema, options):
     # build CQL statements string
     generated_statements = "\n\n".join(ks.export_as_string() for ks in keyspaces_metadata)
     # transform CREATE statements to include `IF NOT EXISTS`
+
+    # TODO: shift this around to a regex so that we can do the whole thing in a single pass
     return generated_statements.replace("CREATE TABLE", "CREATE TABLE IF NOT EXISTS") \
         .replace("CREATE KEYSPACE", "CREATE KEYSPACE IF NOT EXISTS") \
         .replace("CREATE TYPE", "CREATE TYPE IF NOT EXISTS") \

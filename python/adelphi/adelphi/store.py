@@ -18,20 +18,18 @@ def build_auth_provider(username = None,password = None):
     return auth_provider
 
 
-def get_schema(hosts, port, username = None,password = None):
+def with_cluster(cluster_fn, hosts, port, username = None, password = None):
     ep = ExecutionProfile(load_balancing_policy=default_lbp_factory())
     cluster = Cluster(hosts, port=port, auth_provider=build_auth_provider(username,password), execution_profiles={EXEC_PROFILE_DEFAULT: ep})
     log.info("Connecting to the cluster to get metadata...")
-    session = cluster.connect()
-    schema = cluster.metadata
+    cluster.connect()
+    cluster_fn(cluster)
     cluster.shutdown()
-    return schema
 
 
-def build_keyspaces_metadata(keyspaces, schema):
-    selected_keyspaces = keyspaces.split(',') if keyspaces is not None else None
-    if selected_keyspaces is not None:
-        [schema.keyspaces[k] for k in selected_keyspaces]
+def filter_keyspaces_for_export(keyspaces, schema):
+    if keyspaces is not None:
+        return [schema.keyspaces[k] for k in keyspaces]
     else:
         # filter out system keyspaces
         return [k for k in schema.keyspaces.values() if k.name not in system_keyspaces]
