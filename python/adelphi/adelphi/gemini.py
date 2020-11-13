@@ -1,8 +1,11 @@
+# Logic necessary to generate a string representation of a Gemini schema
+
 import json
 
 from cassandra.cqltypes import cqltype_to_python
 
-from adelphi import anonymize_keyspace, set_replication_factor, get_standard_columns_from_table_metadata
+from adelphi.anonymize import anonymize_keyspace
+from adelphi.store import get_standard_columns_from_table_metadata, set_replication_factor
 
 def export_gemini_schema(keyspaces_metadata, schema, options):
     if options['anonymize']:
@@ -60,8 +63,11 @@ def export_gemini_schema(keyspaces_metadata, schema, options):
 
         data["tables"].append(table_data)
 
-    print(json.dumps(data, indent=4))
+    return data
 
+
+def to_string(data):
+    return json.dumps(data, indent=4)
 
 def cql_type_to_gemini(cql_type, is_frozen=False):
     """

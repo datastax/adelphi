@@ -4,42 +4,14 @@ import argparse
 import logging
 
 import click
-from cassandra.cluster import Cluster, ExecutionProfile, EXEC_PROFILE_DEFAULT, default_lbp_factory
-from cassandra.auth import PlainTextAuthProvider
 
 from adelphi import system_keyspaces
 from adelphi.cql import export_cql_schema
-from adelphi.gemini import export_gemini_schema
+from adelphi.gemini import export_gemini_schema, to_string
+from adelphi.store import get_schema, build_keyspaces_metadata
 
 logging.basicConfig(level=logging.INFO)
-log = logging.getLogger('anonymizer')
-
-def build_auth_provider(username = None,password = None):
-    # instantiate auth provider if credentials have been provided
-    auth_provider = None
-    if username is not None and password is not None:
-        auth_provider = PlainTextAuthProvider(username=username, password=password)
-    return auth_provider
-
-
-def get_schema(hosts, port, username = None,password = None):
-    ep = ExecutionProfile(load_balancing_policy=default_lbp_factory())
-    cluster = Cluster(hosts, port=port, auth_provider=build_auth_provider(username,password), execution_profiles={EXEC_PROFILE_DEFAULT: ep})
-    log.info("Connecting to the cluster to get metadata...")
-    session = cluster.connect()
-    schema = cluster.metadata
-    cluster.shutdown()
-    return schema
-
-
-def build_keyspaces_metadata(keyspaces, schema):
-    selected_keyspaces = keyspaces.split(',') if keyspaces is not None else None
-    if selected_keyspaces is not None:
-        [schema.keyspaces[k] for k in selected_keyspaces]
-    else:
-        # filter out system keyspaces
-        return [k for k in schema.keyspaces.values() if k.name not in system_keyspaces]
-
+log = logging.getLogger('adelphi')
 
 @click.group()
 @click.option('--hosts', default='127.0.0.1', help='Comma-separated list of contact points. Default: 127.0.0.1')
@@ -74,7 +46,7 @@ def export(ctx, hosts, port, username, password, keyspaces, rf, anonymize):
 @export.command()
 @click.pass_context
 def export_cql(ctx):
-    export_cql_schema(ctx.obj['keyspaces_metadata'],ctx.obj['schema'],ctx.obj['options'])
+    print(export_cql_schema(ctx.obj['keyspaces_metadata'],ctx.obj['schema'],ctx.obj['options']))
 
 
 @export.command()
@@ -85,7 +57,7 @@ def export_gemini(ctx):
     if len(keyspaces_metadata) > 1:
         log.error("Gemini schema doesn't support multiple keyspaces.")
         exit(1)
-    export_gemini_schema(keyspaces_metadata,ctx.obj['schema'],ctx.obj['options'])
+    print(to_string(export_gemini_schema(keyspaces_metadata,ctx.obj['schema'],ctx.obj['options'])))
 
 
 if __name__ == '__main__':
