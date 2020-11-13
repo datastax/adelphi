@@ -41,6 +41,8 @@ name_map = {
     INDEX_PREFIX: {}
 }
 
+# Anonymize by default. Turn off with --no-anonymize
+anonymize = True
 
 def export_cql_schema(keyspaces_metadata, options):
     # anonymize keyspace and its children
@@ -48,7 +50,7 @@ def export_cql_schema(keyspaces_metadata, options):
         anonymize_keyspace(ks)
 
     # set replication factor
-    set_replication_factor(schema, options['rf'])
+    set_replication_factor(keyspaces_metadata, options['rf'])
     # build CQL statements string
     generated_statements = "\n\n".join(ks.export_as_string() for ks in keyspaces_metadata)
     # transform CREATE statements to include `IF NOT EXISTS`
@@ -62,7 +64,7 @@ def export_gemini_schema(keyspaces_metadata, options):
         anonymize_keyspace(ks)
 
     # set replication factor
-    set_replication_factor(schema, options['rf'])
+    set_replication_factor(keyspaces_metadata, options['rf'])
 
     keyspace = keyspaces_metadata[0]
     replication = json.loads(
@@ -246,9 +248,9 @@ def anonymize_table(table):
         anonymize_index(index)
 
 
-def set_replication_factor(db_schema, factor):
+def set_replication_factor(keyspaces, factor):
     if factor:
-        for ks in db_schema.keyspaces.values():
+        for ks in keyspaces.values():
             strategy = ks.replication_strategy
             strategy.replication_factor_info = factor
 
@@ -260,73 +262,74 @@ def transform_if_not_exists(cql_string):
         .replace("CREATE INDEX", "CREATE INDEX IF NOT EXISTS")
 
 
-parser = argparse.ArgumentParser(description='Utility script that connects to a Cassandra cluster,'
-                                             'extracts its schema as CQL statements and anonymizes the entity names.')
-parser.add_argument('--hosts', metavar='127.0.0.1', default='127.0.0.1',
-                    help='Comma-separated list of contact points. Default: 127.0.0.1')
-parser.add_argument('--port', metavar='9042', type=int, default=9042, help='Database RCP port. Default: 9042')
-# not implemented yet
-#parser.add_argument('--output', metavar='/file/path', help='Output file. If not specified, it will write to stdout')
-parser.add_argument('--username', metavar='user', help='Database username')
-parser.add_argument('--password', metavar='pass', help='Database password')
-parser.add_argument('--keyspaces', metavar='k1,k2',
-                    help='Comma-separated list of keyspaces to include. If not specified, all keypaces will '
-                         'be included, except system keypaces')
-parser.add_argument('--replication-factor', metavar='3', type=int,
-                    help='Replication factor to override original setting. Optional.')
-parser.add_argument('--format', metavar='cql', default='cql', choices=['cql', 'gemini'],
-                    help='Output format for the schema. cql or gemini (json). Default is cql.')
-parser.add_argument('--no-anonymize', dest='anonymize', action='store_false', help='Disable anonymization functions')
-parser.set_defaults(anonymize=True)
+def main():
+    parser = argparse.ArgumentParser(description='Utility script that connects to a Cassandra cluster,'
+                                                 'extracts its schema as CQL statements and anonymizes the entity names.')
+    parser.add_argument('--hosts', metavar='127.0.0.1', default='127.0.0.1',
+                        help='Comma-separated list of contact points. Default: 127.0.0.1')
+    parser.add_argument('--port', metavar='9042', type=int, default=9042, help='Database RCP port. Default: 9042')
+    # not implemented yet
+    #parser.add_argument('--output', metavar='/file/path', help='Output file. If not specified, it will write to stdout')
+    parser.add_argument('--username', metavar='user', help='Database username')
+    parser.add_argument('--password', metavar='pass', help='Database password')
+    parser.add_argument('--keyspaces', metavar='k1,k2',
+                        help='Comma-separated list of keyspaces to include. If not specified, all keypaces will '
+                             'be included, except system keypaces')
+    parser.add_argument('--replication-factor', metavar='3', type=int,
+                        help='Replication factor to override original setting. Optional.')
+    parser.add_argument('--format', metavar='cql', default='cql', choices=['cql', 'gemini'],
+                        help='Output format for the schema. cql or gemini (json). Default is cql.')
+    parser.add_argument('--no-anonymize', dest='anonymize', action='store_false', help='Disable anonymization functions')
+    parser.set_defaults(anonymize=True)
 
-# extract command-line args
-args = parser.parse_args()
-hosts = args.hosts.split(',')
-port = args.port
-selected_keyspaces = args.keyspaces.split(',') if args.keyspaces is not None else None
-output_format = args.format
-username = args.username
-password = args.password
-anonymize = args.anonymize
+    # extract command-line args
+    args = parser.parse_args()
+    hosts = args.hosts.split(',')
+    port = args.port
+    selected_keyspaces = args.keyspaces.split(',') if args.keyspaces is not None else None
+    output_format = args.format
+    username = args.username
+    password = args.password
+    anonymize = args.anonymize
 
-options = dict()
-options['rf'] = args.replication_factor
+    options = dict()
+    options['rf'] = args.replication_factor
 
-# instantiate auth provider if credentials have been provided
-auth_provider = None
-if username is not None and password is not None:
-    auth_provider = PlainTextAuthProvider(username=username, password=password)
+    # instantiate auth provider if credentials have been provided
+    auth_provider = None
+    if username is not None and password is not None:
+        auth_provider = PlainTextAuthProvider(username=username, password=password)
 
-ep = ExecutionProfile(load_balancing_policy=default_lbp_factory())
-cluster = Cluster(hosts, port=port, auth_provider=auth_provider, execution_profiles={EXEC_PROFILE_DEFAULT: ep})
-log.info("Connecting to the cluster to get metadata...")
-session = cluster.connect()
-schema = cluster.metadata
-cluster.shutdown()
+    ep = ExecutionProfile(load_balancing_policy=default_lbp_factory())
+    cluster = Cluster(hosts, port=port, auth_provider=auth_provider, execution_profiles={EXEC_PROFILE_DEFAULT: ep})
+    log.info("Connecting to the cluster to get metadata...")
+    session = cluster.connect()
+    schema = cluster.metadata
+    cluster.shutdown()
 
-keyspaces_metadata = []
-if selected_keyspaces is not None:
-    try:
-        for k in selected_keyspaces:
-            keyspaces_metadata.append(schema.keyspaces[k])
-    except KeyError:
-        log.error("Keyspace '%s' not found in schema.", k)
-else:
-    # filter out system keyspaces
-    keyspaces_metadata = [k for k in schema.keyspaces.values() if k.name not in system_keyspaces]
+    keyspaces_metadata = []
+    if selected_keyspaces is not None:
+        try:
+            for k in selected_keyspaces:
+                keyspaces_metadata.append(schema.keyspaces[k])
+        except KeyError:
+            log.error("Keyspace '%s' not found in schema.", k)
+    else:
+        # filter out system keyspaces
+        keyspaces_metadata = [k for k in schema.keyspaces.values() if k.name not in system_keyspaces]
 
-if len(keyspaces_metadata) == 0:
-    log.info("No keyspace selected.")
-    exit(1)
-
-log.info("Exporting schema for the following keyspaces: %s",
-         ','.join([k.name for k in keyspaces_metadata]))
-
-if output_format == 'gemini':
-    # multiple keyspaces is not supported with gemini
-    if len(keyspaces_metadata) > 1:
-        log.error("Gemini schema doesn't support multiple keyspaces.")
+    if len(keyspaces_metadata) == 0:
+        log.info("No keyspace selected.")
         exit(1)
-    export_gemini_schema(keyspaces_metadata, options)
-else:
-    export_cql_schema(keyspaces_metadata, options)
+
+    log.info("Exporting schema for the following keyspaces: %s",
+             ','.join([k.name for k in keyspaces_metadata]))
+
+    if output_format == 'gemini':
+        # multiple keyspaces is not supported with gemini
+        if len(keyspaces_metadata) > 1:
+            log.error("Gemini schema doesn't support multiple keyspaces.")
+            exit(1)
+        export_gemini_schema(keyspaces_metadata, options)
+    else:
+        export_cql_schema(keyspaces_metadata, options)

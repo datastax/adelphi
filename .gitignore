@@ -1,3 +1,6 @@
+# Test output files
+test-output*.cql
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
