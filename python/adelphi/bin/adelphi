@@ -6,7 +6,6 @@ from functools import partial
 
 import click
 
-from adelphi import system_keyspaces
 from adelphi.cql import export_cql_schema
 from adelphi.gemini import export_gemini_schema, to_string
 from adelphi.store import with_cluster, filter_keyspaces_for_export

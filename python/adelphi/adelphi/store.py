@@ -2,13 +2,19 @@
 
 import logging
 
-from adelphi import system_keyspaces
-
 from cassandra.cluster import Cluster, ExecutionProfile, EXEC_PROFILE_DEFAULT, default_lbp_factory
 from cassandra.auth import PlainTextAuthProvider
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger('adelphi')
+
+system_keyspaces = ["system",
+                    "system_schema",
+                    "system_traces",
+                    "system_auth",
+                    "system_distributed",
+                    "system_virtual_schema",
+                    "system_views"]
 
 def build_auth_provider(username = None,password = None):
     # instantiate auth provider if credentials have been provided
