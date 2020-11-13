@@ -13,7 +13,7 @@ target:
   dc: dc2
   clusterName: target
   version: "4.0.0"
-  commit_hash:
+  git_identifier:
 
 cassandra_diff_download_url: https://repository.apache.org/service/local/repositories/snapshots/content/org/apache/cassandra/diff/spark-uberjar/0.2-SNAPSHOT/spark-uberjar-0.2-20200325.160556-1.jar
 spark_download_url: https://archive.apache.org/dist/spark/spark-3.0.0/spark-3.0.0-bin-hadoop3.2.tgz
