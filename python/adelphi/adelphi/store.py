@@ -60,9 +60,9 @@ def get_standard_columns_from_table_metadata(table_metadata):
     return standard_columns
 
 
-def set_replication_factor(metadata, selected_keyspaces, factor):
+def set_replication_factor(selected_keyspaces, factor):
     if factor:
         for ks in selected_keyspaces:
-            print("Replication: " + str(ks.replication_strategy) + " for keyspace " + ks.name)
+            log.debug("Replication: " + str(ks.replication_strategy) + " for keyspace " + ks.name)
             strategy = ks.replication_strategy
             strategy.replication_factor_info = factor

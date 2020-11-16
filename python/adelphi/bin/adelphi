@@ -44,16 +44,16 @@ def export(ctx, hosts, port, username, password, keyspaces, rf, anonymize):
 # application happy
 def cluster_fn(export_fn, keyspaces, options, cluster, keyspace_validation_fn = None):
     metadata = cluster.metadata
-    export_keyspaces = filter_keyspaces_for_export(keyspaces, metadata)
+    selected_keyspaces = filter_keyspaces_for_export(keyspaces, metadata)
 
-    if len(export_keyspaces) == 0:
+    if len(selected_keyspaces) == 0:
         log.info("No keyspace selected.")
         exit(1)
     if keyspace_validation_fn:
-        keyspace_validation_fn(export_keyspaces)
+        keyspace_validation_fn(selected_keyspaces)
 
-    log.info("Exporting schema for the following keyspaces: %s", ','.join((k.name for k in export_keyspaces)))
-    print(export_fn(export_keyspaces, metadata, options))
+    log.info("Exporting schema for the following keyspaces: %s", ','.join((k.name for k in selected_keyspaces)))
+    print(export_fn(selected_keyspaces, options))
 
 
 @export.command()
