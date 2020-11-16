@@ -43,8 +43,8 @@ def export(ctx, hosts, port, username, password, keyspaces, rf, anonymize):
 # Note that "cluster" must be the last non-keyword arg here in order to make the partial
 # application happy
 def cluster_fn(export_fn, keyspaces, options, cluster, keyspace_validation_fn = None):
-    schema = cluster.metadata
-    export_keyspaces = filter_keyspaces_for_export(keyspaces, schema)
+    metadata = cluster.metadata
+    export_keyspaces = filter_keyspaces_for_export(keyspaces, metadata)
 
     if len(export_keyspaces) == 0:
         log.info("No keyspace selected.")
@@ -52,8 +52,8 @@ def cluster_fn(export_fn, keyspaces, options, cluster, keyspace_validation_fn = 
     if keyspace_validation_fn:
         keyspace_validation_fn(export_keyspaces)
 
-    log.info("Exporting schema for the following keyspaces: %s", ','.join([k.name for k in export_keyspaces]))
-    print(export_fn(export_keyspaces, schema, options))
+    log.info("Exporting schema for the following keyspaces: %s", ','.join((k.name for k in export_keyspaces)))
+    print(export_fn(export_keyspaces, metadata, options))
 
 
 @export.command()

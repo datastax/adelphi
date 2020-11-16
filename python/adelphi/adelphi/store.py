@@ -33,12 +33,12 @@ def with_cluster(cluster_fn, hosts, port, username = None, password = None):
     cluster.shutdown()
 
 
-def filter_keyspaces_for_export(keyspaces, schema):
+def filter_keyspaces_for_export(keyspaces, metadata):
     if keyspaces is not None:
-        return [schema.keyspaces[k] for k in keyspaces]
+        return [metadata.keyspaces[k] for k in keyspaces]
     else:
         # filter out system keyspaces
-        return [k for k in schema.keyspaces.values() if k.name not in system_keyspaces]
+        return [k for k in metadata.keyspaces.values() if k.name not in system_keyspaces]
 
 
 def get_standard_columns_from_table_metadata(table_metadata):
@@ -60,8 +60,9 @@ def get_standard_columns_from_table_metadata(table_metadata):
     return standard_columns
 
 
-def set_replication_factor(db_schema, factor):
+def set_replication_factor(metadata, selected_keyspaces, factor):
     if factor:
-        for ks in db_schema.keyspaces.values():
+        for ks in selected_keyspaces:
+            print("Replication: " + str(ks.replication_strategy) + " for keyspace " + ks.name)
             strategy = ks.replication_strategy
             strategy.replication_factor_info = factor

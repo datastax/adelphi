@@ -3,14 +3,14 @@
 from adelphi.anonymize import anonymize_keyspace
 from adelphi.store import get_standard_columns_from_table_metadata, set_replication_factor
 
-def export_cql_schema(keyspaces_metadata, schema, options):
+def export_cql_schema(keyspaces_metadata, metadata, options):
     if options['anonymize']:
         # anonymize keyspace and its children
         for ks in keyspaces_metadata:
             anonymize_keyspace(ks)
 
     # set replication factor
-    set_replication_factor(schema, options['rf'])
+    set_replication_factor(metadata, keyspaces_metadata, options['rf'])
     # build CQL statements string
     generated_statements = "\n\n".join(ks.export_as_string() for ks in keyspaces_metadata)
     # transform CREATE statements to include `IF NOT EXISTS`
