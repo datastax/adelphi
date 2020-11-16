@@ -12,5 +12,5 @@ setup(
    #license='LICENSE.txt',
    description='Schema anonymizer for Adelphi',
    #long_description=open('README.txt').read(),
-   install_requires=['cassandra-driver', 'click'],
+   install_requires=['cassandra-driver==3.24.0', 'click'],
 )

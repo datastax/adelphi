@@ -41,8 +41,8 @@ def anonymize_keyspace(keyspace):
     for table in keyspace.tables.values():
         anonymize_table(table)
 
-    for table in keyspace.user_types.values():
-        anonymize_udt(table)
+    for udt in keyspace.user_types.values():
+        anonymize_udt(udt)
 
 
 def anonymize_udt(udt):
