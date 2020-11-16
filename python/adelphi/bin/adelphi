@@ -53,7 +53,7 @@ def cluster_fn(export_fn, keyspaces, options, cluster, keyspace_validation_fn = 
         keyspace_validation_fn(export_keyspaces)
 
     log.info("Exporting schema for the following keyspaces: %s", ','.join([k.name for k in export_keyspaces]))
-    print export_fn(export_keyspaces, schema, options)
+    print(export_fn(export_keyspaces, schema, options))
 
 
 @export.command()
