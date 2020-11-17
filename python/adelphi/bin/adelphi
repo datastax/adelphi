@@ -2,6 +2,8 @@
 
 import argparse
 import logging
+import os
+import os.path
 from functools import partial
 
 import click
@@ -16,18 +18,30 @@ log = logging.getLogger('adelphi')
 @click.group()
 @click.option('--hosts', default='127.0.0.1', help='Comma-separated list of contact points. Default: 127.0.0.1')
 @click.option('--port', type=int, default=9042, help='Database RPC port. Default: 9042')
-# not implemented yet
-#@click.option('--output', metavar='/file/path', help='Output file. If not specified, it will write to stdout')
 @click.option('--username', help='Database username')
 @click.option('--password', help='Database password')
 @click.option('--keyspaces', help='Comma-separated list of keyspaces to include. If not specified, all keypaces will '
                          'be included, except system keypaces')
 @click.option('--rf', type=int, help='Replication factor to override original setting. Optional.')
 @click.option('--anonymize/--no-anonymize', default=True, help="Enable/disable schema anonymization")
+@click.option('--output-dir', help='Directory schema files should be written to. If not specified, it will write to stdout')
 @click.pass_context
-def export(ctx, hosts, port, username, password, keyspaces, rf, anonymize):
+def export(ctx, hosts, port, username, password, keyspaces, rf, anonymize, output_dir):
 
     ctx.ensure_object(dict)
+
+    # If output-dir is specified make sure it actually exists, is a directory and is writable
+    if output_dir is not None:
+        if not os.path.exists(output_dir):
+            log.error("Output directory " + output_dir + " does not exist")
+            exit(3)
+        if not os.path.isdir(output_dir):
+            log.error("Specified output directory " + output_dir + " exists but is not a directory")
+            exit(4)
+        if not os.access(output_dir, os.W_OK):
+            log.error("Output directory " + output_dir + " exists but is not writable")
+            exit(5)
+
     ctx.obj['hosts'] = hosts.split(',')
     ctx.obj['port'] = port
     ctx.obj['username'] = username
@@ -35,6 +49,7 @@ def export(ctx, hosts, port, username, password, keyspaces, rf, anonymize):
     ctx.obj['keyspace_names'] = keyspaces.split(',') if keyspaces is not None else None
     ctx.obj['rf'] = rf
     ctx.obj['anonymize'] = anonymize
+    ctx.obj['output-dir'] = output_dir
 
 
 # Function implementing the behaviours we want to execute when provided with a metadata object
@@ -43,28 +58,35 @@ def export(ctx, hosts, port, username, password, keyspaces, rf, anonymize):
 #
 # Note that "cluster" must be the last non-keyword arg here in order to make the partial
 # application happy
-def cluster_fn(export_fn, keyspace_names, options, cluster, keyspace_validation_fn = None):
+def cluster_fn(export_fn, ctx, cluster, keyspace_validation_fn = None):
+
+    keyspace_names = ctx.obj["keyspace_names"]
+    options = {'rf': ctx.obj['rf'], 'anonymize': ctx.obj['anonymize']}
+    output_dir = ctx.obj["output-dir"]
+
     metadata = cluster.metadata
     keyspace_objects = build_keyspace_objects(keyspace_names, metadata)
     log.info("Exporting schema for keyspaces %s", ','.join((k.name for k in keyspace_objects)))
 
     if len(keyspace_objects) == 0:
-        log.info("No keyspace selected")
+        log.info("No keyspaces selected")
         exit(1)
     if keyspace_validation_fn:
         keyspace_validation_fn(keyspace_objects)
 
-    print(export_fn(keyspace_objects, options))
-
-
-def build_options(ctx):
-    return {'rf': ctx.obj['rf'], 'anonymize': ctx.obj['anonymize']}
+    if output_dir is None:
+        print(export_fn(keyspace_objects, options))
+    else:
+        for keyspace_obj in keyspace_objects:
+            with open(os.path.join(output_dir, keyspace_obj.name),'w') as output_file:
+                log.info("Writing schema for keyspace " + keyspace_obj.name + " to file " + output_file.name)
+                output_file.write(export_fn(keyspace_objects, options))
 
 
 @export.command()
 @click.pass_context
 def export_cql(ctx):
-    my_fn = partial(cluster_fn, export_cql_schema, ctx.obj['keyspace_names'], build_options(ctx))
+    my_fn = partial(cluster_fn, export_cql_schema, ctx)
     with_cluster(my_fn, **({k:ctx.obj[k] for k in ["hosts","port","username","password"]}))
 
 
@@ -79,7 +101,7 @@ def export_gemini(ctx):
             log.error("Gemini schema doesn't support multiple keyspaces.")
             exit(2)
 
-    my_fn = partial(cluster_fn, my_export_fn, ctx.obj['keyspace_names'], build_options(ctx))
+    my_fn = partial(cluster_fn, my_export_fn, ctx)
     with_cluster(my_fn, **({k:ctx.obj[k] for k in ["hosts","port","username","password"]}))
 
 
