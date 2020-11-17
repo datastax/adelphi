@@ -4,6 +4,7 @@ import argparse
 import logging
 import os
 import os.path
+import tempfile
 from functools import partial
 
 import click
@@ -11,6 +12,7 @@ import click
 from adelphi.cql import export_cql_schema
 from adelphi.gemini import export_gemini_schema, to_string
 from adelphi.store import with_cluster, build_keyspace_objects
+from adelphi.github import build_github, build_repository, build_branch, commit_schemas
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger('adelphi')
@@ -106,10 +108,21 @@ def export_gemini(ctx):
 
 
 @export.command()
+@click.option('--repo-user', help='Username for the repo used for schema storage on Github')
+@click.option('--repo-token', help='Access token for schema storage on Github')
+@click.option('--repo-name', help='Name of the repo used for schema storage on Github')
+@click.option('--author-name', help='Github username to be used for schema commits')
 @click.pass_context
-def github(ctx):
+def github(ctx, repo_user, repo_token, repo_name, author_name):
     my_fn = partial(cluster_fn, export_cql_schema, ctx)
-    with_cluster(my_fn, **({k:ctx.obj[k] for k in ["hosts","port","username","password"]}))
+    with tempfile.TemporaryDirectory() as tmpdir:
+        ctx.obj["output-dir"] = tmpdir
+        with_cluster(my_fn, **({k:ctx.obj[k] for k in ["hosts","port","username","password"]}))
+
+        gh = build_github(repo_user, repo_token)
+        repo = build_repository(gh, repo_user, repo_name)
+        branch_name = build_branch(gh, repo, author_name)
+        commit_schemas(gh, repo, tmpdir, branch_name, author_name)
 
 
 if __name__ == '__main__':
