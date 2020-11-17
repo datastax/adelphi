@@ -105,5 +105,12 @@ def export_gemini(ctx):
     with_cluster(my_fn, **({k:ctx.obj[k] for k in ["hosts","port","username","password"]}))
 
 
+@export.command()
+@click.pass_context
+def github(ctx):
+    my_fn = partial(cluster_fn, export_cql_schema, ctx)
+    with_cluster(my_fn, **({k:ctx.obj[k] for k in ["hosts","port","username","password"]}))
+
+
 if __name__ == '__main__':
     export(obj={})
