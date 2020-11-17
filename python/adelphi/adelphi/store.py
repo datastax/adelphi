@@ -1,6 +1,13 @@
 # Functions to facilitate interactions with the underlying data store
 
 import logging
+from itertools import tee
+
+# Account for name change in itertools as of py3k
+try:
+    from itertools import ifilterfalse as filterfalse
+except ImportError:
+    from itertools import filterfalse
 
 from cassandra.cluster import Cluster, ExecutionProfile, EXEC_PROFILE_DEFAULT, default_lbp_factory
 from cassandra.auth import PlainTextAuthProvider
@@ -8,13 +15,13 @@ from cassandra.auth import PlainTextAuthProvider
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger('adelphi')
 
-system_keyspaces = ["system",
+system_keyspaces = set(["system",
                     "system_schema",
                     "system_traces",
                     "system_auth",
                     "system_distributed",
                     "system_virtual_schema",
-                    "system_views"]
+                    "system_views"])
 
 def build_auth_provider(username = None,password = None):
     # instantiate auth provider if credentials have been provided
@@ -33,12 +40,19 @@ def with_cluster(cluster_fn, hosts, port, username = None, password = None):
     cluster.shutdown()
 
 
-def filter_keyspaces_for_export(keyspaces, metadata):
-    if keyspaces is not None:
-        return [metadata.keyspaces[k] for k in keyspaces]
-    else:
-        # filter out system keyspaces
-        return [k for k in metadata.keyspaces.values() if k.name not in system_keyspaces]
+def build_keyspace_objects(keyspaces, metadata):
+    """Build a list of cassandra.metadata.KeyspaceMetadata objects from a list of strings and a c.m.Metadata instance.  System keyspaces will be excluded."""
+    all_keyspace_objs = [metadata.keyspaces[ks] for ks in keyspaces] if keyspaces is not None else metadata.keyspaces.values()
+
+    # Borrowed from itertools
+    def partition(pred, iterable):
+        t1, t2 = tee(iterable)
+        return list(filterfalse(pred, t1)), list(filter(pred, t2))
+
+    (failed,passed) = partition(lambda ks: ks.name not in system_keyspaces,all_keyspace_objs)
+    if failed:
+        log.info("Excluding system keyspaces " + ",".join((ks.name for ks in failed)))
+    return passed
 
 
 def get_standard_columns_from_table_metadata(table_metadata):
@@ -61,8 +75,13 @@ def get_standard_columns_from_table_metadata(table_metadata):
 
 
 def set_replication_factor(selected_keyspaces, factor):
-    if factor:
+    if not factor:
+        log.debug("No replication factor provided")
+    else:
         for ks in selected_keyspaces:
-            log.debug("Replication: " + str(ks.replication_strategy) + " for keyspace " + ks.name)
+            if ks.virtual:
+                log.debug("Keyspace " + ks.name + " is a virtual keyspace")
+                continue
+            log.debug("Replication for keyspace " + ks.name+ ": " + str(ks.replication_strategy))
             strategy = ks.replication_strategy
             strategy.replication_factor_info = factor
