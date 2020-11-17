@@ -33,7 +33,8 @@ def export(ctx, hosts, port, username, password, keyspaces, rf, anonymize):
     ctx.obj['username'] = username
     ctx.obj['password'] = password
     ctx.obj['keyspace_names'] = keyspaces.split(',') if keyspaces is not None else None
-    ctx.obj['options'] = {'rf':rf, 'anonymize':anonymize}
+    ctx.obj['rf'] = rf
+    ctx.obj['anonymize'] = anonymize
 
 
 # Function implementing the behaviours we want to execute when provided with a metadata object
@@ -48,7 +49,7 @@ def cluster_fn(export_fn, keyspace_names, options, cluster, keyspace_validation_
     log.info("Exporting schema for keyspaces %s", ','.join((k.name for k in keyspace_objects)))
 
     if len(keyspace_objects) == 0:
-        log.info("No keyspace selected.")
+        log.info("No keyspace selected")
         exit(1)
     if keyspace_validation_fn:
         keyspace_validation_fn(keyspace_objects)
@@ -56,11 +57,15 @@ def cluster_fn(export_fn, keyspace_names, options, cluster, keyspace_validation_
     print(export_fn(keyspace_objects, options))
 
 
+def build_options(ctx):
+    return {'rf': ctx.obj['rf'], 'anonymize': ctx.obj['anonymize']}
+
+
 @export.command()
 @click.pass_context
 def export_cql(ctx):
-    my_fn = partial(cluster_fn, export_cql_schema, ctx.obj['keyspace_names'], ctx.obj['options'])
-    with_cluster(my_fn, ctx.obj['hosts'], ctx.obj['port'], ctx.obj['username'], ctx.obj['password'])
+    my_fn = partial(cluster_fn, export_cql_schema, ctx.obj['keyspace_names'], build_options(ctx))
+    with_cluster(my_fn, **({k:ctx.obj[k] for k in ["hosts","port","username","password"]}))
 
 
 @export.command()
@@ -74,8 +79,8 @@ def export_gemini(ctx):
             log.error("Gemini schema doesn't support multiple keyspaces.")
             exit(2)
 
-    my_fn = partial(cluster_fn, my_export_fn, ctx.obj['keyspace_names'], ctx.obj['options'], keyspace_validation_fn=validation_fn)
-    with_cluster(my_fn, ctx.obj['hosts'], ctx.obj['port'], ctx.obj['username'], ctx.obj['password'])
+    my_fn = partial(cluster_fn, my_export_fn, ctx.obj['keyspace_names'], build_options(ctx))
+    with_cluster(my_fn, **({k:ctx.obj[k] for k in ["hosts","port","username","password"]}))
 
 
 if __name__ == '__main__':
