@@ -1,0 +1,82 @@
+#!python
+
+import argparse
+import logging
+from functools import partial
+
+import click
+
+from adelphi.cql import export_cql_schema
+from adelphi.gemini import export_gemini_schema, to_string
+from adelphi.store import with_cluster, filter_keyspaces_for_export
+
+logging.basicConfig(level=logging.INFO)
+log = logging.getLogger('adelphi')
+
+@click.group()
+@click.option('--hosts', default='127.0.0.1', help='Comma-separated list of contact points. Default: 127.0.0.1')
+@click.option('--port', type=int, default=9042, help='Database RPC port. Default: 9042')
+# not implemented yet
+#@click.option('--output', metavar='/file/path', help='Output file. If not specified, it will write to stdout')
+@click.option('--username', help='Database username')
+@click.option('--password', help='Database password')
+@click.option('--keyspaces', help='Comma-separated list of keyspaces to include. If not specified, all keypaces will '
+                         'be included, except system keypaces')
+@click.option('--rf', type=int, default=3, help='Replication factor to override original setting. Optional.')
+@click.option('--anonymize/--no-anonymize', default=True, help="Enable/disable schema anonymization")
+@click.pass_context
+def export(ctx, hosts, port, username, password, keyspaces, rf, anonymize):
+
+    ctx.ensure_object(dict)
+    ctx.obj['hosts'] = hosts.split(',')
+    ctx.obj['port'] = port
+    ctx.obj['username'] = username
+    ctx.obj['password'] = password
+    ctx.obj['keyspaces'] = keyspaces.split(',') if keyspaces is not None else None
+    ctx.obj['options'] = {'rf':rf, 'anonymize':anonymize}
+
+
+# Function implementing the behaviours we want to execute when provided with a metadata object
+# from the driver.  This function will be used to generate a lower-arity function suitable
+# for use with store.with_cluster via partial application below.
+#
+# Note that "cluster" must be the last non-keyword arg here in order to make the partial
+# application happy
+def cluster_fn(export_fn, keyspaces, options, cluster, keyspace_validation_fn = None):
+    schema = cluster.metadata
+    export_keyspaces = filter_keyspaces_for_export(keyspaces, schema)
+
+    if len(export_keyspaces) == 0:
+        log.info("No keyspace selected.")
+        exit(1)
+    if keyspace_validation_fn:
+        keyspace_validation_fn(export_keyspaces)
+
+    log.info("Exporting schema for the following keyspaces: %s", ','.join([k.name for k in export_keyspaces]))
+    print(export_fn(export_keyspaces, schema, options))
+
+
+@export.command()
+@click.pass_context
+def export_cql(ctx):
+    my_fn = partial(cluster_fn, export_cql_schema, ctx.obj['keyspaces'], ctx.obj['options'])
+    with_cluster(my_fn, ctx.obj['hosts'], ctx.obj['port'], ctx.obj['username'], ctx.obj['password'])
+
+
+@export.command()
+@click.pass_context
+def export_gemini(ctx):
+    def my_export_fn(*args):
+        return to_string(export_gemini_schema(*args))
+
+    def validation_fn(keyspaces):
+        if len(keyspaces) > 1:
+            log.error("Gemini schema doesn't support multiple keyspaces.")
+            exit(2)
+
+    my_fn = partial(cluster_fn, my_export_fn, ctx.obj['keyspaces'], ctx.obj['options'], keyspace_validation_fn=validation_fn)
+    with_cluster(my_fn, ctx.obj['hosts'], ctx.obj['port'], ctx.obj['username'], ctx.obj['password'])
+
+
+if __name__ == '__main__':
+    export(obj={})
