@@ -112,22 +112,22 @@ def export_gemini(ctx):
 
 
 @export.command()
-@click.option('--repo-user', help='Username for the repo used for schema storage on Github')
-@click.option('--repo-token', help='Access token for schema storage on Github')
-@click.option('--repo-name', help='Name of the repo used for schema storage on Github')
-@click.option('--author-name', help='Github username to be used for schema commits')
+@click.option('--token', help='Access token for schema storage on Github')
+# TODO: Change the default to something real when we have something real
+@click.option('--repo', default="absurdfarce/schema-playground", help='Name of the repo used for schema storage on Github')
+@click.option('--author', help='Github username to be used for schema commits')
 @click.pass_context
-def github(ctx, repo_user, repo_token, repo_name, author_name):
+def github(ctx, token, repo, author):
     with TemporaryDirectory() as tmpdir:
         my_fn = partial(cluster_fn, export_cql_schema, ctx)
         ctx.obj["output-dir"] = tmpdir
         with_cluster(my_fn, **({k:ctx.obj[k] for k in ["hosts","port","username","password"]}))
 
-        gh = build_github(repo_user, repo_token)
-        repo = build_repository(gh, repo_user, repo_name)
-        branch_name = build_branch(gh, repo, author_name)
-        commit_schemas(gh, repo, tmpdir, branch_name, author_name)
-        build_pull_request(repo, branch_name, author_name)
+        gh = build_github(token)
+        repo_obj = build_repository(gh, repo)
+        branch_name = build_branch(gh, repo_obj, author)
+        commit_schemas(gh, repo_obj, tmpdir, branch_name, author)
+        build_pull_request(repo_obj, branch_name, author)
 
 if __name__ == '__main__':
-    export(obj={})
+    export(obj={}, auto_envvar_prefix="ADELPHI")
