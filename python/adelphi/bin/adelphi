@@ -12,7 +12,7 @@ import click
 from adelphi.cql import export_cql_schema
 from adelphi.gemini import export_gemini_schema, to_string
 from adelphi.store import with_cluster, build_keyspace_objects
-from adelphi.github import build_github, build_repository, build_branch, commit_schemas
+from adelphi.github import build_github, build_repository, build_branch, commit_schemas, build_pull_request
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger('adelphi')
@@ -114,8 +114,8 @@ def export_gemini(ctx):
 @click.option('--author-name', help='Github username to be used for schema commits')
 @click.pass_context
 def github(ctx, repo_user, repo_token, repo_name, author_name):
-    my_fn = partial(cluster_fn, export_cql_schema, ctx)
     with tempfile.TemporaryDirectory() as tmpdir:
+        my_fn = partial(cluster_fn, export_cql_schema, ctx)
         ctx.obj["output-dir"] = tmpdir
         with_cluster(my_fn, **({k:ctx.obj[k] for k in ["hosts","port","username","password"]}))
 
@@ -123,7 +123,7 @@ def github(ctx, repo_user, repo_token, repo_name, author_name):
         repo = build_repository(gh, repo_user, repo_name)
         branch_name = build_branch(gh, repo, author_name)
         commit_schemas(gh, repo, tmpdir, branch_name, author_name)
-
+        build_pull_request(repo, branch_name, author_name)
 
 if __name__ == '__main__':
     export(obj={})
