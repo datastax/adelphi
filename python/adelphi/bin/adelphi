@@ -13,10 +13,11 @@ except ImportError:
 
 import click
 
+from adelphi.anonymize import anonymize_keyspace
 from adelphi.cql import export_cql_schema
 from adelphi.gemini import export_gemini_schema, to_string
-from adelphi.store import with_cluster, build_keyspace_objects
 from adelphi.gh import build_github, build_repository, build_branch, commit_schemas, build_pull_request
+from adelphi.store import with_cluster, build_keyspace_objects
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger('adelphi')
@@ -67,11 +68,17 @@ def export(ctx, hosts, port, username, password, keyspaces, rf, anonymize, outpu
 def cluster_fn(export_fn, ctx, cluster, keyspace_validation_fn = None):
 
     keyspace_names = ctx.obj["keyspace_names"]
-    options = {'rf': ctx.obj['rf'], 'anonymize': ctx.obj['anonymize']}
+    options = {'rf': ctx.obj['rf']}
     output_dir = ctx.obj["output-dir"]
 
     metadata = cluster.metadata
     keyspace_objects = build_keyspace_objects(keyspace_names, metadata)
+
+    if ctx.obj['anonymize']:
+        # anonymize keyspace and its children
+        for keyspace_object in keyspace_objects:
+            anonymize_keyspace(keyspace_object)
+
     log.info("Exporting schema for keyspaces %s", ','.join((k.name for k in keyspace_objects)))
 
     if len(keyspace_objects) == 0:
@@ -86,7 +93,7 @@ def cluster_fn(export_fn, ctx, cluster, keyspace_validation_fn = None):
         for keyspace_obj in keyspace_objects:
             with open(os.path.join(output_dir, keyspace_obj.name),'w') as output_file:
                 log.info("Writing schema for keyspace " + keyspace_obj.name + " to file " + output_file.name)
-                output_file.write(export_fn(keyspace_objects, options))
+                output_file.write(export_fn([keyspace_obj], options))
 
 
 @export.command()

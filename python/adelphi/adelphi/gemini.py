@@ -4,13 +4,9 @@ import json
 
 from cassandra.cqltypes import cqltype_to_python
 
-from adelphi.anonymize import anonymize_keyspace
 from adelphi.store import get_standard_columns_from_table_metadata, set_replication_factor
 
 def export_gemini_schema(keyspaces_metadata, options):
-    if options['anonymize']:
-        for ks in keyspaces_metadata:
-            anonymize_keyspace(ks)
 
     # set replication factor
     set_replication_factor(keyspaces_metadata, options['rf'])
