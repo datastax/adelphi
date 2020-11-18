@@ -31,4 +31,4 @@ def commit_schemas(gh, repo, schemadir, branch_name, author_name):
         repo.create_file(path=repo_path, message="Schema " + schema, content=schema_str, branch=branch_name, author=InputGitAuthor(author_obj.name, author_obj.email))
 
 def build_pull_request(repo, branch_name, author_name):
-    repo.create_pull(title = "Schemas for user " + author_name, body = "Schemas for user " + author_name, base = MAIN_BRANCH_NAME, head = branch_name, draft = False)
+    repo.create_pull(title = "Schemas for user " + author_name, body = "Schemas for user " + author_name, base = MAIN_BRANCH_NAME, head = branch_name)

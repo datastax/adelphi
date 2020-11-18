@@ -4,8 +4,12 @@ import argparse
 import logging
 import os
 import os.path
-import tempfile
 from functools import partial
+
+try:
+    from tempfile import TemporaryDirectory
+except ImportError:
+    from backports.tempfile import TemporaryDirectory
 
 import click
 
@@ -114,7 +118,7 @@ def export_gemini(ctx):
 @click.option('--author-name', help='Github username to be used for schema commits')
 @click.pass_context
 def github(ctx, repo_user, repo_token, repo_name, author_name):
-    with tempfile.TemporaryDirectory() as tmpdir:
+    with TemporaryDirectory() as tmpdir:
         my_fn = partial(cluster_fn, export_cql_schema, ctx)
         ctx.obj["output-dir"] = tmpdir
         with_cluster(my_fn, **({k:ctx.obj[k] for k in ["hosts","port","username","password"]}))
