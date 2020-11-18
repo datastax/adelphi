@@ -1,12 +1,8 @@
 # Functions and constants related to the anonymization process
 
-from adelphi.store import get_standard_columns_from_table_metadata
-
 # default prefixes for the anonymized names
 KEYSPACE_PREFIX = "ks"
 TABLE_PREFIX = "tbl"
-PARTITION_KEY_PREFIX = "pk"
-CLUSTERING_KEY_PREFIX = "ck"
 COLUMN_PREFIX = "col"
 TYPE_PREFIX = "udt"
 FIELD_PREFIX = "fld"
@@ -16,8 +12,6 @@ INDEX_PREFIX = "idx"
 name_map = {
     KEYSPACE_PREFIX: {},
     TABLE_PREFIX: {},
-    PARTITION_KEY_PREFIX: {},
-    CLUSTERING_KEY_PREFIX: {},
     COLUMN_PREFIX: {},
     TYPE_PREFIX: {},
     FIELD_PREFIX: {},
@@ -57,40 +51,25 @@ def anonymize_udt(udt):
                        for field_type in udt.field_types]
 
 
-def anonymize_column(column, prefix):
-    column.name = get_name(column.name, prefix)
+def anonymize_column(column):
+    column.name = get_name(column.name, COLUMN_PREFIX)
 
 
 def anonymize_index(index):
     index.name = get_name(index.name, INDEX_PREFIX)
-    prefix = COLUMN_PREFIX if index.index_options['target'] in name_map[COLUMN_PREFIX] \
-        else CLUSTERING_KEY_PREFIX
-    index.index_options['target'] = name_map[prefix][index.index_options["target"]]
-    index.keyspace_name = name_map[KEYSPACE_PREFIX][index.keyspace_name]
-    index.table_name = name_map[TABLE_PREFIX][index.table_name]
-
+    index.index_options['target'] = get_name(index.index_options["target"], COLUMN_PREFIX)
+    index.keyspace_name = get_name(index.keyspace_name, KEYSPACE_PREFIX)
+    index.table_name = get_name(index.table_name, TABLE_PREFIX)
 
 def anonymize_table(table):
     table.keyspace_name = get_name(table.keyspace_name, KEYSPACE_PREFIX)
     table.name = get_name(table.name, TABLE_PREFIX)
 
-    for partition_key in table.partition_key:
-        anonymize_column(partition_key, PARTITION_KEY_PREFIX)
-
-    for clustering_key in table.clustering_key:
-        anonymize_column(clustering_key, CLUSTERING_KEY_PREFIX)
-
-    # CK are also in the standard columns, but different objects
-    # if we don't anonymize them there too, the generated cql is wrong
-    for clustering_key in [t for t in table.columns.values() if t.name in name_map[CLUSTERING_KEY_PREFIX]]:
-        clustering_key.name = name_map[CLUSTERING_KEY_PREFIX][clustering_key.name]
-
-    for column in get_standard_columns_from_table_metadata(table):
-        anonymize_column(column, COLUMN_PREFIX)
+    for column in table.columns.values():
+        anonymize_column(column)
 
     for index in list(table.indexes.values()):
-        if (index.index_options["target"] not in name_map[COLUMN_PREFIX].keys() and
-                index.index_options["target"] not in name_map[CLUSTERING_KEY_PREFIX].keys()):
+        if (index.kind == "CUSTOM"):
             del table.indexes[index.name]
             continue
         anonymize_index(index)
