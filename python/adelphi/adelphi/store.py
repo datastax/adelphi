@@ -40,6 +40,24 @@ def filter_keyspaces_for_export(keyspaces, schema):
         # filter out system keyspaces
         return [k for k in schema.keyspaces.values() if k.name not in system_keyspaces]
 
+def get_standard_columns_from_table_metadata(table_metadata):
+    """
+    Return the standard columns and ensure to exclude pk and ck ones.
+    """
+    partition_column_names = [c.name for c in table_metadata.partition_key]
+    clustering_column_names = [c.name for c in table_metadata.clustering_key]
+    standard_columns = []
+    for c in list(table_metadata.columns.values()):
+        if 'udt' in c.cql_type:
+            log.warning("Ignoring column %s since udt are not supported." % c.name)
+            del table_metadata.columns[c.name]
+            continue
+        if (c.name not in clustering_column_names
+                and c.name not in partition_column_names):
+            standard_columns.append(c)
+
+    return standard_columns
+
 def set_replication_factor(db_schema, factor):
     if factor:
         for ks in db_schema.keyspaces.values():

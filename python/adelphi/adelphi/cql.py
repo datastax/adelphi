@@ -1,7 +1,7 @@
 # Logic necessary to generate a string representation of a standard CQL schema
 
 from adelphi.anonymize import anonymize_keyspace
-from adelphi.store import get_standard_columns_from_table_metadata, set_replication_factor
+from adelphi.store import set_replication_factor
 
 def export_cql_schema(keyspaces_metadata, schema, options):
     if options['anonymize']:

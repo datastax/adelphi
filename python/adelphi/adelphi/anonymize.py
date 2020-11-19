@@ -1,4 +1,5 @@
 # Functions and constants related to the anonymization process
+from adelphi.store import get_standard_columns_from_table_metadata
 
 # default prefixes for the anonymized names
 KEYSPACE_PREFIX = "ks"
@@ -65,7 +66,13 @@ def anonymize_table(table):
     table.keyspace_name = get_name(table.keyspace_name, KEYSPACE_PREFIX)
     table.name = get_name(table.name, TABLE_PREFIX)
 
-    for column in table.columns.values():
+    for pk in table.partition_key:
+        anonymize_column(pk)
+
+    for ck in table.clustering_key:
+        anonymize_column(ck)
+
+    for column in get_standard_columns_from_table_metadata(table):
         anonymize_column(column)
 
     for index in list(table.indexes.values()):
