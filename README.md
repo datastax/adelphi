@@ -49,6 +49,8 @@ if you're using some other existing cluster you can skip to step 4.
     k3d cluster create adelphi --servers 3 --wait
     ```
 
+Test test test
+
 3. When that completes, set the KUBECONFIG environment variable to make sure you're working in the right context:
 
     ```
