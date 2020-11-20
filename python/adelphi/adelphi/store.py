@@ -51,8 +51,9 @@ def with_cluster(cluster_fn, hosts, port, username = None, password = None):
     cluster = Cluster(hosts, port=port, auth_provider=build_auth_provider(username,password), execution_profiles={EXEC_PROFILE_DEFAULT: ep})
     log.info("Connecting to the cluster to get metadata...")
     cluster.connect()
-    cluster_fn(cluster)
+    rv = cluster_fn(cluster)
     cluster.shutdown()
+    return rv
 
 
 def build_keyspace_objects(keyspaces, metadata):

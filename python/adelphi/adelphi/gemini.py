@@ -77,7 +77,7 @@ def export_gemini_schema(keyspaces_metadata, options):
     return data
 
 
-def to_string(data):
+def format_gemini_schema(data):
     return json.dumps(data, indent=4)
 
 def cql_type_to_gemini(cql_type, is_frozen=False):

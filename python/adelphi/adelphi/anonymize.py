@@ -59,6 +59,7 @@ def anonymize_keyspace(keyspace):
     for udt in keyspace.user_types.values():
         anonymize_udt(udt)
 
+    return keyspace
 
 def anonymize_udt(udt):
     udt.keyspace = get_name(udt.keyspace, KEYSPACE_PREFIX)
