@@ -30,7 +30,7 @@ import click
 from adelphi.anonymize import anonymize_keyspace
 from adelphi.cql import export_cql_schema
 from adelphi.gemini import export_gemini_schema, format_gemini_schema
-from adelphi.gh import build_github, build_repository, build_branch, commit_schemas, build_pull_request
+from adelphi.gh import build_github, build_origin_repo, build_branch, commit_schemas, build_pull_request
 from adelphi.store import with_cluster, build_keyspace_objects
 
 logging.basicConfig(level=logging.INFO)
@@ -131,26 +131,27 @@ def export_gemini(ctx):
 
 @export.command()
 @click.option('--token', help='Access token for schema storage on Github')
-# TODO: Change the default to something real when we have something real
-@click.option('--repo', default="absurdfarce/schema-playground", help='Name of the repo used for schema storage on Github')
-@click.option('--author', help='Github username to be used for schema commits')
 @click.pass_context
-def github(ctx, token, repo, author):
+def github(ctx, token):
 
-    if ctx.obj["anonymize"]:
+    if not ctx.obj["anonymize"]:
         log.error("All schemas contributed to Adelphi must be anonymized")
         exit(6)
 
     with TemporaryDirectory() as tmpdir:
-        my_fn = partial(cluster_fn, export_cql_schema, ctx)
         ctx.obj["output-dir"] = tmpdir
-        with_cluster(my_fn, **({k:ctx.obj[k] for k in ["hosts","port","username","password"]}))
+        partial_fn = partial(get_keyspace_objects, ctx)
+        keyspace_objs = with_cluster(partial_fn, **({k:ctx.obj[k] for k in ["hosts","port","username","password"]}))
+        validate_keyspaces(keyspace_objs)
+
+        export_keyspaces(ctx, export_cql_schema, keyspace_objs)
 
         gh = build_github(token)
-        repo_obj = build_repository(gh, repo)
-        branch_name = build_branch(gh, repo_obj, author)
-        commit_schemas(gh, repo_obj, tmpdir, branch_name, author)
-        build_pull_request(repo_obj, branch_name, author)
+        origin_repo = build_origin_repo(gh)
+        fork_repo = origin_repo.create_fork()
+        branch_name = build_branch(gh, fork_repo)
+        commit_schemas(gh, fork_repo, tmpdir, branch_name)
+        build_pull_request(gh, origin_repo, branch_name)
 
 if __name__ == '__main__':
     export(obj={}, auto_envvar_prefix="ADELPHI")
