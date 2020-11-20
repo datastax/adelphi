@@ -139,6 +139,11 @@ def export_gemini(ctx):
 @click.option('--author', help='Github username to be used for schema commits')
 @click.pass_context
 def github(ctx, token, repo, author):
+
+    if ctx.obj["anonymize"]:
+        log.error("All schemas contributed to Adelphi must be anonymized")
+        exit(6)
+
     with TemporaryDirectory() as tmpdir:
         my_fn = partial(cluster_fn, export_cql_schema, ctx)
         ctx.obj["output-dir"] = tmpdir
