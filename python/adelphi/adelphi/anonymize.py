@@ -1,3 +1,4 @@
+import re
 # Functions and constants related to the anonymization process
 from adelphi.store import get_standard_columns_from_table_metadata
 
@@ -19,7 +20,6 @@ name_map = {
     INDEX_PREFIX: {}
 }
 
-
 def get_name(original_name, prefix):
     """
     Looks up the anonymized name for the provided original name in the cache.
@@ -33,27 +33,41 @@ def get_name(original_name, prefix):
 def anonymize_keyspace(keyspace):
     keyspace.name = get_name(keyspace.name, KEYSPACE_PREFIX)
 
+    # anonymize udts at once because they can reference
+    # one another
+    udts = keyspace.user_types.values()
+    anonymize_udts(udts)
+
     for table in keyspace.tables.values():
         anonymize_table(table)
 
-    for udt in keyspace.user_types.values():
-        anonymize_udt(udt)
+    # remove functions, aggregates and views for now
+    keyspace.functions = {}
+    keyspace.aggregates = {}
+    keyspace.views = {}
+
+def anonymize_type(original_type):
+    name = original_type
+    for udt in name_map[TYPE_PREFIX]:
+        name = name.replace(udt, name_map[TYPE_PREFIX][udt])
+    return name
 
 
-def anonymize_udt(udt):
-    udt.keyspace = get_name(udt.keyspace, KEYSPACE_PREFIX)
-    udt.name = get_name(udt.name, TYPE_PREFIX)
-    # field names
-    udt.field_names = [get_name(field_name, FIELD_PREFIX) for field_name in udt.field_names]
-    # field types
-    udt.field_types = [get_name(field_type, TYPE_PREFIX)
-                       if field_type in name_map[TYPE_PREFIX]
-                       else field_type
-                       for field_type in udt.field_types]
-
+def anonymize_udts(udts):
+    # anonymize all udt names first
+    for udt in udts:
+        udt.keyspace = get_name(udt.keyspace, KEYSPACE_PREFIX)
+        udt.name = get_name(udt.name, TYPE_PREFIX)
+    
+    for udt in udts:
+        # field names
+        udt.field_names = [get_name(field_name, FIELD_PREFIX) for field_name in udt.field_names]
+        # field types
+        udt.field_types = [anonymize_type(field_type) for field_type in udt.field_types]
 
 def anonymize_column(column):
     column.name = get_name(column.name, COLUMN_PREFIX)
+    column.cql_type = anonymize_type(column.cql_type)
 
 
 def anonymize_index(index):
@@ -72,6 +86,12 @@ def anonymize_table(table):
     for ck in table.clustering_key:
         anonymize_column(ck)
 
+    # remove comment since it may contain sensitive information
+    table.options["comment"] = ""
+
+    # The CQL python driver holds the same object references for clustering keys
+    # and regular columns, so we have to separate them otherwise the names
+    # will be re-anonymized.
     for column in get_standard_columns_from_table_metadata(table):
         anonymize_column(column)
 

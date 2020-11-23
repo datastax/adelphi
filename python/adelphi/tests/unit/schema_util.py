@@ -3,17 +3,18 @@ from cassandra.metadata import Metadata,\
 	TableMetadata,\
 	ColumnMetadata,\
 	IndexMetadata,\
-	SimpleStrategy
+	SimpleStrategy, \
+	UserType
 
-# types compatible with C* 2.1
+# types compatible with C* 2.1+
 data_types = ["ascii", "bigint", "blob", "boolean",
 			"decimal", "double", "float", "inet", "int", "list<int>",
-			"map<int,int>", "set<int>",
+			"map<int,int>", "set<int>", "tuple<int, tuple<text, double>>",
 			"text", "timestamp", "timeuuid",
 			"uuid",  "varchar", "varint"]
 
-# types compatible with C* 2.1+
-#data_types = ["date", "smallint", "time", "tinyint"]
+def udt(keyspace, name, field_names, field_types):
+	return UserType(keyspace.name, name, field_names, field_types)
 
 def column(table_metadata, column_name, cql_type, is_static=False, is_reversed=False):
 	return ColumnMetadata(table_metadata, column_name, cql_type)
@@ -29,9 +30,23 @@ def get_table(keyspace, name):
 		col = column(table, "my_column_%s" % i, data_types[i])
 		columns_dict[col.name] = col
 
-	columns = list(columns_dict.values())
+	# create some udts
+	address_udt = udt(keyspace, "address", ["street", "number"], ["text", "int"])
+	user_udt = udt(keyspace, "user", ["name", "address"], ["tuple<text,text>", "frozen<address>"])
+	collections_udt = udt(keyspace, "collections", ["field1", "field2", "field3", "field4"], ["frozen<user>",\
+		"frozen<map<frozen<user>, frozen<user>>>",\
+		"frozen<list<frozen<address>>>",\
+		"frozen<tuple<frozen<user>, frozen<address>>>"])
+	# add udts to keyspace
+	keyspace.user_types = {address_udt.name: address_udt,\
+		user_udt.name: user_udt,\
+		collections_udt.name: collections_udt}
+	# build column with udt types
+	columns_dict["user"] = column(table, user_udt.name, "frozen<%s>" % user_udt.name)
+	columns_dict["collections"] = column(table, collections_udt.name, "frozen<%s>" % collections_udt.name)
 
 	# set some pk's and ck's
+	columns = list(columns_dict.values())
 	partition_keys = [columns[0], columns[1]]
 	clustering_keys = [columns[2], columns[3]]
 
@@ -49,8 +64,10 @@ def get_table(keyspace, name):
 	indexes[custom_index.name] = custom_index
 	table.indexes = indexes
 
-	# table options
+	# table options compatible with C* 2.1+
 	table.options = {
+		# set a comment, which must be removed by the anonymizer
+		"comment": "Lorem ipsum",
 		"compaction_strategy_class": "org.apache.cassandra.db.compaction.SizeTieredCompactionStrategy",
 		"max_compaction_threshold": "32",
 		"min_compaction_threshold": "4",
@@ -83,7 +100,7 @@ def get_schema():
 
 if __name__ == "__main__":
 	"""
-	Use this to print the generated schema.
+	Use this to print the test schema.
 	The output can be used in the integration tests too.
 	"""
 	print("\n\n".join(ks.export_as_string() for ks in get_schema().keyspaces))
