@@ -73,32 +73,40 @@ def export(ctx, hosts, port, username, password, keyspaces, rf, anonymize, outpu
     ctx.obj['output-dir'] = output_dir
 
 # ============================ Utility functions for commands ============================
-def get_keyspace_objects(ctx, cluster):
+def get_keyspaces(ctx, cluster):
     keyspace_names = ctx.obj["keyspace_names"]
 
     metadata = cluster.metadata
-    keyspace_objs = build_keyspace_objects(keyspace_names, metadata)
+    keyspaces = build_keyspace_objects(keyspace_names, metadata)
 
-    return [anonymize_keyspace(ks) for ks in keyspace_objs] if ctx.obj['anonymize'] else keyspace_objs
+    return [anonymize_keyspace(ks) for ks in keyspaces] if ctx.obj['anonymize'] else keyspaces
 
 
 def validate_keyspaces(keyspace_objs):
-    log.info("Exporting schema for keyspaces %s", ','.join((k.name for k in keyspace_objs)))
-
     if len(keyspace_objs) == 0:
         log.info("No keyspaces selected")
         exit(1)
 
 
-def export_keyspaces(ctx, export_fn, keyspace_objs):
-    options = {'rf': ctx.obj['rf']}
-    output_dir = ctx.obj["output-dir"]
+def gather_keyspaces(ctx, output_dir = None):
+    partial_fn = partial(get_keyspaces, ctx)
+    keyspaces = with_cluster(partial_fn, **({k:ctx.obj[k] for k in ["hosts","port","username","password"]}))
 
-    if output_dir is None:
+    log.info("Exporting schema for keyspaces %s", ','.join((k.name for k in keyspaces)))
+
+    validate_keyspaces(keyspaces)
+    return keyspaces
+
+
+def export_keyspaces(ctx, export_fn, keyspace_objs, output_dir = None):
+    options = {'rf': ctx.obj['rf']}
+    export_dir = output_dir or ctx.obj["output-dir"]
+
+    if export_dir is None:
         print(export_fn(keyspace_objs, options))
     else:
         for keyspace_obj in keyspace_objs:
-            with open(os.path.join(output_dir, keyspace_obj.name),'w') as output_file:
+            with open(os.path.join(export_dir, keyspace_obj.name),'w') as output_file:
                 log.info("Writing schema for keyspace " + keyspace_obj.name + " to file " + output_file.name)
                 output_file.write(export_fn([keyspace_obj], options))
 
@@ -107,26 +115,21 @@ def export_keyspaces(ctx, export_fn, keyspace_objs):
 @export.command()
 @click.pass_context
 def export_cql(ctx):
-    partial_fn = partial(get_keyspace_objects, ctx)
-    keyspace_objs = with_cluster(partial_fn, **({k:ctx.obj[k] for k in ["hosts","port","username","password"]}))
-    validate_keyspaces(keyspace_objs)
-
-    export_keyspaces(ctx, export_cql_schema, keyspace_objs)
+    keyspaces = gather_keyspaces(ctx)
+    export_keyspaces(ctx, export_cql_schema, keyspaces)
 
 
 @export.command()
 @click.pass_context
 def export_gemini(ctx):
-    partial_fn = partial(get_keyspace_objects, ctx)
-    keyspace_objs = with_cluster(partial_fn, **({k:ctx.obj[k] for k in ["hosts","port","username","password"]}))
-    validate_keyspaces(keyspace_objs)
+    keyspaces = gather_keyspaces(ctx)
 
-    if len(keyspace_objs) > 1:
+    if len(keyspaces) > 1:
         log.error("Gemini schema doesn't support multiple keyspaces.")
         exit(2)
 
     # My kingdom for decent function composition :(
-    export_keyspaces(ctx, lambda x,y: format_gemini_schema(export_gemini_schema(x,y)), keyspace_objs)
+    export_keyspaces(ctx, lambda x,y: format_gemini_schema(export_gemini_schema(x,y)), keyspaces)
 
 
 @export.command()
@@ -139,12 +142,8 @@ def github(ctx, token):
         exit(6)
 
     with TemporaryDirectory() as tmpdir:
-        ctx.obj["output-dir"] = tmpdir
-        partial_fn = partial(get_keyspace_objects, ctx)
-        keyspace_objs = with_cluster(partial_fn, **({k:ctx.obj[k] for k in ["hosts","port","username","password"]}))
-        validate_keyspaces(keyspace_objs)
-
-        export_keyspaces(ctx, export_cql_schema, keyspace_objs)
+        keyspace_objs = gather_keyspaces(ctx)
+        export_keyspaces(ctx, export_cql_schema, keyspace_objs, tmpdir)
 
         gh = build_github(token)
         origin_repo = build_origin_repo(gh)
