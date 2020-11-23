@@ -21,6 +21,11 @@ import os.path
 from functools import partial
 
 try:
+    from itertools import ifilterfalse as filterfalse
+except ImportError:
+    from itertools import filterfalse
+
+try:
     from tempfile import TemporaryDirectory
 except ImportError:
     from backports.tempfile import TemporaryDirectory
@@ -29,9 +34,10 @@ import click
 
 from adelphi.anonymize import anonymize_keyspace
 from adelphi.cql import export_cql_schema
-from adelphi.gemini import export_gemini_schema, format_gemini_schema
+from adelphi.gemini import export_gemini_schema
 from adelphi.gh import build_github, build_origin_repo, build_branch, commit_schemas, build_pull_request
-from adelphi.store import with_cluster, build_keyspace_objects
+from adelphi.store import build_keyspace_objects
+from adelphi.store import with_cluster as _with_cluster
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger('adelphi')
@@ -47,8 +53,10 @@ log = logging.getLogger('adelphi')
 @click.option('--rf', type=int, help='Replication factor to override original setting. Optional.')
 @click.option('--anonymize/--no-anonymize', default=True, show_default=True, help="Enable/disable schema anonymization")
 @click.option('--output-dir', help='Directory schema files should be written to. If not specified, it will write to stdout')
+@click.option('--purpose', help='Comments on the anticipated purpose of this schema.  Optional')
+@click.option('--maturity', help='Comments on the maturity of this schema.  Optional')
 @click.pass_context
-def export(ctx, hosts, port, username, password, keyspaces, rf, anonymize, output_dir):
+def export(ctx, hosts, port, username, password, keyspaces, rf, anonymize, output_dir, purpose, maturity):
 
     ctx.ensure_object(dict)
 
@@ -72,8 +80,32 @@ def export(ctx, hosts, port, username, password, keyspaces, rf, anonymize, outpu
     ctx.obj['rf'] = rf
     ctx.obj['anonymize'] = anonymize
     ctx.obj['output-dir'] = output_dir
+    ctx.obj['purpose'] = purpose
+    ctx.obj['maturity'] = maturity
 
 # ============================ Utility functions for commands ============================
+# unique_everseen from itertools recipes
+def unique(iterable, key=None):
+    "List unique elements, preserving order. Remember all elements ever seen."
+    # unique_everseen('AAAABBBCCDAABBB') --> A B C D
+    # unique_everseen('ABBCcAD', str.lower) --> A B C D
+    seen = set()
+    seen_add = seen.add
+    if key is None:
+        for element in filterfalse(seen.__contains__, iterable):
+            seen_add(element)
+            yield element
+    else:
+        for element in iterable:
+            k = key(element)
+            if k not in seen:
+                seen_add(k)
+                yield element
+
+
+def with_cluster(cluster_fn, ctx):
+    return _with_cluster(cluster_fn, **({k:ctx.obj[k] for k in ["hosts","port","username","password"]}))
+
 def get_keyspaces(ctx, cluster):
     keyspace_names = ctx.obj["keyspace_names"]
 
@@ -89,9 +121,15 @@ def validate_keyspaces(keyspace_objs):
         exit(1)
 
 
+def get_cluster_metadata(cluster):
+    hosts = cluster.metadata.all_hosts()
+    unique_dcs = unique((host.datacenter for host in hosts))
+    return {"host_count": len(hosts), "dc_count": sum(1 for i in unique_dcs)}
+
+
 def gather_keyspaces(ctx):
     partial_fn = partial(get_keyspaces, ctx)
-    keyspaces = with_cluster(partial_fn, **({k:ctx.obj[k] for k in ["hosts","port","username","password"]}))
+    keyspaces = with_cluster(partial_fn, ctx)
 
     log.info("Exporting schema for keyspaces %s", ','.join((k.name for k in keyspaces)))
 
@@ -99,25 +137,30 @@ def gather_keyspaces(ctx):
     return keyspaces
 
 
-def export_keyspaces(ctx, export_fn, keyspace_objs, output_dir = None):
+def gather_metadata(ctx):
+    metadata = {k : ctx.obj[k] for k in ["purpose", "maturity"]}
+    metadata.update(with_cluster(get_cluster_metadata, ctx))
+    return {k : metadata[k] for k in metadata.keys() if metadata[k] is not None}
+
+
+def export_keyspaces(ctx, export_fn, keyspace_objs, metadata, output_dir = None):
     options = {'rf': ctx.obj['rf']}
     export_dir = output_dir or ctx.obj["output-dir"]
 
     if export_dir is None:
-        print(export_fn(keyspace_objs, options))
+        print(export_fn(keyspace_objs, metadata, options))
     else:
         for keyspace_obj in keyspace_objs:
             with open(os.path.join(export_dir, keyspace_obj.name),'w') as output_file:
                 log.info("Writing schema for keyspace " + keyspace_obj.name + " to file " + output_file.name)
-                output_file.write(export_fn([keyspace_obj], options))
+                output_file.write(export_fn([keyspace_obj], metadata, options))
 
 
 # ============================ Command implementations ============================
 @export.command()
 @click.pass_context
 def export_cql(ctx):
-    keyspaces = gather_keyspaces(ctx)
-    export_keyspaces(ctx, export_cql_schema, keyspaces)
+    export_keyspaces(ctx, export_cql_schema, gather_keyspaces(ctx), gather_metadata(ctx))
 
 
 @export.command()
@@ -129,8 +172,7 @@ def export_gemini(ctx):
         log.error("Gemini schema doesn't support multiple keyspaces.")
         exit(2)
 
-    # My kingdom for decent function composition :(
-    export_keyspaces(ctx, lambda x,y: format_gemini_schema(export_gemini_schema(x,y)), keyspaces)
+    export_keyspaces(ctx, export_gemini_schema, keyspaces, gather_metadata(ctx))
 
 
 @export.command()
@@ -143,8 +185,7 @@ def github(ctx, token):
         exit(6)
 
     with TemporaryDirectory() as tmpdir:
-        keyspace_objs = gather_keyspaces(ctx)
-        export_keyspaces(ctx, export_cql_schema, keyspace_objs, tmpdir)
+        export_keyspaces(ctx, export_cql_schema, gather_keyspaces(ctx), gather_metadata(ctx), tmpdir)
 
         gh = build_github(token)
         origin_repo = build_origin_repo(gh)
