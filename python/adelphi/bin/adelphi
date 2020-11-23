@@ -36,15 +36,16 @@ from adelphi.store import with_cluster, build_keyspace_objects
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger('adelphi')
 
+# Note: click assumes a type of string and a required value of False unless explicitly specified
 @click.group()
-@click.option('--hosts', default='127.0.0.1', help='Comma-separated list of contact points. Default: 127.0.0.1')
-@click.option('--port', type=int, default=9042, help='Database RPC port. Default: 9042')
+@click.option('--hosts', default='127.0.0.1', show_default=True, help='Comma-separated list of contact points')
+@click.option('--port', type=int, default=9042, show_default=True, help='Database RPC port')
 @click.option('--username', help='Database username')
 @click.option('--password', help='Database password')
 @click.option('--keyspaces', help='Comma-separated list of keyspaces to include. If not specified, all keypaces will '
                          'be included, except system keypaces')
 @click.option('--rf', type=int, help='Replication factor to override original setting. Optional.')
-@click.option('--anonymize/--no-anonymize', default=True, help="Enable/disable schema anonymization")
+@click.option('--anonymize/--no-anonymize', default=True, show_default=True, help="Enable/disable schema anonymization")
 @click.option('--output-dir', help='Directory schema files should be written to. If not specified, it will write to stdout')
 @click.pass_context
 def export(ctx, hosts, port, username, password, keyspaces, rf, anonymize, output_dir):
@@ -88,7 +89,7 @@ def validate_keyspaces(keyspace_objs):
         exit(1)
 
 
-def gather_keyspaces(ctx, output_dir = None):
+def gather_keyspaces(ctx):
     partial_fn = partial(get_keyspaces, ctx)
     keyspaces = with_cluster(partial_fn, **({k:ctx.obj[k] for k in ["hosts","port","username","password"]}))
 
