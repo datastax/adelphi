@@ -30,7 +30,7 @@ import uuid
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger('adelphi')
 
-# We're assuming any storage repo will be created after the converstion to "main"
+# We're assuming any storage repo will be created after the conversion to "main"
 MAIN_BRANCH_NAME = "main"
 
 ORIGIN_REPO = "schemafarce/schema-repository"
