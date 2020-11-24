@@ -3,13 +3,13 @@ from setuptools import setup
 PY3 = sys.version_info[0] == 3
 
 dependencies = [
-    'cassandra-driver >= 3.24.0',
-    'click >= 7.1.2',
-    'PyGithub >= 1.45'
+    'cassandra-driver ~= 3.24',
+    'click ~= 7.1',
+    'PyGithub ~= 1.45'
     ]
 
 if not PY3:
-    dependencies.append('backports.tempfile')
+    dependencies.append('backports.tempfile ~= 1.0')
 
 setup(
    name='adelphi',
