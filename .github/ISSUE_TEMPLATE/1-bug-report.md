@@ -22,7 +22,7 @@ Even better, we'd love a pull request to resolve the issue!
 ### Schema
 
 <!--
-Is this issue related to a specific shema?  Has the schema already been contirbuted? Can the schema be contribted for reproduction?  
+Is this issue related to a specific schema?  Has the schema already been contributed? Can the schema be contributed for reproduction?  
 
 Provide the content of the schema or a link to the contributed schema if possible.
 -->
