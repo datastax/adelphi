@@ -1,3 +1,5 @@
+import sys
+
 from setuptools import setup
 
 PY3 = sys.version_info[0] == 3
