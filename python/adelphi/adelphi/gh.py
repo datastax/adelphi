@@ -22,11 +22,6 @@ import uuid
 
 from github import Github
 
-import logging
-import os
-import os.path
-import uuid
-
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger('adelphi')
 

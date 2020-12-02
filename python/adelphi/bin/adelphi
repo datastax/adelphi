@@ -132,7 +132,7 @@ def gather_keyspaces(ctx):
     partial_fn = partial(get_keyspaces, ctx)
     keyspaces = with_cluster(partial_fn, ctx)
 
-    log.info("Exporting schema for keyspaces %s", ','.join((k.name for k in keyspaces)))
+    log.info("Processing the following keyspaces: %s", ','.join((k.name for k in keyspaces)))
 
     validate_keyspaces(keyspaces)
     return keyspaces
@@ -189,11 +189,7 @@ def contribute(ctx, token):
 
     with TemporaryDirectory() as tmpdir:
         ctx.obj["output-dir"] = tmpdir
-        partial_fn = partial(get_keyspace_objects, ctx)
-        keyspace_objs = with_cluster(partial_fn, **({k:ctx.obj[k] for k in ["hosts","port","username","password"]}))
-        validate_keyspaces(keyspace_objs)
-
-        export_keyspaces(ctx, export_cql_schema, keyspace_objs)
+        export_keyspaces(ctx, export_cql_schema, gather_keyspaces(ctx), gather_metadata(ctx))
 
         gh = build_github(token)
         origin_repo = build_origin_repo(gh)
