@@ -21,12 +21,15 @@ from cassandra.cqltypes import cqltype_to_python
 
 from adelphi.store import get_standard_columns_from_table_metadata, set_replication_factor
 
-def export_gemini_schema(keyspaces_metadata, options):
+def export_gemini_schema(keyspace_objs, metadata, options):
 
     # set replication factor
-    set_replication_factor(keyspaces_metadata, options['rf'])
+    set_replication_factor(keyspace_objs, options['rf'])
 
-    keyspace = keyspaces_metadata[0]
+    metadata_generator = ("//@{} = {}".format(k,v) for k,v in metadata.items())
+    metadata_str = "//Schema metadata:\n" + "\n".join(metadata_generator)
+
+    keyspace = keyspace_objs[0]
     replication = json.loads(
         keyspace.replication_strategy.export_for_schema().replace("'", "\""))
     data = {
@@ -74,11 +77,8 @@ def export_gemini_schema(keyspaces_metadata, options):
 
         data["tables"].append(table_data)
 
-    return data
+    return metadata_str + "\n\n" + json.dumps(data, indent=4)
 
-
-def format_gemini_schema(data):
-    return json.dumps(data, indent=4)
 
 def cql_type_to_gemini(cql_type, is_frozen=False):
     """

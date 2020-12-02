@@ -17,16 +17,22 @@
 
 from adelphi.store import get_standard_columns_from_table_metadata, set_replication_factor
 
-def export_cql_schema(keyspaces_metadata, options):
+def export_cql_schema(keyspace_objs, metadata, options):
 
     # set replication factor
-    set_replication_factor(keyspaces_metadata, options['rf'])
+    set_replication_factor(keyspace_objs, options['rf'])
+
+    metadata_generator = ("//@{} = {}".format(k,v) for k,v in metadata.items())
+    metadata_str = "//Schema metadata:\n" + "\n".join(metadata_generator)
+
     # build CQL statements string
-    generated_statements = "\n\n".join(ks.export_as_string() for ks in keyspaces_metadata)
+    cql_str = "\n\n".join(ks.export_as_string() for ks in keyspace_objs)
     # transform CREATE statements to include `IF NOT EXISTS`
 
     # TODO: shift this around to a regex so that we can do the whole thing in a single pass
-    return generated_statements.replace("CREATE TABLE", "CREATE TABLE IF NOT EXISTS") \
+    cql_str.replace("CREATE TABLE", "CREATE TABLE IF NOT EXISTS") \
         .replace("CREATE KEYSPACE", "CREATE KEYSPACE IF NOT EXISTS") \
         .replace("CREATE TYPE", "CREATE TYPE IF NOT EXISTS") \
         .replace("CREATE INDEX", "CREATE INDEX IF NOT EXISTS")
+
+    return metadata_str + "\n\n" + cql_str
