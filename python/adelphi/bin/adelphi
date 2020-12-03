@@ -103,17 +103,17 @@ def unique(iterable, key=None):
                 yield element
 
 
-def with_cluster(cluster_fn, ctx):
-    return _with_cluster(cluster_fn, **({k:ctx.obj[k] for k in ["hosts","port","username","password"]}))
+def with_cluster(cluster_fn, props):
+    return _with_cluster(cluster_fn, **({k:props[k] for k in ["hosts","port","username","password"]}))
 
 
-def get_keyspaces(ctx, cluster):
-    keyspace_names = ctx.obj["keyspace_names"]
+def get_keyspaces(props, cluster):
+    keyspace_names = props["keyspace_names"]
 
     metadata = cluster.metadata
     keyspaces = build_keyspace_objects(keyspace_names, metadata)
 
-    return [anonymize_keyspace(ks) for ks in keyspaces] if ctx.obj['anonymize'] else keyspaces
+    return [anonymize_keyspace(ks) for ks in keyspaces] if props['anonymize'] else keyspaces
 
 
 def validate_keyspaces(keyspace_objs):
@@ -128,9 +128,9 @@ def get_cluster_metadata(cluster):
     return {"host_count": len(hosts), "dc_count": sum(1 for i in unique_dcs)}
 
 
-def gather_keyspaces(ctx):
-    partial_fn = partial(get_keyspaces, ctx)
-    keyspaces = with_cluster(partial_fn, ctx)
+def gather_keyspaces(props):
+    partial_fn = partial(get_keyspaces, props)
+    keyspaces = with_cluster(partial_fn, props)
 
     log.info("Processing the following keyspaces: %s", ','.join((k.name for k in keyspaces)))
 
@@ -138,15 +138,15 @@ def gather_keyspaces(ctx):
     return keyspaces
 
 
-def gather_metadata(ctx):
-    metadata = {k : ctx.obj[k] for k in ["purpose", "maturity"]}
-    metadata.update(with_cluster(get_cluster_metadata, ctx))
+def gather_metadata(props):
+    metadata = {k : props[k] for k in ["purpose", "maturity"]}
+    metadata.update(with_cluster(get_cluster_metadata, props))
     return {k : metadata[k] for k in metadata.keys() if metadata[k] is not None}
 
 
-def export_keyspaces(ctx, export_fn, keyspace_objs, metadata, output_dir = None):
-    options = {'rf': ctx.obj['rf']}
-    export_dir = output_dir or ctx.obj["output-dir"]
+def export_keyspaces(props, export_fn, keyspace_objs, metadata):
+    options = {'rf': props['rf']}
+    export_dir = props["output-dir"]
 
     if export_dir is None:
         print(export_fn(keyspace_objs, metadata, options))
@@ -162,20 +162,20 @@ def export_keyspaces(ctx, export_fn, keyspace_objs, metadata, output_dir = None)
 @click.pass_context
 def export_cql(ctx):
     """Export a schema as raw CQL statements"""
-    export_keyspaces(ctx, export_cql_schema, gather_keyspaces(ctx), gather_metadata(ctx))
+    export_keyspaces(ctx.obj, export_cql_schema, gather_keyspaces(ctx.obj), gather_metadata(ctx.obj))
 
 
 @export.command()
 @click.pass_context
 def export_gemini(ctx):
     """Export a schema in a format suitable for use with the the Gemini data integrity test framework"""
-    keyspaces = gather_keyspaces(ctx)
+    keyspaces = gather_keyspaces(ctx.obj)
 
     if len(keyspaces) > 1:
         log.error("Gemini schema doesn't support multiple keyspaces.")
         exit(2)
 
-    export_keyspaces(ctx, export_gemini_schema, keyspaces, gather_metadata(ctx))
+    export_keyspaces(ctx.obj, export_gemini_schema, keyspaces, gather_metadata(ctx.obj))
 
 
 @export.command()
@@ -187,9 +187,13 @@ def contribute(ctx, token):
         log.error("All schemas contributed to Adelphi must be anonymized")
         exit(6)
 
+    if ctx.obj["output-dir"]:
+        log.info("Output directory is ignored when contributing a schema to Adelphi")
+
     with TemporaryDirectory() as tmpdir:
-        ctx.obj["output-dir"] = tmpdir
-        export_keyspaces(ctx, export_cql_schema, gather_keyspaces(ctx), gather_metadata(ctx))
+        props = ctx.obj.copy()
+        props["output-dir"] = tmpdir
+        export_keyspaces(props, export_cql_schema, gather_keyspaces(props), gather_metadata(props))
 
         gh = build_github(token)
         origin_repo = build_origin_repo(gh)
