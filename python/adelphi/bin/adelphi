@@ -179,7 +179,7 @@ def export_gemini(ctx):
 
 
 @export.command()
-@click.option('--token', help='Access token for schema storage on Github')
+@click.option('--token', help='Personal access token for Github user')
 @click.pass_context
 def contribute(ctx, token):
     """Contribute schemas to Adelphi"""
