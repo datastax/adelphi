@@ -54,6 +54,7 @@ def build_keyspace_objects(keyspaces, metadata):
         log.info("Excluding system keyspaces " + ",".join((ks.name for ks in failed)))
     return passed
 
+
 def get_standard_columns_from_table_metadata(table_metadata):
     """
     Return the standard columns and ensure to exclude pk and ck ones.

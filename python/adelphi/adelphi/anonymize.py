@@ -1,6 +1,6 @@
-import re
 # Functions and constants related to the anonymization process
 from adelphi.store import get_standard_columns_from_table_metadata
+import re
 
 # default prefixes for the anonymized names
 KEYSPACE_PREFIX = "ks"

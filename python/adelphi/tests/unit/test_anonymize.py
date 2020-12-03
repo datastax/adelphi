@@ -1,4 +1,3 @@
-import pytest
 from adelphi import anonymize
 from adelphi.anonymize import COLUMN_PREFIX, get_name
 from schema_util import get_schema
@@ -131,3 +130,6 @@ class TestCqlAnonymize(unittest.TestCase):
 		name3 = get_name("another_column", COLUMN_PREFIX)
 		self.assertEqual(name1, name2)
 		self.assertNotEqual(name1, name3)
+
+if __name__ == "__main__":
+    unittest.main()

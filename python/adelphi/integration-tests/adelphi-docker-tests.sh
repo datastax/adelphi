@@ -51,12 +51,9 @@ function compare() {
 
 }
 
-# switch to parent folder to build the anonymizer package
-cd ..
-python3 setup.py install > /dev/null 
-
-# return to the integration-tests folder
-cd -
+# build adelphi package
+pip uninstall -y adelphi
+pip install ../../adelphi
 
 # create test output folder, if it doesn't exist yet
 mkdir -p output logs
