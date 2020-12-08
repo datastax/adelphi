@@ -19,6 +19,7 @@ import hashlib
 import logging
 import os
 import os.path
+import sys
 from base64 import b64encode
 from functools import partial
 
@@ -43,6 +44,32 @@ from adelphi.store import with_cluster as _with_cluster
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger('adelphi')
+
+
+# Final version of PyGithub with Python 2.x support includes a bug that appears when users
+# are part of a Github organization.  See https://github.com/datastax/adelphi/issues/70
+# for more detail
+def patch_repo(repo):
+    log.info("Patching Repository.create_fork")
+    import six
+    from github import GithubObject, Repository
+    def safe_create_fork(self, organization=GithubObject.NotSet):
+        # TODO: I'm not sure we need to support the non-default string case here... maintaining
+        # it for now to preserve fidelity with the 1.45 impl
+        assert organization is GithubObject.NotSet or isinstance(
+            organization, (str, six.text_type)
+        ), organization
+        post_parameters = {}
+        if organization is not GithubObject.NotSet:
+            post_parameters["organization"] = organization
+        headers, data = self._requester.requestJsonAndCheck(
+            "POST", self.url + "/forks", input=post_parameters,
+        )
+        return Repository.Repository(self._requester, headers, data, completed=True)
+
+    import types
+    repo.safe_create_fork = types.MethodType(safe_create_fork, repo)
+
 
 # Note: click assumes a type of string and a required value of False unless explicitly specified
 @click.group()
@@ -203,9 +230,12 @@ def contribute(ctx, token):
         export_keyspaces(props, export_cql_schema, build_keyspace_map(props), metadata)
 
         gh = build_github(token)
-        log.info("github-user set to {}".format(gh.get_user().login))
         origin_repo = build_origin_repo(gh)
-        fork_repo = origin_repo.create_fork()
+        if not sys.version_info[0] == 3:
+            patch_repo(origin_repo)
+            fork_repo = origin_repo.safe_create_fork()
+        else:
+            fork_repo = origin_repo.create_fork()
         branch_name = build_branch(gh, fork_repo)
         commit_schemas(gh, fork_repo, tmpdir, branch_name)
         build_pull_request(gh, origin_repo, branch_name)
