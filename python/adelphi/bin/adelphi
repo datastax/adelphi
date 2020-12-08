@@ -20,7 +20,7 @@ import logging
 import os
 import os.path
 import sys
-from base64 import b64encode
+from base64 import b64encode, urlsafe_b64encode
 from functools import partial
 
 try:
@@ -139,7 +139,15 @@ def with_cluster(cluster_fn, props):
 def hash_keyspace_name(ks):
     m = hashlib.sha256()
     m.update(ks.name.encode("utf-8"))
-    return b64encode(m.digest()).decode('ascii')
+    return m.digest()
+
+
+def hash_to_filename(hash_bytes):
+    return urlsafe_b64encode(hash_bytes).decode('ascii')
+
+
+def hash_to_str(hash_bytes):
+    return b64encode(hash_bytes).decode('ascii')
 
 
 def get_keyspaces(props, cluster):
@@ -180,9 +188,12 @@ def export_keyspaces(props, export_fn, keyspace_map, metadata):
         print(export_fn(keyspace_map.keys(), metadata, options))
     else:
         for (keyspace_obj, hashed_ks_name) in keyspace_map.items():
-            with open(os.path.join(export_dir, keyspace_obj.name),'w') as output_file:
+            # Output filename should use the file-safe alphabet for b64 encoding
+            output_file_name = hash_to_filename(hashed_ks_name) if props["anonymize"] else keyspace_obj.name
+            with open(os.path.join(export_dir, output_file_name),'w') as output_file:
                 log.info("Writing schema for keyspace " + keyspace_obj.name + " to file " + output_file.name)
-                metadata['hashed_ks_name'] = hashed_ks_name
+                # Metadata string for b64 encoded keyspace name should use the conventional encoding
+                metadata['hashed_ks_name'] = hash_to_str(hashed_ks_name)
                 output_file.write(export_fn([keyspace_obj], metadata, options))
                 del metadata['hashed_ks_name']
 
@@ -225,8 +236,6 @@ def contribute(ctx, token):
         props = ctx.obj.copy()
         props["output-dir"] = tmpdir
         metadata = build_metadata(props)
-        #metadata["github-user"] = gh.get_user().login
-        #log.info("github-user set to {}".format(metadata['github-user']))
         export_keyspaces(props, export_cql_schema, build_keyspace_map(props), metadata)
 
         gh = build_github(token)
