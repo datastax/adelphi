@@ -21,6 +21,7 @@ import os
 import os.path
 import sys
 from base64 import b64encode, urlsafe_b64encode
+from datetime import datetime
 from functools import partial
 
 try:
@@ -238,7 +239,8 @@ def contribute(ctx, token):
         props = ctx.obj.copy()
         props["output-dir"] = tmpdir
         metadata = build_metadata(props)
-        metadata["github-user"] = gh.get_user().login
+        metadata["github_user"] = gh.get_user().login
+        metadata["created_at"] = datetime.now().isoformat()
         export_keyspaces(props, export_cql_schema, build_keyspace_map(props), metadata)
 
         if not sys.version_info[0] == 3:
