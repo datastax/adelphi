@@ -175,7 +175,7 @@ def build_keyspace_map(props):
 
 
 def build_metadata(props):
-    metadata = {k : props[k] for k in ["purpose", "maturity", "github-user"] if k in props}
+    metadata = {k : props[k] for k in ["purpose", "maturity"] if k in props}
     metadata.update(with_cluster(get_cluster_metadata, props))
     return {k : metadata[k] for k in metadata.keys() if metadata[k] is not None}
 
@@ -231,15 +231,16 @@ def contribute(ctx, token):
     if ctx.obj["output-dir"]:
         log.info("Output directory argument is ignored when contributing a schema to Adelphi")
 
+    gh = build_github(token)
+    origin_repo = build_origin_repo(gh)
 
     with TemporaryDirectory() as tmpdir:
         props = ctx.obj.copy()
         props["output-dir"] = tmpdir
         metadata = build_metadata(props)
+        metadata["github-user"] = gh.get_user().login
         export_keyspaces(props, export_cql_schema, build_keyspace_map(props), metadata)
 
-        gh = build_github(token)
-        origin_repo = build_origin_repo(gh)
         if not sys.version_info[0] == 3:
             patch_repo(origin_repo)
             fork_repo = origin_repo.safe_create_fork()
