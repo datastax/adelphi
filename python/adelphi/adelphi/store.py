@@ -49,7 +49,6 @@ def build_auth_provider(username = None,password = None):
 def with_cluster(cluster_fn, hosts, port, username = None, password = None):
     ep = ExecutionProfile(load_balancing_policy=default_lbp_factory())
     cluster = Cluster(hosts, port=port, auth_provider=build_auth_provider(username,password), execution_profiles={EXEC_PROFILE_DEFAULT: ep})
-    log.info("Connecting to the cluster to get metadata...")
     cluster.connect()
     rv = cluster_fn(cluster)
     cluster.shutdown()
@@ -79,10 +78,6 @@ def get_standard_columns_from_table_metadata(table_metadata):
     clustering_column_names = [c.name for c in table_metadata.clustering_key]
     standard_columns = []
     for c in list(table_metadata.columns.values()):
-        if 'udt' in c.cql_type:
-            log.warning("Ignoring column %s since udt are not supported." % c.name)
-            del table_metadata.columns[c.name]
-            continue
         if (c.name not in clustering_column_names
                 and c.name not in partition_column_names):
             standard_columns.append(c)

@@ -15,7 +15,8 @@
 
 # Logic necessary to generate a string representation of a standard CQL schema
 
-from adelphi.store import get_standard_columns_from_table_metadata, set_replication_factor
+from adelphi.anonymize import anonymize_keyspace
+from adelphi.store import set_replication_factor
 
 def export_cql_schema(keyspace_objs, metadata, options):
 
@@ -27,10 +28,10 @@ def export_cql_schema(keyspace_objs, metadata, options):
 
     # build CQL statements string
     cql_str = "\n\n".join(ks.export_as_string() for ks in keyspace_objs)
+    
     # transform CREATE statements to include `IF NOT EXISTS`
-
     # TODO: shift this around to a regex so that we can do the whole thing in a single pass
-    cql_str.replace("CREATE TABLE", "CREATE TABLE IF NOT EXISTS") \
+    cql_str = cql_str.replace("CREATE TABLE", "CREATE TABLE IF NOT EXISTS") \
         .replace("CREATE KEYSPACE", "CREATE KEYSPACE IF NOT EXISTS") \
         .replace("CREATE TYPE", "CREATE TYPE IF NOT EXISTS") \
         .replace("CREATE INDEX", "CREATE INDEX IF NOT EXISTS")

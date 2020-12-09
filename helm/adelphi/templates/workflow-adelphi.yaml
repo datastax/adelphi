@@ -15,19 +15,19 @@ spec:
           template: registry-template
       - name: build-cassandra
         depends: "start-registry"
-        when: "{{ default false .Values.target.commit_hash }}"
+        when: "{{ not (empty .Values.target.git_identifier) }}"
         arguments:
           parameters:
           - name: registry_ip
             value: "{{`{{tasks.start-registry.ip}}`}}"
-          - name: commit_hash
-            value: "{{ .Values.target.commit_hash }}"
+          - name: git_identifier
+            value: "{{ .Values.target.git_identifier }}"
         templateRef:
           name: cassandra-image
           template: cassandra-image-template
       - name: build-cassandra-mgmt-api
         depends: "build-cassandra"
-        when: "{{ default false .Values.target.commit_hash }}"
+        when: "{{ not (empty .Values.target.git_identifier) }}"
         arguments:
           parameters:
           - name: registry_ip
