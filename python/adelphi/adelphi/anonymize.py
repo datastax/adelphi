@@ -61,6 +61,8 @@ def anonymize_keyspace(keyspace):
     keyspace.aggregates = {}
     keyspace.views = {}
 
+    return keyspace
+
 def anonymize_type(original_type):
     name = original_type
     for udt in name_map[TYPE_PREFIX]:
