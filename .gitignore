@@ -1,3 +1,6 @@
+# Test output files
+output/
+
 # Spark tarball dir
 Docker/spark
 

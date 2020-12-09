@@ -1,33 +1,77 @@
 #!python
 
+# Copyright DataStax, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 import argparse
 import logging
+import os
+import os.path
 from functools import partial
+
+try:
+    from itertools import ifilterfalse as filterfalse
+except ImportError:
+    from itertools import filterfalse
+
+try:
+    from tempfile import TemporaryDirectory
+except ImportError:
+    from backports.tempfile import TemporaryDirectory
 
 import click
 
+from adelphi.anonymize import anonymize_keyspace
 from adelphi.cql import export_cql_schema
-from adelphi.gemini import export_gemini_schema, to_string
-from adelphi.store import with_cluster, build_keyspace_objects
+from adelphi.gemini import export_gemini_schema
+from adelphi.gh import build_github, build_origin_repo, build_branch, commit_schemas, build_pull_request
+from adelphi.store import build_keyspace_objects
+from adelphi.store import with_cluster as _with_cluster
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger('adelphi')
 
+# Note: click assumes a type of string and a required value of False unless explicitly specified
 @click.group()
-@click.option('--hosts', default='127.0.0.1', help='Comma-separated list of contact points. Default: 127.0.0.1')
-@click.option('--port', type=int, default=9042, help='Database RPC port. Default: 9042')
-# not implemented yet
-#@click.option('--output', metavar='/file/path', help='Output file. If not specified, it will write to stdout')
+@click.option('--hosts', default='127.0.0.1', show_default=True, help='Comma-separated list of contact points')
+@click.option('--port', type=int, default=9042, show_default=True, help='Database RPC port')
 @click.option('--username', help='Database username')
 @click.option('--password', help='Database password')
-@click.option('--keyspaces', help='Comma-separated list of keyspaces to include. If not specified, all keypaces will '
-                         'be included, except system keypaces')
+@click.option('--keyspaces',
+              help='Comma-separated list of keyspaces to include. If not specified all non-system keypaces will be included')
 @click.option('--rf', type=int, help='Replication factor to override original setting. Optional.')
-@click.option('--anonymize/--no-anonymize', default=True, help="Enable/disable schema anonymization")
+@click.option('--anonymize/--no-anonymize', default=True, show_default=True, help="Enable/disable schema anonymization")
+@click.option('--output-dir', help='Directory schema files should be written to. If not specified, it will write to stdout')
+@click.option('--purpose', help='Comments on the anticipated purpose of this schema.  Optional.')
+@click.option('--maturity', help="The maturity of this schema.  Sample values would include 'alpha', 'beta', 'dev', 'test' or 'prod'.  Optional.")
 @click.pass_context
-def export(ctx, hosts, port, username, password, keyspaces, rf, anonymize):
+def export(ctx, hosts, port, username, password, keyspaces, rf, anonymize, output_dir, purpose, maturity):
 
     ctx.ensure_object(dict)
+
+    # If output-dir is specified make sure it actually exists, is a directory and is writable
+    if output_dir is not None:
+        if not os.path.exists(output_dir):
+            log.error("Output directory " + output_dir + " does not exist")
+            exit(3)
+        if not os.path.isdir(output_dir):
+            log.error("Specified output directory " + output_dir + " exists but is not a directory")
+            exit(4)
+        if not os.access(output_dir, os.W_OK):
+            log.error("Output directory " + output_dir + " exists but is not writable")
+            exit(5)
+
     ctx.obj['hosts'] = hosts.split(',')
     ctx.obj['port'] = port
     ctx.obj['username'] = username
@@ -35,53 +79,128 @@ def export(ctx, hosts, port, username, password, keyspaces, rf, anonymize):
     ctx.obj['keyspace_names'] = keyspaces.split(',') if keyspaces is not None else None
     ctx.obj['rf'] = rf
     ctx.obj['anonymize'] = anonymize
+    ctx.obj['output-dir'] = output_dir
+    ctx.obj['purpose'] = purpose
+    ctx.obj['maturity'] = maturity
+
+# ============================ Utility functions for commands ============================
+# unique_everseen from itertools recipes
+def unique(iterable, key=None):
+    "List unique elements, preserving order. Remember all elements ever seen."
+    # unique_everseen('AAAABBBCCDAABBB') --> A B C D
+    # unique_everseen('ABBCcAD', str.lower) --> A B C D
+    seen = set()
+    seen_add = seen.add
+    if key is None:
+        for element in filterfalse(seen.__contains__, iterable):
+            seen_add(element)
+            yield element
+    else:
+        for element in iterable:
+            k = key(element)
+            if k not in seen:
+                seen_add(k)
+                yield element
 
 
-# Function implementing the behaviours we want to execute when provided with a metadata object
-# from the driver.  This function will be used to generate a lower-arity function suitable
-# for use with store.with_cluster via partial application below.
-#
-# Note that "cluster" must be the last non-keyword arg here in order to make the partial
-# application happy
-def cluster_fn(export_fn, keyspace_names, options, cluster, keyspace_validation_fn = None):
+def with_cluster(cluster_fn, ctx):
+    return _with_cluster(cluster_fn, **({k:ctx.obj[k] for k in ["hosts","port","username","password"]}))
+
+
+def get_keyspaces(ctx, cluster):
+    keyspace_names = ctx.obj["keyspace_names"]
+
     metadata = cluster.metadata
-    keyspace_objects = build_keyspace_objects(keyspace_names, metadata)
-    log.info("Exporting schema for keyspaces %s", ','.join((k.name for k in keyspace_objects)))
+    keyspaces = build_keyspace_objects(keyspace_names, metadata)
 
-    if len(keyspace_objects) == 0:
-        log.info("No keyspace selected")
+    return [anonymize_keyspace(ks) for ks in keyspaces] if ctx.obj['anonymize'] else keyspaces
+
+
+def validate_keyspaces(keyspace_objs):
+    if len(keyspace_objs) == 0:
+        log.info("No keyspaces selected")
         exit(1)
-    if keyspace_validation_fn:
-        keyspace_validation_fn(keyspace_objects)
-
-    print(export_fn(keyspace_objects, options))
 
 
-def build_options(ctx):
-    return {'rf': ctx.obj['rf'], 'anonymize': ctx.obj['anonymize']}
+def get_cluster_metadata(cluster):
+    hosts = cluster.metadata.all_hosts()
+    unique_dcs = unique((host.datacenter for host in hosts))
+    return {"host_count": len(hosts), "dc_count": sum(1 for i in unique_dcs)}
 
 
+def gather_keyspaces(ctx):
+    partial_fn = partial(get_keyspaces, ctx)
+    keyspaces = with_cluster(partial_fn, ctx)
+
+    log.info("Exporting schema for keyspaces %s", ','.join((k.name for k in keyspaces)))
+
+    validate_keyspaces(keyspaces)
+    return keyspaces
+
+
+def gather_metadata(ctx):
+    metadata = {k : ctx.obj[k] for k in ["purpose", "maturity"]}
+    metadata.update(with_cluster(get_cluster_metadata, ctx))
+    return {k : metadata[k] for k in metadata.keys() if metadata[k] is not None}
+
+
+def export_keyspaces(ctx, export_fn, keyspace_objs, metadata, output_dir = None):
+    options = {'rf': ctx.obj['rf']}
+    export_dir = output_dir or ctx.obj["output-dir"]
+
+    if export_dir is None:
+        print(export_fn(keyspace_objs, metadata, options))
+    else:
+        for keyspace_obj in keyspace_objs:
+            with open(os.path.join(export_dir, keyspace_obj.name),'w') as output_file:
+                log.info("Writing schema for keyspace " + keyspace_obj.name + " to file " + output_file.name)
+                output_file.write(export_fn([keyspace_obj], metadata, options))
+
+
+# ============================ Command implementations ============================
 @export.command()
 @click.pass_context
 def export_cql(ctx):
-    my_fn = partial(cluster_fn, export_cql_schema, ctx.obj['keyspace_names'], build_options(ctx))
-    with_cluster(my_fn, **({k:ctx.obj[k] for k in ["hosts","port","username","password"]}))
+    """Export a schema as raw CQL statements"""
+    export_keyspaces(ctx, export_cql_schema, gather_keyspaces(ctx), gather_metadata(ctx))
 
 
 @export.command()
 @click.pass_context
 def export_gemini(ctx):
-    def my_export_fn(*args):
-        return to_string(export_gemini_schema(*args))
+    """Export a schema in a format suitable for use with the the Gemini data integrity test framework"""
+    keyspaces = gather_keyspaces(ctx)
 
-    def validation_fn(keyspaces):
-        if len(keyspaces) > 1:
-            log.error("Gemini schema doesn't support multiple keyspaces.")
-            exit(2)
+    if len(keyspaces) > 1:
+        log.error("Gemini schema doesn't support multiple keyspaces.")
+        exit(2)
 
-    my_fn = partial(cluster_fn, my_export_fn, ctx.obj['keyspace_names'], build_options(ctx))
-    with_cluster(my_fn, **({k:ctx.obj[k] for k in ["hosts","port","username","password"]}))
+    export_keyspaces(ctx, export_gemini_schema, keyspaces, gather_metadata(ctx))
 
+
+@export.command()
+@click.option('--token', help='Access token for schema storage on Github')
+@click.pass_context
+def contribute(ctx, token):
+    """Contribute schemas to Adelphi"""
+    if not ctx.obj["anonymize"]:
+        log.error("All schemas contributed to Adelphi must be anonymized")
+        exit(6)
+
+    with TemporaryDirectory() as tmpdir:
+        ctx.obj["output-dir"] = tmpdir
+        partial_fn = partial(get_keyspace_objects, ctx)
+        keyspace_objs = with_cluster(partial_fn, **({k:ctx.obj[k] for k in ["hosts","port","username","password"]}))
+        validate_keyspaces(keyspace_objs)
+
+        export_keyspaces(ctx, export_cql_schema, keyspace_objs)
+
+        gh = build_github(token)
+        origin_repo = build_origin_repo(gh)
+        fork_repo = origin_repo.create_fork()
+        branch_name = build_branch(gh, fork_repo)
+        commit_schemas(gh, fork_repo, tmpdir, branch_name)
+        build_pull_request(gh, origin_repo, branch_name)
 
 if __name__ == '__main__':
-    export(obj={})
+    export(obj={}, auto_envvar_prefix="ADELPHI")

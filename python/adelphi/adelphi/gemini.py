@@ -1,21 +1,35 @@
+# Copyright DataStax, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
 # Logic necessary to generate a string representation of a Gemini schema
 
 import json
 
 from cassandra.cqltypes import cqltype_to_python
 
-from adelphi.anonymize import anonymize_keyspace
 from adelphi.store import get_standard_columns_from_table_metadata, set_replication_factor
 
-def export_gemini_schema(keyspaces_metadata, options):
-    if options['anonymize']:
-        for ks in keyspaces_metadata:
-            anonymize_keyspace(ks)
+def export_gemini_schema(keyspace_objs, metadata, options):
 
     # set replication factor
-    set_replication_factor(keyspaces_metadata, options['rf'])
+    set_replication_factor(keyspace_objs, options['rf'])
 
-    keyspace = keyspaces_metadata[0]
+    metadata_generator = ("//@{} = {}".format(k,v) for k,v in metadata.items())
+    metadata_str = "//Schema metadata:\n" + "\n".join(metadata_generator)
+
+    keyspace = keyspace_objs[0]
     replication = json.loads(
         keyspace.replication_strategy.export_for_schema().replace("'", "\""))
     data = {
@@ -63,11 +77,8 @@ def export_gemini_schema(keyspaces_metadata, options):
 
         data["tables"].append(table_data)
 
-    return data
+    return metadata_str + "\n\n" + json.dumps(data, indent=4)
 
-
-def to_string(data):
-    return json.dumps(data, indent=4)
 
 def cql_type_to_gemini(cql_type, is_frozen=False):
     """

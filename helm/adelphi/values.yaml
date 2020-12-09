@@ -13,7 +13,7 @@ target:
   dc: dc2
   clusterName: target
   version: "4.0.0"
-  commit_hash:
+  git_identifier:
 
 gemini_test_duration: 1m
 

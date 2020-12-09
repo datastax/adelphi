@@ -1,3 +1,18 @@
+# Copyright DataStax, Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
 # Functions to facilitate interactions with the underlying data store
 
 import logging
@@ -36,8 +51,9 @@ def with_cluster(cluster_fn, hosts, port, username = None, password = None):
     cluster = Cluster(hosts, port=port, auth_provider=build_auth_provider(username,password), execution_profiles={EXEC_PROFILE_DEFAULT: ep})
     log.info("Connecting to the cluster to get metadata...")
     cluster.connect()
-    cluster_fn(cluster)
+    rv = cluster_fn(cluster)
     cluster.shutdown()
+    return rv
 
 
 def build_keyspace_objects(keyspaces, metadata):
@@ -63,10 +79,6 @@ def get_standard_columns_from_table_metadata(table_metadata):
     clustering_column_names = [c.name for c in table_metadata.clustering_key]
     standard_columns = []
     for c in list(table_metadata.columns.values()):
-        if 'udt' in c.cql_type:
-            log.warning("Ignoring column %s since udt are not supported." % c.name)
-            del table_metadata.columns[c.name]
-            continue
         if (c.name not in clustering_column_names
                 and c.name not in partition_column_names):
             standard_columns.append(c)
