@@ -1,5 +1,11 @@
 from adelphi import anonymize
-from adelphi.anonymize import COLUMN_PREFIX, get_name
+from adelphi.anonymize import KEYSPACE_PREFIX,\
+	COLUMN_PREFIX,\
+	TABLE_PREFIX,\
+	TYPE_PREFIX,\
+	FIELD_PREFIX,\
+	INDEX_PREFIX,\
+	get_name
 from schema_util import get_schema
 
 try:
@@ -8,6 +14,17 @@ except ImportError:
     import unittest  # noqa
 
 class TestCqlAnonymize(unittest.TestCase):
+
+	def setUp(self):
+		# clear state between tests
+		anonymize.name_map = {
+		    KEYSPACE_PREFIX: {},
+		    TABLE_PREFIX: {},
+		    COLUMN_PREFIX: {},
+		    TYPE_PREFIX: {},
+		    FIELD_PREFIX: {},
+		    INDEX_PREFIX: {}
+		}
 
 	def assertPrefixes(self, name_list, prefix):
 		for name in name_list:
@@ -25,21 +42,23 @@ class TestCqlAnonymize(unittest.TestCase):
 	def test_anonymize_nested_udt(self):
 		schema = get_schema()
 		keyspace = schema.keyspaces[0]
-		udt = keyspace.user_types["user"]
-		anonymize.anonymize_udts([udt])
-		self.assertTrue(udt.name.startswith("udt"))
-		self.assertPrefixes(udt.field_names, "fld")
-		self.assertEqual(udt.field_types, ["tuple<text,text>", "frozen<udt_0>"])
+		address = keyspace.user_types["address"]
+		user = keyspace.user_types["user"]
+		anonymize.anonymize_udts([address, user])
+		self.assertTrue(user.name.startswith("udt"))
+		self.assertPrefixes(user.field_names, "fld")
+		self.assertEqual(user.field_types, ["tuple<text,text>", "frozen<udt_0>"])
 
 	def test_anonymize_complex_udt(self):
 		schema = get_schema()
 		keyspace = schema.keyspaces[0]
-		udt = keyspace.user_types["collections"]
-		udts = keyspace.user_types.values()
-		anonymize.anonymize_udts(udts)
-		self.assertTrue(udt.name.startswith("udt"))
-		self.assertPrefixes(udt.field_names, "fld")
-		self.assertEqual(udt.field_types, ["frozen<udt_1>",\
+		address = keyspace.user_types["address"]
+		user = keyspace.user_types["user"]
+		collections = keyspace.user_types["collections"]
+		anonymize.anonymize_udts([address, user, collections])
+		self.assertTrue(collections.name.startswith("udt"))
+		self.assertPrefixes(collections.field_names, "fld")
+		self.assertEqual(collections.field_types, ["frozen<udt_1>",\
 			"frozen<map<frozen<udt_1>, frozen<udt_1>>>",\
 			"frozen<list<frozen<udt_0>>>",\
 			"frozen<tuple<frozen<udt_1>, frozen<udt_0>>>"])
@@ -78,14 +97,10 @@ class TestCqlAnonymize(unittest.TestCase):
 		self.assertPrefixes(columns, "col")
 
 		# check standard columns match their pk and ck definitions
-		self.assertEqual(columns[0], "col_0")
-		self.assertEqual(columns[1], "col_1")
-		self.assertEqual(columns[2], "col_2")
-		self.assertEqual(columns[3], "col_3")
-		self.assertEqual(table.partition_key[0].name, "col_0")
-		self.assertEqual(table.partition_key[1].name, "col_1")
-		self.assertEqual(table.clustering_key[0].name, "col_2")
-		self.assertEqual(table.clustering_key[1].name, "col_3")
+		self.assertEqual(columns[0], table.partition_key[0].name)
+		self.assertEqual(columns[1], table.partition_key[1].name)
+		self.assertEqual(columns[2], table.clustering_key[0].name)
+		self.assertEqual(columns[3], table.clustering_key[1].name)
 
 	def test_anonymize_keyspace(self):
 		schema = get_schema()

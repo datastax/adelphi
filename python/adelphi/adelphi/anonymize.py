@@ -35,10 +35,10 @@ def anonymize_keyspace(keyspace):
 
     # anonymize udts at once because they can reference
     # one another
-    udts = keyspace.user_types.values()
+    udts = sorted(keyspace.user_types.values(), key=lambda v: v.name)
     anonymize_udts(udts)
 
-    for table in keyspace.tables.values():
+    for table in sorted(keyspace.tables.values(), key=lambda v: v.name):
         anonymize_table(table)
 
     # remove functions, aggregates and views for now
@@ -95,7 +95,7 @@ def anonymize_table(table):
     for column in get_standard_columns_from_table_metadata(table):
         anonymize_column(column)
 
-    for index in list(table.indexes.values()):
+    for index in sorted(list(table.indexes.values()), key=lambda v: v.name):
         if (index.kind == "CUSTOM"):
             del table.indexes[index.name]
             continue

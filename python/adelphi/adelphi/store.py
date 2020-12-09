@@ -63,10 +63,6 @@ def get_standard_columns_from_table_metadata(table_metadata):
     clustering_column_names = [c.name for c in table_metadata.clustering_key]
     standard_columns = []
     for c in list(table_metadata.columns.values()):
-        if 'udt' in c.cql_type:
-            log.warning("Ignoring column %s since udt are not supported." % c.name)
-            del table_metadata.columns[c.name]
-            continue
         if (c.name not in clustering_column_names
                 and c.name not in partition_column_names):
             standard_columns.append(c)
