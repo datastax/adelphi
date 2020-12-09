@@ -49,7 +49,6 @@ def build_auth_provider(username = None,password = None):
 def with_cluster(cluster_fn, hosts, port, username = None, password = None):
     ep = ExecutionProfile(load_balancing_policy=default_lbp_factory())
     cluster = Cluster(hosts, port=port, auth_provider=build_auth_provider(username,password), execution_profiles={EXEC_PROFILE_DEFAULT: ep})
-    log.info("Connecting to the cluster to get metadata...")
     cluster.connect()
     rv = cluster_fn(cluster)
     cluster.shutdown()
