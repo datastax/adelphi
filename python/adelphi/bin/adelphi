@@ -170,15 +170,13 @@ def get_cluster_metadata(cluster):
     return {"host-count": len(hosts), "dc-count": sum(1 for i in unique_dcs)}
 
 
-def build_keyspace_map(props):
-    partial_fn = partial(get_keyspaces, props)
-    return with_cluster(partial_fn, props)
+def build_keyspace_map_and_metadata(props):
+    def build_fn(cluster):
+        metadata = {k : props[k] for k in ["purpose", "maturity"] if k in props}
+        metadata.update(get_cluster_metadata(cluster))
+        return (get_keyspaces(props, cluster), {k : metadata[k] for k in metadata.keys() if metadata[k]})
 
-
-def build_metadata(props):
-    metadata = {k : props[k] for k in ["purpose", "maturity"] if k in props}
-    metadata.update(with_cluster(get_cluster_metadata, props))
-    return {k : metadata[k] for k in metadata.keys() if metadata[k] is not None}
+    return with_cluster(build_fn, props)
 
 
 def export_keyspaces(props, export_fn, keyspace_map, metadata):
@@ -204,20 +202,21 @@ def export_keyspaces(props, export_fn, keyspace_map, metadata):
 @click.pass_context
 def export_cql(ctx):
     """Export a schema as raw CQL statements"""
-    export_keyspaces(ctx.obj, export_cql_schema, build_keyspace_map(ctx.obj), build_metadata(ctx.obj))
+    (keyspace_map, metadata) = build_keyspace_map_and_metadata(ctx.obj)
+    export_keyspaces(ctx.obj, export_cql_schema, keyspace_map, metadata)
 
 
 @export.command()
 @click.pass_context
 def export_gemini(ctx):
     """Export a schema in a format suitable for use with the the Gemini data integrity test framework"""
-    keyspace_map = build_keyspace_map(ctx.obj)
+    (keyspace_map, metadata) = build_keyspace_map_and_metadata(ctx.obj)
 
     if len(keyspace_map) > 1:
         log.error("Gemini schema doesn't support multiple keyspaces.")
         exit(2)
 
-    export_keyspaces(ctx.obj, export_gemini_schema, keyspace_map, build_metadata(ctx.obj))
+    export_keyspaces(ctx.obj, export_gemini_schema, keyspace_map, metadata)
 
 
 @export.command()
@@ -238,10 +237,12 @@ def contribute(ctx, token):
     with TemporaryDirectory() as tmpdir:
         props = ctx.obj.copy()
         props["output-dir"] = tmpdir
-        metadata = build_metadata(props)
+
+        (keyspace_map, metadata) = build_keyspace_map_and_metadata(ctx.obj)
         metadata["github_user"] = gh.get_user().login
         metadata["created_at"] = datetime.now().isoformat()
-        export_keyspaces(props, export_cql_schema, build_keyspace_map(props), metadata)
+
+        export_keyspaces(props, export_cql_schema, keyspace_map, metadata)
 
         if not sys.version_info[0] == 3:
             patch_repo(origin_repo)
