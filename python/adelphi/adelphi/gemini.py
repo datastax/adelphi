@@ -26,9 +26,6 @@ def export_gemini_schema(keyspace_objs, metadata, options):
     # set replication factor
     set_replication_factor(keyspace_objs, options['rf'])
 
-    metadata_generator = ("//@{} = {}".format(k,v) for k,v in metadata.items())
-    metadata_str = "//Schema metadata:\n" + "\n".join(metadata_generator)
-
     keyspace = keyspace_objs[0]
     replication = json.loads(
         keyspace.replication_strategy.export_for_schema().replace("'", "\""))
@@ -77,7 +74,7 @@ def export_gemini_schema(keyspace_objs, metadata, options):
 
         data["tables"].append(table_data)
 
-    return metadata_str + "\n\n" + json.dumps(data, indent=4)
+    return json.dumps(data, indent=4)
 
 
 def cql_type_to_gemini(cql_type, is_frozen=False):
