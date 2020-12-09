@@ -77,7 +77,7 @@ spec:
           clusterName: {{ .Values.target.clusterName }}
           serverType: cassandra
           serverVersion: {{ .Values.target.version }}
-          {{- if .Values.target.commit_hash }}
+          {{- if .Values.target.git_identifier }}
           serverImage: {{`{{inputs.parameters.registry_ip}}`}}:30000/adelphi/management-api-for-apache-cassandra
           {{- end }}
           managementApiAuth:
