@@ -60,7 +60,7 @@ spec:
         - echo "Extract Gemini schema using anonymizer script";
           pip install cassandra-driver;
           cd /workspace/adelphi/python/adelphi;
-          python3 setup.py install;
+          pip install .;
           adelphi --hosts="{{ .Values.source.clusterName }}-{{ .Values.source.dc }}-service" --username="{{ .Values.source.clusterName }}-superuser" --password="`cat /source-secret/password`" --keyspaces="{{ .Values.gemini_schema_keyspace }}" --no-anonymize export-gemini > /workspace/gemini_schema.json;
           echo "Done";
       volumeMounts:
