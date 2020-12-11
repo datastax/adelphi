@@ -13,17 +13,38 @@ dependencies = [
 if not PY3:
     dependencies.append('backports.tempfile ~= 1.0')
 
+long_description = ""
+with open("README.rst") as f:
+    long_description = f.read()
+
 setup(
    name='adelphi',
+   url='https://github.com/datastax/adelphi',
+   description='Tooling for Adelphi',
+   long_description=long_description,
    version='0.1.0',
-   author='Gianluca Righetto',
-   author_email='gianluca.righetto@datastax.com',
+   project_urls={
+      'Source': 'https://github.com/datastax/adelphi',
+      'Issues': 'https://github.com/datastax/adelphi/issues',
+   },
+   author='DataStax',
+   classifiers=[
+      'Development Status :: 3 - Alpha',
+      'Intended Audience :: Developers',
+      'License :: OSI Approved :: Apache Software License',
+      'Natural Language :: English',
+      'Operating System :: OS Independent',
+      'Programming Language :: Python',
+      'Programming Language :: Python :: 2.7',
+      'Programming Language :: Python :: 3.5',
+      'Programming Language :: Python :: 3.6',
+      'Programming Language :: Python :: 3.7',
+      'Programming Language :: Python :: 3.8',
+      'Programming Language :: Python :: 3.9',
+      'Programming Language :: Python :: Implementation :: CPython',
+      'Topic :: Software Development :: Libraries :: Python Modules'
+   ],
    packages=['adelphi'],
    scripts=['bin/adelphi'],
-   #url='http://pypi.python.org/pypi/PackageName/',
-   url='https://github.com/datastax/adelphi',
-   #license='LICENSE.txt',
-   description='Tooling for Adelphi',
-   #long_description=open('README.txt').read(),
    install_requires=dependencies,
 )
