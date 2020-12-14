@@ -88,10 +88,10 @@ Individual commands may have their own options and/or help text.  For example th
 
 > $ adelphi contribute --help  
 Usage: adelphi contribute [OPTIONS]  
->  
-   Contribute schemas to Adelphi  
->  
-Options:  
+  
+>    Contribute schemas to Adelphi  
+  
+> Options:  
   --token TEXT  Personal access token for Github user  
   --help        Show this message and exit.
 
