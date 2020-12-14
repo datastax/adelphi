@@ -7,22 +7,22 @@ This command extracts schemas for the specified keyspaces from a Cassandra insta
 
 The following will display the schemas for the keyspaces "foo" and "bar" on standard out: 
 
-> adelphi --keyspaces foo,bar export-cql
+    adelphi --keyspaces foo,bar export-cql
 
 If you wish to store the schemas in a directory "baz" you could use the following instead:
 
-> adelphi --keyspaces foo,bar --output-dir=baz export-cql
+    adelphi --keyspaces foo,bar --output-dir=baz export-cql
 
 ### export-gemini
 This command is similar to the "export-cql" command.  The difference is that retrieved schemas are displayed in a format suitable for use with Scylla's [Gemini](https://github.com/scylladb/gemini) tool.
 
 To display Gemini-formatted schemas for the keyspaces "foo" and "bar" use the following:
 
-> adelphi --keyspaces foo,bar export-gemini
+    adelphi --keyspaces foo,bar export-gemini
 
 And to store these schemas in a directory "baz":
 
-> adelphi --keyspaces foo,bar --output-dir=baz export-gemini
+    adelphi --keyspaces foo,bar --output-dir=baz export-gemini
 
 ### contribute
 This command automates the workflow of contributing one or more schemas to the Adelphi project.  The [Adelphi schema repository](https://github.com/datastax/adelphi-schemas) is implemented as a Github repository and contributions to this repository take the form of pull requests.  The workflow implemented by this command includes the following steps:
@@ -36,53 +36,53 @@ This command automates the workflow of contributing one or more schemas to the A
 
 The syntax for using this command looks very similar to the export commands above.  The following will create a pull request to contribute schemas for the keyspaces "foo" and "bar" to Adelphi:
 
-> adelphi --keyspaces foo,bar contribute
+    adelphi --keyspaces foo,bar contribute
 
 Authentication to Github is performed by way of a [personal access token](https://docs.github.com/en/free-pro-team@latest/github/authenticating-to-github/creating-a-personal-access-token).  You must create a token for your Github user before you can contribute your schema(s) to Adelphi.  The token can be provided to the command at execution time using a command-line argument but this is discouraged for security reasons.  Instead we recommend using an environment variable, in this case the ADELPHI_CONTRIBUTE_TOKEN environment variable.  We discuss using environment variables to pass command-line arguments in the "Options" section below.
 
 ## Options
 The "adelphi" application supports several command-line arguments.  The full list of arguments can be accessed via the following:
 
-> adelphi --help
+    adelphi --help
 
 The output of this command provides a brief summary of each argument:
 
-> $ adelphi --help
-Usage: adelphi [OPTIONS] COMMAND [ARGS]...  
-  
-Options:  
-  --hosts TEXT                  Comma-separated list of contact points  
-                                [default: 127.0.0.1]  
-  
-  --port INTEGER                Database RPC port  [default: 9042]  
-  --username TEXT               Database username  
-  --password TEXT               Database password  
-  --keyspaces TEXT              Comma-separated list of keyspaces to include.  
-                                If not specified all non-system keypaces will  
-                                be included  
-  
-  --rf INTEGER                  Replication factor to override original  
-                                setting. Optional.  
-  
-  --anonymize / --no-anonymize  Enable/disable schema anonymization  [default:  
-                                True]  
-  
-  --output-dir TEXT             Directory schema files should be written to.  
-                                If not specified, it will write to stdout  
-  
-  --purpose TEXT                Comments on the anticipated purpose of this  
-                                schema.  Optional.  
-  
-  --maturity TEXT               The maturity of this schema.  Sample values  
-                                would include 'alpha', 'beta', 'dev', 'test'  
-                                or 'prod'.  Optional.  
-  
-  --help                        Show this message and exit.  
-  
-Commands:  
-  contribute     Contribute schemas to Adelphi  
-  export-cql     Export a schema as raw CQL statements  
-  export-gemini  Export a schema in a format suitable for use with the the...
+    $ adelphi --help
+    Usage: adelphi [OPTIONS] COMMAND [ARGS]...
+    
+    Options:
+      --hosts TEXT                  Comma-separated list of contact points
+                                    [default: 127.0.0.1]
+    
+      --port INTEGER                Database RPC port  [default: 9042]
+      --username TEXT               Database username
+      --password TEXT               Database password
+      --keyspaces TEXT              Comma-separated list of keyspaces to include.
+                                    If not specified all non-system keypaces will
+                                    be included
+    
+      --rf INTEGER                  Replication factor to override original
+                                    setting. Optional.
+    
+      --anonymize / --no-anonymize  Enable/disable schema anonymization  [default:
+                                    True]
+    
+      --output-dir TEXT             Directory schema files should be written to.
+                                    If not specified, it will write to stdout
+    
+      --purpose TEXT                Comments on the anticipated purpose of this
+                                    schema.  Optional.
+    
+      --maturity TEXT               The maturity of this schema.  Sample values
+                                    would include 'alpha', 'beta', 'dev', 'test'
+                                    or 'prod'.  Optional.
+    
+      --help                        Show this message and exit.
+    
+    Commands:
+      contribute     Contribute schemas to Adelphi
+      export-cql     Export a schema as raw CQL statements
+      export-gemini  Export a schema in a format suitable for use with the the...
 
 Individual commands may have their own options and/or help text.  For example the help for the "contribute" command is as follows:
 
