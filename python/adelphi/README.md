@@ -48,52 +48,52 @@ The "adelphi" application supports several command-line arguments.  The full lis
 The output of this command provides a brief summary of each argument:
 
 > $ adelphi --help
-> Usage: adelphi [OPTIONS] COMMAND [ARGS]...
->
-> Options:
->   --hosts TEXT                  Comma-separated list of contact points
->                                 [default: 127.0.0.1]
->
->   --port INTEGER                Database RPC port  [default: 9042]
->   --username TEXT               Database username
->   --password TEXT               Database password
->   --keyspaces TEXT              Comma-separated list of keyspaces to include.
->                                 If not specified all non-system keypaces will
->                                 be included
->
->   --rf INTEGER                  Replication factor to override original
->                                 setting. Optional.
->
->   --anonymize / --no-anonymize  Enable/disable schema anonymization  [default:
->                                 True]
->
->   --output-dir TEXT             Directory schema files should be written to.
->                                 If not specified, it will write to stdout
->
->   --purpose TEXT                Comments on the anticipated purpose of this
->                                 schema.  Optional.
->
->   --maturity TEXT               The maturity of this schema.  Sample values
->                                 would include 'alpha', 'beta', 'dev', 'test'
->                                 or 'prod'.  Optional.
->
->   --help                        Show this message and exit.
->
-> Commands:
->   contribute     Contribute schemas to Adelphi
->   export-cql     Export a schema as raw CQL statements
->   export-gemini  Export a schema in a format suitable for use with the the...
+Usage: adelphi [OPTIONS] COMMAND [ARGS]...  
+  
+Options:  
+  --hosts TEXT                  Comma-separated list of contact points  
+                                [default: 127.0.0.1]  
+  
+  --port INTEGER                Database RPC port  [default: 9042]  
+  --username TEXT               Database username  
+  --password TEXT               Database password  
+  --keyspaces TEXT              Comma-separated list of keyspaces to include.  
+                                If not specified all non-system keypaces will  
+                                be included  
+  
+  --rf INTEGER                  Replication factor to override original  
+                                setting. Optional.  
+  
+  --anonymize / --no-anonymize  Enable/disable schema anonymization  [default:  
+                                True]  
+  
+  --output-dir TEXT             Directory schema files should be written to.  
+                                If not specified, it will write to stdout  
+  
+  --purpose TEXT                Comments on the anticipated purpose of this  
+                                schema.  Optional.  
+  
+  --maturity TEXT               The maturity of this schema.  Sample values  
+                                would include 'alpha', 'beta', 'dev', 'test'  
+                                or 'prod'.  Optional.  
+  
+  --help                        Show this message and exit.  
+  
+Commands:  
+  contribute     Contribute schemas to Adelphi  
+  export-cql     Export a schema as raw CQL statements  
+  export-gemini  Export a schema in a format suitable for use with the the...
 
 Individual commands may have their own options and/or help text.  For example the help for the "contribute" command is as follows:
 
-> $ adelphi contribute --help
-> Usage: adelphi contribute [OPTIONS]
->
->   Contribute schemas to Adelphi
->
-> Options:
->   --token TEXT  Personal access token for Github user
->   --help        Show this message and exit.
+> $ adelphi contribute --help  
+Usage: adelphi contribute [OPTIONS]  
+  
+   Contribute schemas to Adelphi  
+  
+Options:  
+  --token TEXT  Personal access token for Github user  
+  --help        Show this message and exit.
 
 ### Anonymization
 The anonymization process can be explicitly enabled or disabled using the "--anonymize" and "--no-anonymize" arguments (respectively).  The default value will anonymize schemas so unless you explicitly wish to disable anonymization you don't need to supply either argument.  Also note that the "--no-anonymize" argument cannot be used when contirbuting schemas to Adelphi.  All schemas contributed to Adelphi *must* be anonymized.  The application will exit with a warning message if you attempt to submit a schema without anonymization.
