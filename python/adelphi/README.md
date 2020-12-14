@@ -38,7 +38,7 @@ The syntax for using this command looks very similar to the export commands abov
 
     adelphi --keyspaces foo,bar contribute
 
-Authentication to Github is performed by way of a [personal access token](https://docs.github.com/en/free-pro-team@latest/github/authenticating-to-github/creating-a-personal-access-token).  You must create a token for your Github user before you can contribute your schema(s) to Adelphi.  The token can be provided to the command at execution time using a command-line argument but this is discouraged for security reasons.  Instead we recommend using an environment variable, in this case the ADELPHI_CONTRIBUTE_TOKEN environment variable.  We discuss using environment variables to pass command-line arguments in the "Options" section below.
+Authentication to Github is performed by way of a [personal access token](https://docs.github.com/en/free-pro-team@latest/github/authenticating-to-github/creating-a-personal-access-token).  You must create a token for your Github user before you can contribute your schema(s) to Adelphi.  The token can be provided to the command at execution time using a command-line argument but this is discouraged for security reasons.  Instead we recommend using an environment variable, in this case the **ADELPHI_CONTRIBUTE_TOKEN** environment variable.  We discuss using environment variables to pass command-line arguments in the "Options" section below.
 
 ## Options
 The "adelphi" application supports several command-line arguments.  The full list of arguments can be accessed via the following:
@@ -104,4 +104,4 @@ Values for individual arguments can also be specified using corresponding enviro
     export ADELPHI_KEYSPACES=foo,bar
     adelphi export-cql
 
-To supply a value for a command-specific parameter use an environment variable of the form "ADELPHI_COMMAND_ARGUMENT" where "COMMAND" is an the uppercase name of the command and "ARGUMENT" the uppercase name of the argument.  As mentioned above this feature becomes quite useful for providing the Github personal access token.  Using the ADELPHI_CONTRIBUTE_TOKEN environment variable removes the need to specify any security materials when invoking the application.
+To supply a value for a command-specific parameter use an environment variable of the form "ADELPHI_COMMAND_ARGUMENT" where "COMMAND" is an the uppercase name of the command and "ARGUMENT" the uppercase name of the argument.  As mentioned above this feature becomes quite useful for providing the Github personal access token.  Using the **ADELPHI_CONTRIBUTE_TOKEN** environment variable removes the need to specify any security materials when invoking the application.
