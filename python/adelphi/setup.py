@@ -25,6 +25,7 @@ setup(
     long_description_content_type="text/markdown",
     version='0.1.0',
     project_urls={
+        'Documentation': 'https://github.com/datastax/adelphi/blob/master/python/adelphi/README.md',
         'Source': 'https://github.com/datastax/adelphi',
         'Issues': 'https://github.com/datastax/adelphi/issues',
     },
