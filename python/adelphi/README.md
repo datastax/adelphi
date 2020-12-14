@@ -86,14 +86,14 @@ Commands:
 
 Individual commands may have their own options and/or help text.  For example the help for the "contribute" command is as follows:
 
-> $ adelphi contribute --help  
-Usage: adelphi contribute [OPTIONS]  
-  
->    Contribute schemas to Adelphi  
-  
-> Options:  
-  --token TEXT  Personal access token for Github user  
-  --help        Show this message and exit.
+    $ adelphi contribute --help  
+    Usage: adelphi contribute [OPTIONS]
+    
+       Contribute schemas to Adelphi
+    
+    Options:
+      --token TEXT  Personal access token for Github user
+      --help        Show this message and exit.
 
 ### Anonymization
 The anonymization process can be explicitly enabled or disabled using the "--anonymize" and "--no-anonymize" arguments (respectively).  The default value will anonymize schemas so unless you explicitly wish to disable anonymization you don't need to supply either argument.  Also note that the "--no-anonymize" argument cannot be used when contirbuting schemas to Adelphi.  All schemas contributed to Adelphi *must* be anonymized.  The application will exit with a warning message if you attempt to submit a schema without anonymization.
@@ -101,7 +101,7 @@ The anonymization process can be explicitly enabled or disabled using the "--ano
 ### Paramters via environment variables
 Values for individual arguments can also be specified using corresponding environment variables.  The name of the environment variable to use takes the form "ADELPHI_ARGUMENT" where "ARGUMENT" is the uppercase name of the argument.  So for example the following is equivalent to the first example in the "export-cql" section above:
 
-> export ADELPHI_KEYSPACES=foo,bar  
-adelphi export-cql
+    export ADELPHI_KEYSPACES=foo,bar
+    adelphi export-cql
 
 To supply a value for a command-specific parameter use an environment variable of the form "ADELPHI_COMMAND_ARGUMENT" where "COMMAND" is an the uppercase name of the command and "ARGUMENT" the uppercase name of the argument.  As mentioned above this feature becomes quite useful for providing the Github personal access token.  Using the ADELPHI_CONTRIBUTE_TOKEN environment variable removes the need to specify any security materials when invoking the application.
