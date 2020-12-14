@@ -84,7 +84,7 @@ The output of this command provides a brief summary of each argument:
                                     setting. Optional.
     
       --anonymize / --no-anonymize  Enable/disable schema anonymization  [default:
-                                    True]
+                                    anonymization enabled]
     
       --output-dir TEXT             Directory schema files should be written to.
                                     If not specified, it will write to stdout
