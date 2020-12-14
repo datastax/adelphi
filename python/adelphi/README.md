@@ -102,6 +102,6 @@ The anonymization process can be explicitly enabled or disabled using the "--ano
 Values for individual arguments can also be specified using corresponding environment variables.  The name of the environment variable to use takes the form "ADELPHI_ARGUMENT" where "ARGUMENT" is the uppercase name of the argument.  So for example the following is equivalent to the first example in the "export-cql" section above:
 
 > export ADELPHI_KEYSPACES=foo,bar  
-> adelphi export-cql
+adelphi export-cql
 
 To supply a value for a command-specific parameter use an environment variable of the form "ADELPHI_COMMAND_ARGUMENT" where "COMMAND" is an the uppercase name of the command and "ARGUMENT" the uppercase name of the argument.  As mentioned above this feature becomes quite useful for providing the Github personal access token.  Using the ADELPHI_CONTRIBUTE_TOKEN environment variable removes the need to specify any security materials when invoking the application.
