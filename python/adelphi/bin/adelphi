@@ -20,8 +20,8 @@ import logging
 import os
 import os.path
 import sys
-from base64 import b64encode, urlsafe_b64encode
-from datetime import datetime
+from base64 import urlsafe_b64encode
+from datetime import datetime, tzinfo, timedelta
 from functools import partial
 
 try:
@@ -33,6 +33,20 @@ try:
     from tempfile import TemporaryDirectory
 except ImportError:
     from backports.tempfile import TemporaryDirectory
+
+try:
+    from datetime import timezone
+    utc = timezone.utc
+except ImportError:
+    class UTC(tzinfo):
+        def utcoffset(self, dt):
+            return timedelta(0)
+        def tzname(self, dt):
+            return "UTC"
+        def dst(self, dt):
+            return timedelta(0)
+    utc = UTC()
+
 
 import click
 
@@ -50,8 +64,12 @@ log = logging.getLogger('adelphi')
 # Final version of PyGithub with Python 2.x support includes a bug that appears when users
 # are part of a Github organization.  See https://github.com/datastax/adelphi/issues/70
 # for more detail
+#
+# Source below is Repository.create_fork from v1.45 + a fix for the bug referenced above.
+# See https://github.com/PyGithub/PyGithub/blob/v1.45/github/Repository.py#L2075-L2090 for the
+# base impl from v1.45.
 def patch_repo(repo):
-    log.info("Patching Repository.create_fork")
+    log.info("Adding safe_create_fork function to github.Repository")
     import six
     from github import GithubObject, Repository
     def safe_create_fork(self, organization=GithubObject.NotSet):
@@ -137,18 +155,12 @@ def with_cluster(cluster_fn, props):
     return _with_cluster(cluster_fn, **({k:props[k] for k in ["hosts", "port", "username", "password"]}))
 
 
-def hash_keyspace_name(ks):
+def build_keyspace_id(ks):
     m = hashlib.sha256()
     m.update(ks.name.encode("utf-8"))
-    return m.digest()
-
-
-def hash_to_filename(hash_bytes):
-    return urlsafe_b64encode(hash_bytes).decode('ascii')
-
-
-def hash_to_str(hash_bytes):
-    return b64encode(hash_bytes).decode('ascii')
+    # Leverage the urlsafe base64 encoding defined in RFC 4648, section 5 to provide an ID which can
+    # safely be used for filenames as well
+    return urlsafe_b64encode(m.digest()).decode('ascii')
 
 
 def get_keyspaces(props, cluster):
@@ -161,7 +173,7 @@ def get_keyspaces(props, cluster):
         exit(1)
 
     log.info("Processing the following keyspaces: %s", ','.join((ks.name for ks in keyspaces)))
-    return {anonymize_keyspace(ks) if props['anonymize'] else ks : hash_keyspace_name(ks) for ks in keyspaces}
+    return {anonymize_keyspace(ks) if props['anonymize'] else ks : build_keyspace_id(ks) for ks in keyspaces}
 
 
 def get_cluster_metadata(cluster):
@@ -174,6 +186,7 @@ def build_keyspace_map_and_metadata(props):
     def build_fn(cluster):
         metadata = {k : props[k] for k in ["purpose", "maturity"] if k in props}
         metadata.update(get_cluster_metadata(cluster))
+        metadata["creation_timestamp"] = datetime.now(utc).isoformat()
         return (get_keyspaces(props, cluster), {k : metadata[k] for k in metadata.keys() if metadata[k]})
 
     return with_cluster(build_fn, props)
@@ -186,15 +199,14 @@ def export_keyspaces(props, export_fn, keyspace_map, metadata):
     if export_dir is None:
         print(export_fn(keyspace_map.keys(), metadata, options))
     else:
-        for (keyspace_obj, hashed_ks_name) in keyspace_map.items():
+        for (keyspace_obj, keyspace_id) in keyspace_map.items():
             # Output filename should use the file-safe alphabet for b64 encoding
-            output_file_name = hash_to_filename(hashed_ks_name) if props["anonymize"] else keyspace_obj.name
+            output_file_name = keyspace_id if props["anonymize"] else keyspace_obj.name
             with open(os.path.join(export_dir, output_file_name),'w') as output_file:
                 log.info("Writing schema for keyspace " + keyspace_obj.name + " to file " + output_file.name)
-                # Metadata string for b64 encoded keyspace name should use the conventional encoding
-                metadata['hashed_ks_name'] = hash_to_str(hashed_ks_name)
+                metadata['keyspace_id'] = keyspace_id
                 output_file.write(export_fn([keyspace_obj], metadata, options))
-                del metadata['hashed_ks_name']
+                del metadata['keyspace_id']
 
 
 # ============================ Command implementations ============================
@@ -240,7 +252,6 @@ def contribute(ctx, token):
 
         (keyspace_map, metadata) = build_keyspace_map_and_metadata(ctx.obj)
         metadata["github_user"] = gh.get_user().login
-        metadata["created_at"] = datetime.now().isoformat()
 
         export_keyspaces(props, export_cql_schema, keyspace_map, metadata)
 
