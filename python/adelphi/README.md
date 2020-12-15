@@ -120,7 +120,7 @@ None of the commands above *require* you to specify keyspaces for export.  If yo
 ### A quick note on anonymization
 The anonymization process can be explicitly enabled or disabled using the "--anonymize" and "--no-anonymize" arguments (respectively).  The default value will anonymize schemas so unless you explicitly wish to disable anonymization you don't need to supply either argument.  Also note that since all contributed schemas *must* be anonymized the "--no-anonymize" argument cannot be used when contributing schemas to Adelphi.  Supplying this argument when contributing one or more schemas will cause the application to exit with an error message.
 
-### Paramters via environment variables
+### Parameters via environment variables
 Values for individual arguments can also be specified using corresponding environment variables.  The name of the environment variable to use takes the form "ADELPHI_ARGUMENT" where "ARGUMENT" is the uppercase name of the argument.  So for example the following is equivalent to the first example in the "export-cql" section above:
 
     export ADELPHI_KEYSPACES=foo,bar
