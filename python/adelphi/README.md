@@ -9,7 +9,7 @@ A tool for interacting with the DataStax [Adelphi](https://github.com/datastax/a
 * Displaying these formatted schemas on standard out or writing them to the filesystem
 * Automate a workflow for contributing anonymized schemas to the public [Adelphi schema repository](https://github.com/datastax/adelphi-schemas)
 
-The anonymization process replaces all keyspace names, table names and table column names with a generic identifier.  You can use the "adelphi" application to extract, format and display schemas from your Cassandra clusters without contributing these schemas to the Adelphi project, and for this use case anonymization is not required.  Anonymization *is* required anytime you contribute schemas to the Adelphi project.  All the schemas in our repository are publicly visible so to avoid *any* possible leakage of proprietary information we can only accept schemas which have been anonymized.
+The anonymization process replaces all keyspace names, table names and table column names with a generic identifier.  You can use the "adelphi" application to extract, format and display schemas from your Cassandra clusters without contributing these schemas to the Adelphi project, and for this use case anonymization is not required.  Anonymization *is* required anytime you contribute schemas to the Adelphi project.  __All the schemas in our repository are publicly visible so to avoid *any* possible leakage of proprietary information we can only accept schemas which have been anonymized__.
 
 This package supports Python 2.7.x as well as Python 3.5 through 3.9.
 
