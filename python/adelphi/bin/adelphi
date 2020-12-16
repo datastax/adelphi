@@ -198,7 +198,7 @@ def export_keyspaces(props, export_fn, keyspace_map, metadata):
     export_dir = props["output-dir"]
 
     if export_dir is None:
-        print(export_fn(keyspace_map.keys(), metadata, options))
+        print(export_fn(iter(keyspace_map.keys()), metadata, options))
     else:
         for (keyspace_obj, keyspace_id) in keyspace_map.items():
             # Output filename should use the file-safe alphabet for b64 encoding

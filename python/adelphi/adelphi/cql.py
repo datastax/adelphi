@@ -18,17 +18,17 @@
 from adelphi.anonymize import anonymize_keyspace
 from adelphi.store import set_replication_factor
 
-def export_cql_schema(keyspace_objs, metadata, options):
+def export_cql_schema(keyspace_objs_iter, metadata, options):
 
     # set replication factor
-    set_replication_factor(keyspace_objs, options['rf'])
+    set_replication_factor(keyspace_objs_iter, options['rf'])
 
     metadata_generator = ("//@{} = {}".format(k,v) for k,v in metadata.items())
     metadata_str = "//Schema metadata:\n" + "\n".join(metadata_generator)
 
     # build CQL statements string
-    cql_str = "\n\n".join(ks.export_as_string() for ks in keyspace_objs)
-    
+    cql_str = "\n\n".join(ks.export_as_string() for ks in keyspace_objs_iter)
+
     # transform CREATE statements to include `IF NOT EXISTS`
     # TODO: shift this around to a regex so that we can do the whole thing in a single pass
     cql_str = cql_str.replace("CREATE TABLE", "CREATE TABLE IF NOT EXISTS") \
