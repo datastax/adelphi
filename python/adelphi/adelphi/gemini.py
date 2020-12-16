@@ -26,7 +26,7 @@ def export_gemini_schema(keyspace_objs, metadata, options):
     # set replication factor
     set_replication_factor(keyspace_objs, options['rf'])
 
-    keyspace = keyspace_objs[0]
+    keyspace = list(keyspace_objs)[0]
     replication = json.loads(
         keyspace.replication_strategy.export_for_schema().replace("'", "\""))
     data = {
