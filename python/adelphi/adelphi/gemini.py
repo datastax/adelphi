@@ -21,12 +21,12 @@ from cassandra.cqltypes import cqltype_to_python
 
 from adelphi.store import get_standard_columns_from_table_metadata, set_replication_factor
 
-def export_gemini_schema(keyspace_objs, metadata, options):
+def export_gemini_schema(keyspace_objs_iter, metadata, options):
 
     # set replication factor
-    set_replication_factor(keyspace_objs, options['rf'])
+    set_replication_factor(keyspace_objs_iter, options['rf'])
 
-    keyspace = keyspace_objs[0]
+    keyspace = next(keyspace_objs_iter)
     replication = json.loads(
         keyspace.replication_strategy.export_for_schema().replace("'", "\""))
     data = {

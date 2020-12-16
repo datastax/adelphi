@@ -15,9 +15,13 @@
 # limitations under the License.
 
 import argparse
+import hashlib
 import logging
 import os
 import os.path
+import sys
+from base64 import urlsafe_b64encode
+from datetime import datetime, tzinfo, timedelta
 from functools import partial
 
 try:
@@ -29,6 +33,20 @@ try:
     from tempfile import TemporaryDirectory
 except ImportError:
     from backports.tempfile import TemporaryDirectory
+
+try:
+    from datetime import timezone
+    utc = timezone.utc
+except ImportError:
+    class UTC(tzinfo):
+        def utcoffset(self, dt):
+            return timedelta(0)
+        def tzname(self, dt):
+            return "UTC"
+        def dst(self, dt):
+            return timedelta(0)
+    utc = UTC()
+
 
 import click
 
@@ -42,6 +60,36 @@ from adelphi.store import with_cluster as _with_cluster
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger('adelphi')
 
+
+# Final version of PyGithub with Python 2.x support includes a bug that appears when users
+# are part of a Github organization.  See https://github.com/datastax/adelphi/issues/70
+# for more detail
+#
+# Source below is Repository.create_fork from v1.45 + a fix for the bug referenced above.
+# See https://github.com/PyGithub/PyGithub/blob/v1.45/github/Repository.py#L2075-L2090 for the
+# base impl from v1.45.
+def patch_repo(repo):
+    log.info("Adding safe_create_fork function to github.Repository")
+    import six
+    from github import GithubObject, Repository
+    def safe_create_fork(self, organization=GithubObject.NotSet):
+        # TODO: I'm not sure we need to support the non-default string case here... maintaining
+        # it for now to preserve fidelity with the 1.45 impl
+        assert organization is GithubObject.NotSet or isinstance(
+            organization, (str, six.text_type)
+        ), organization
+        post_parameters = {}
+        if organization is not GithubObject.NotSet:
+            post_parameters["organization"] = organization
+        headers, data = self._requester.requestJsonAndCheck(
+            "POST", self.url + "/forks", input=post_parameters,
+        )
+        return Repository.Repository(self._requester, headers, data, completed=True)
+
+    import types
+    repo.safe_create_fork = types.MethodType(safe_create_fork, repo)
+
+
 # Note: click assumes a type of string and a required value of False unless explicitly specified
 @click.group()
 @click.option('--hosts', default='127.0.0.1', show_default=True, help='Comma-separated list of contact points')
@@ -51,12 +99,12 @@ log = logging.getLogger('adelphi')
 @click.option('--keyspaces',
               help='Comma-separated list of keyspaces to include. If not specified all non-system keypaces will be included')
 @click.option('--rf', type=int, help='Replication factor to override original setting. Optional.')
-@click.option('--anonymize/--no-anonymize', default=True, show_default=True, help="Enable/disable schema anonymization")
+@click.option('--no-anonymize', help="Disable schema anonymization", is_flag=True)
 @click.option('--output-dir', help='Directory schema files should be written to. If not specified, it will write to stdout')
 @click.option('--purpose', help='Comments on the anticipated purpose of this schema.  Optional.')
 @click.option('--maturity', help="The maturity of this schema.  Sample values would include 'alpha', 'beta', 'dev', 'test' or 'prod'.  Optional.")
 @click.pass_context
-def export(ctx, hosts, port, username, password, keyspaces, rf, anonymize, output_dir, purpose, maturity):
+def export(ctx, hosts, port, username, password, keyspaces, rf, no_anonymize, output_dir, purpose, maturity):
 
     ctx.ensure_object(dict)
 
@@ -76,9 +124,9 @@ def export(ctx, hosts, port, username, password, keyspaces, rf, anonymize, outpu
     ctx.obj['port'] = port
     ctx.obj['username'] = username
     ctx.obj['password'] = password
-    ctx.obj['keyspace_names'] = keyspaces.split(',') if keyspaces is not None else None
+    ctx.obj['keyspace-names'] = keyspaces.split(',') if keyspaces is not None else None
     ctx.obj['rf'] = rf
-    ctx.obj['anonymize'] = anonymize
+    ctx.obj['anonymize'] = not no_anonymize
     ctx.obj['output-dir'] = output_dir
     ctx.obj['purpose'] = purpose
     ctx.obj['maturity'] = maturity
@@ -103,58 +151,63 @@ def unique(iterable, key=None):
                 yield element
 
 
-def with_cluster(cluster_fn, ctx):
-    return _with_cluster(cluster_fn, **({k:ctx.obj[k] for k in ["hosts","port","username","password"]}))
+def with_cluster(cluster_fn, props):
+    return _with_cluster(cluster_fn, **({k:props[k] for k in ["hosts", "port", "username", "password"]}))
 
 
-def get_keyspaces(ctx, cluster):
-    keyspace_names = ctx.obj["keyspace_names"]
+def build_keyspace_id(ks):
+    m = hashlib.sha256()
+    m.update(ks.name.encode("utf-8"))
+    # Leverage the urlsafe base64 encoding defined in RFC 4648, section 5 to provide an ID which can
+    # safely be used for filenames as well
+    return urlsafe_b64encode(m.digest()).decode('ascii')
 
+
+def get_keyspaces(props, cluster):
+    keyspace_names = props["keyspace-names"]
     metadata = cluster.metadata
     keyspaces = build_keyspace_objects(keyspace_names, metadata)
 
-    return [anonymize_keyspace(ks) for ks in keyspaces] if ctx.obj['anonymize'] else keyspaces
-
-
-def validate_keyspaces(keyspace_objs):
-    if len(keyspace_objs) == 0:
-        log.info("No keyspaces selected")
+    if len(keyspaces) == 0:
+        log.info("No valid keyspaces selected")
         exit(1)
+
+    log.info("Processing the following keyspaces: %s", ','.join((ks.name for ks in keyspaces)))
+    base_map = { ks : build_keyspace_id(ks) for ks in keyspaces}
+    return {anonymize_keyspace(ks) if props['anonymize'] else ks : keyspace_id for (ks, keyspace_id) in base_map.items()}
 
 
 def get_cluster_metadata(cluster):
     hosts = cluster.metadata.all_hosts()
     unique_dcs = unique((host.datacenter for host in hosts))
-    return {"host_count": len(hosts), "dc_count": sum(1 for i in unique_dcs)}
+    return {"host-count": len(hosts), "dc-count": sum(1 for i in unique_dcs)}
 
 
-def gather_keyspaces(ctx):
-    partial_fn = partial(get_keyspaces, ctx)
-    keyspaces = with_cluster(partial_fn, ctx)
+def build_keyspace_map_and_metadata(props):
+    def build_fn(cluster):
+        metadata = {k : props[k] for k in ["purpose", "maturity"] if k in props}
+        metadata.update(get_cluster_metadata(cluster))
+        metadata["creation_timestamp"] = datetime.now(utc).isoformat()
+        return (get_keyspaces(props, cluster), {k : metadata[k] for k in metadata.keys() if metadata[k]})
 
-    log.info("Exporting schema for keyspaces %s", ','.join((k.name for k in keyspaces)))
-
-    validate_keyspaces(keyspaces)
-    return keyspaces
-
-
-def gather_metadata(ctx):
-    metadata = {k : ctx.obj[k] for k in ["purpose", "maturity"]}
-    metadata.update(with_cluster(get_cluster_metadata, ctx))
-    return {k : metadata[k] for k in metadata.keys() if metadata[k] is not None}
+    return with_cluster(build_fn, props)
 
 
-def export_keyspaces(ctx, export_fn, keyspace_objs, metadata, output_dir = None):
-    options = {'rf': ctx.obj['rf']}
-    export_dir = output_dir or ctx.obj["output-dir"]
+def export_keyspaces(props, export_fn, keyspace_map, metadata):
+    options = {'rf': props['rf']}
+    export_dir = props["output-dir"]
 
     if export_dir is None:
-        print(export_fn(keyspace_objs, metadata, options))
+        print(export_fn(iter(keyspace_map.keys()), metadata, options))
     else:
-        for keyspace_obj in keyspace_objs:
-            with open(os.path.join(export_dir, keyspace_obj.name),'w') as output_file:
+        for (keyspace_obj, keyspace_id) in keyspace_map.items():
+            # Output filename should use the file-safe alphabet for b64 encoding
+            output_file_name = keyspace_id if props["anonymize"] else keyspace_obj.name
+            with open(os.path.join(export_dir, output_file_name),'w') as output_file:
                 log.info("Writing schema for keyspace " + keyspace_obj.name + " to file " + output_file.name)
-                output_file.write(export_fn([keyspace_obj], metadata, options))
+                metadata['keyspace_id'] = keyspace_id
+                output_file.write(export_fn(iter([keyspace_obj]), metadata, options))
+                del metadata['keyspace_id']
 
 
 # ============================ Command implementations ============================
@@ -162,24 +215,25 @@ def export_keyspaces(ctx, export_fn, keyspace_objs, metadata, output_dir = None)
 @click.pass_context
 def export_cql(ctx):
     """Export a schema as raw CQL statements"""
-    export_keyspaces(ctx, export_cql_schema, gather_keyspaces(ctx), gather_metadata(ctx))
+    (keyspace_map, metadata) = build_keyspace_map_and_metadata(ctx.obj)
+    export_keyspaces(ctx.obj, export_cql_schema, keyspace_map, metadata)
 
 
 @export.command()
 @click.pass_context
 def export_gemini(ctx):
     """Export a schema in a format suitable for use with the the Gemini data integrity test framework"""
-    keyspaces = gather_keyspaces(ctx)
+    (keyspace_map, metadata) = build_keyspace_map_and_metadata(ctx.obj)
 
-    if len(keyspaces) > 1:
+    if len(keyspace_map) > 1:
         log.error("Gemini schema doesn't support multiple keyspaces.")
         exit(2)
 
-    export_keyspaces(ctx, export_gemini_schema, keyspaces, gather_metadata(ctx))
+    export_keyspaces(ctx.obj, export_gemini_schema, keyspace_map, metadata)
 
 
 @export.command()
-@click.option('--token', help='Access token for schema storage on Github')
+@click.option('--token', help='Personal access token for Github user')
 @click.pass_context
 def contribute(ctx, token):
     """Contribute schemas to Adelphi"""
@@ -187,20 +241,30 @@ def contribute(ctx, token):
         log.error("All schemas contributed to Adelphi must be anonymized")
         exit(6)
 
+    if ctx.obj["output-dir"]:
+        log.info("Output directory argument is ignored when contributing a schema to Adelphi")
+
+    gh = build_github(token)
+    origin_repo = build_origin_repo(gh)
+
     with TemporaryDirectory() as tmpdir:
-        ctx.obj["output-dir"] = tmpdir
-        partial_fn = partial(get_keyspace_objects, ctx)
-        keyspace_objs = with_cluster(partial_fn, **({k:ctx.obj[k] for k in ["hosts","port","username","password"]}))
-        validate_keyspaces(keyspace_objs)
+        props = ctx.obj.copy()
+        props["output-dir"] = tmpdir
 
-        export_keyspaces(ctx, export_cql_schema, keyspace_objs)
+        (keyspace_map, metadata) = build_keyspace_map_and_metadata(ctx.obj)
+        metadata["github_user"] = gh.get_user().login
 
-        gh = build_github(token)
-        origin_repo = build_origin_repo(gh)
-        fork_repo = origin_repo.create_fork()
+        export_keyspaces(props, export_cql_schema, keyspace_map, metadata)
+
+        if not sys.version_info[0] == 3:
+            patch_repo(origin_repo)
+            fork_repo = origin_repo.safe_create_fork()
+        else:
+            fork_repo = origin_repo.create_fork()
         branch_name = build_branch(gh, fork_repo)
         commit_schemas(gh, fork_repo, tmpdir, branch_name)
         build_pull_request(gh, origin_repo, branch_name)
+
 
 if __name__ == '__main__':
     export(obj={}, auto_envvar_prefix="ADELPHI")
