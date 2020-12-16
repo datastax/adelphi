@@ -173,7 +173,8 @@ def get_keyspaces(props, cluster):
         exit(1)
 
     log.info("Processing the following keyspaces: %s", ','.join((ks.name for ks in keyspaces)))
-    return {anonymize_keyspace(ks) if props['anonymize'] else ks : build_keyspace_id(ks) for ks in keyspaces}
+    base_map = { ks : build_keyspace_id(ks) for ks in keyspaces}
+    return {anonymize_keyspace(ks) if props['anonymize'] else ks : keyspace_id for (ks, keyspace_id) in base_map.items()}
 
 
 def get_cluster_metadata(cluster):
