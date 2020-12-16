@@ -206,7 +206,7 @@ def export_keyspaces(props, export_fn, keyspace_map, metadata):
             with open(os.path.join(export_dir, output_file_name),'w') as output_file:
                 log.info("Writing schema for keyspace " + keyspace_obj.name + " to file " + output_file.name)
                 metadata['keyspace_id'] = keyspace_id
-                output_file.write(export_fn([keyspace_obj], metadata, options))
+                output_file.write(export_fn(iter([keyspace_obj]), metadata, options))
                 del metadata['keyspace_id']
 
 
