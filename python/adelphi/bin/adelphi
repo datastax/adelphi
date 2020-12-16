@@ -99,12 +99,12 @@ def patch_repo(repo):
 @click.option('--keyspaces',
               help='Comma-separated list of keyspaces to include. If not specified all non-system keypaces will be included')
 @click.option('--rf', type=int, help='Replication factor to override original setting. Optional.')
-@click.option('--anonymize/--no-anonymize', default="anonymization enabled", show_default=True, help="Enable/disable schema anonymization")
+@click.option('--no-anonymize', help="Disable schema anonymization", is_flag=True)
 @click.option('--output-dir', help='Directory schema files should be written to. If not specified, it will write to stdout')
 @click.option('--purpose', help='Comments on the anticipated purpose of this schema.  Optional.')
 @click.option('--maturity', help="The maturity of this schema.  Sample values would include 'alpha', 'beta', 'dev', 'test' or 'prod'.  Optional.")
 @click.pass_context
-def export(ctx, hosts, port, username, password, keyspaces, rf, anonymize, output_dir, purpose, maturity):
+def export(ctx, hosts, port, username, password, keyspaces, rf, no_anonymize, output_dir, purpose, maturity):
 
     ctx.ensure_object(dict)
 
@@ -126,7 +126,7 @@ def export(ctx, hosts, port, username, password, keyspaces, rf, anonymize, outpu
     ctx.obj['password'] = password
     ctx.obj['keyspace-names'] = keyspaces.split(',') if keyspaces is not None else None
     ctx.obj['rf'] = rf
-    ctx.obj['anonymize'] = anonymize
+    ctx.obj['anonymize'] = not no_anonymize
     ctx.obj['output-dir'] = output_dir
     ctx.obj['purpose'] = purpose
     ctx.obj['maturity'] = maturity

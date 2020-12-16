@@ -68,36 +68,32 @@ The output of this command provides a brief summary of each argument:
 
     $ adelphi --help
     Usage: adelphi [OPTIONS] COMMAND [ARGS]...
-    
+
     Options:
-      --hosts TEXT                  Comma-separated list of contact points
-                                    [default: 127.0.0.1]
-    
-      --port INTEGER                Database RPC port  [default: 9042]
-      --username TEXT               Database username
-      --password TEXT               Database password
-      --keyspaces TEXT              Comma-separated list of keyspaces to include.
-                                    If not specified all non-system keypaces will
-                                    be included
-    
-      --rf INTEGER                  Replication factor to override original
-                                    setting. Optional.
-    
-      --anonymize / --no-anonymize  Enable/disable schema anonymization  [default:
-                                    anonymization enabled]
-    
-      --output-dir TEXT             Directory schema files should be written to.
-                                    If not specified, it will write to stdout
-    
-      --purpose TEXT                Comments on the anticipated purpose of this
-                                    schema.  Optional.
-    
-      --maturity TEXT               The maturity of this schema.  Sample values
-                                    would include 'alpha', 'beta', 'dev', 'test'
-                                    or 'prod'.  Optional.
-    
-      --help                        Show this message and exit.
-    
+      --hosts TEXT       Comma-separated list of contact points  [default:
+                         127.0.0.1]
+
+      --port INTEGER     Database RPC port  [default: 9042]
+      --username TEXT    Database username
+      --password TEXT    Database password
+      --keyspaces TEXT   Comma-separated list of keyspaces to include. If not
+                         specified all non-system keypaces will be included
+
+      --rf INTEGER       Replication factor to override original setting.
+                         Optional.
+
+      --no-anonymize     Disable schema anonymization
+      --output-dir TEXT  Directory schema files should be written to. If not
+                         specified, it will write to stdout
+
+      --purpose TEXT     Comments on the anticipated purpose of this schema.
+                         Optional.
+
+      --maturity TEXT    The maturity of this schema.  Sample values would include
+                         'alpha', 'beta', 'dev', 'test' or 'prod'.  Optional.
+
+      --help             Show this message and exit.
+
     Commands:
       contribute     Contribute schemas to Adelphi
       export-cql     Export a schema as raw CQL statements
@@ -118,7 +114,9 @@ Individual commands may have their own options and/or help text.  For example th
 None of the commands above *require* you to specify keyspaces for export.  If you do not supply the "--keyspaces" argument then *all* keyspaces will be considered for export.  In either case the application will prune system keyspaces before performing the export.
 
 ### A quick note on anonymization
-The anonymization process can be explicitly enabled or disabled using the "--anonymize" and "--no-anonymize" arguments (respectively).  The default value will anonymize schemas so unless you explicitly wish to disable anonymization you don't need to supply either argument.  Also note that since all contributed schemas *must* be anonymized the "--no-anonymize" argument cannot be used when contributing schemas to Adelphi.  Supplying this argument when contributing one or more schemas will cause the application to exit with an error message.
+The anonymization process can be explicitly disabled using the "--no-anonymize" argument.
+
+Note that since all contributed schemas *must* be anonymized the "--no-anonymize" argument cannot be used when contributing schemas to Adelphi.  Supplying this argument when attempting to contribute one or more schemas will cause the application to exit with an error message.
 
 ### Parameters via environment variables
 Values for individual arguments can also be specified using corresponding environment variables.  The name of the environment variable to use takes the form "ADELPHI_ARGUMENT" where "ARGUMENT" is the uppercase name of the argument.  So for example the following is equivalent to the first example in the "export-cql" section above:
