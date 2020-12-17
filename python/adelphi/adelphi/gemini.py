@@ -19,32 +19,35 @@ import json
 
 from cassandra.cqltypes import cqltype_to_python
 
+from adelphi.export import BaseExporter
 from adelphi.store import get_standard_columns_from_table_metadata, set_replication_factor
+
 
 class TooManyKeyspacesException(Exception):
     """Exception indicinating that more than one keyspace was observed by the Gemini exporter"""
     pass
 
-class GeminiExporter:
+class GeminiExporter(BaseExporter):
 
     def __init__(self, cluster, props):
 
         self.props = props
+        self.metadata = self.get_common_metadata(cluster, props)
 
-        keyspaces = get_keyspaces(cluster, props)
-        if len(self.keyspace) > 1:
+        all_keyspaces = self.get_keyspaces(cluster, props)
+        if len(all_keyspaces) > 1:
             raise TooManyKeyspacesException
-        ks_name = props['keyspace-names'][0]
-        self.keyspace = cluster.keyspaces[ks_name]
+        for (ks, keyspace_id) in all_keyspaces.items():
+            self.keyspace = ks
+            self.keyspace_id = keyspace_id
 
 
     def each_keyspace(self, ks_fn):
-        # TODO
-        pass
+        ks_fn(self.keyspace, self.keyspace_id)
 
 
     def export_metadata(self):
-        return None
+        return {k : self.metadata[k] for k in self.metadata.keys() if self.metadata[k]}
 
 
     def export_schema(self):
@@ -53,21 +56,20 @@ class GeminiExporter:
 
     def __build_schema(self):
 
-        set_replication_factor(keyspace_objs_iter, props['rf'])
+        set_replication_factor(self.keyspace, self.props['rf'])
 
-        keyspace = next(keyspace_objs_iter)
         replication = json.loads(
-            keyspace.replication_strategy.export_for_schema().replace("'", "\""))
+            self.keyspace.replication_strategy.export_for_schema().replace("'", "\""))
         data = {
             "keyspace": {
-                "name": keyspace.name,
+                "name": self.keyspace.name,
                 "replication": replication,
                 "oracle_replication": replication
             },
             "tables": []
         }
 
-        for t in keyspace.tables.values():
+        for t in self.keyspace.tables.values():
             table_data = {
                 "name": t.name,
                 "partition_keys": [],
@@ -124,19 +126,19 @@ class GeminiExporter:
             token = cql_type.pop(0)
 
             if isinstance(token, (list, tuple)):
-                return cql_type_to_gemini(token, is_frozen_type)
+                return self.__cql_type_to_gemini(token, is_frozen_type)
             elif token == 'frozen':
-                return cql_type_to_gemini(cql_type.pop(0), True)
+                return self.__cql_type_to_gemini(cql_type.pop(0), True)
             elif token == 'map':
                 subtypes = cql_type.pop(0)
-                gemini_type['key_type'] = cql_type_to_gemini(subtypes[0], is_frozen_type)
-                gemini_type['value_type'] = cql_type_to_gemini(subtypes[1], is_frozen_type)
+                gemini_type['key_type'] = self.__cql_type_to_gemini(subtypes[0], is_frozen_type)
+                gemini_type['value_type'] = self.__cql_type_to_gemini(subtypes[1], is_frozen_type)
             elif token == 'list':
                 gemini_type['kind'] = 'list'
-                gemini_type['type'] = cql_type_to_gemini(cql_type.pop(0)[0], is_frozen_type)
+                gemini_type['type'] = self.__cql_type_to_gemini(cql_type.pop(0)[0], is_frozen_type)
             elif token == 'set':
                 gemini_type['kind'] = 'set'
-                gemini_type['type'] = cql_type_to_gemini(cql_type.pop(0)[0], is_frozen_type)
+                gemini_type['type'] = self.__cql_type_to_gemini(cql_type.pop(0)[0], is_frozen_type)
             elif token == 'tuple':
                 gemini_type['types'] = cql_type.pop(0)
 

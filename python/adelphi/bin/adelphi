@@ -29,7 +29,8 @@ except ImportError:
 
 import click
 
-from adelphi.cql import CqlExporter, NoKeyspacesSelectedException
+from adelphi import NoKeyspacesSelectedException
+from adelphi.cql import CqlExporter
 from adelphi.gemini import GeminiExporter, TooManyKeyspacesException
 from adelphi.gh import build_github, build_origin_repo, build_branch, commit_schemas, build_pull_request
 from adelphi.store import with_cluster
