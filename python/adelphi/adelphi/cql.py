@@ -27,6 +27,11 @@ class CqlExporter(BaseExporter):
         self.metadata = self.get_common_metadata(cluster, props)
 
 
+    def each_keyspace(self, ks_fn):
+        for (ks, keyspace_id) in self.keyspaces.items():
+            ks_fn(ks, keyspace_id)
+
+
     def export_metadata(self):
         return {k : self.metadata[k] for k in self.metadata.keys() if self.metadata[k]}
 
@@ -44,3 +49,7 @@ class CqlExporter(BaseExporter):
                       .replace("CREATE KEYSPACE", "CREATE KEYSPACE IF NOT EXISTS") \
                       .replace("CREATE TYPE", "CREATE TYPE IF NOT EXISTS") \
                       .replace("CREATE INDEX", "CREATE INDEX IF NOT EXISTS")
+
+
+    def add_metadata(self, k, v):
+        self.metadata[k] = v

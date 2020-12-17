@@ -126,22 +126,22 @@ def export_keyspaces(props, exporter):
     else:
         def ks_fn(keyspace_obj, keyspace_id):
             # Output filename should use the file-safe alphabet for b64 encoding
-            output_dir_name = keyspace_id if props["anonymize"] else keyspace_obj.name
-            output_dir = os.path.join(export_dir, output_dir_name)
-            if not os.path.exists(output_dir):
-                os.mkdir(output_dir)
-            elif not os.path.isdir(output_dir):
-                log.error("Specified output directory " + output_dir + " exists but is not a directory")
+            keyspace_dir_name = keyspace_id if props["anonymize"] else keyspace_obj.name
+            keyspace_dir = os.path.join(export_dir, keyspace_dir_name)
+            if not os.path.exists(keyspace_dir):
+                os.mkdir(keyspace_dir)
+            elif not os.path.isdir(keyspace_dir):
+                log.error("Specified output directory " + keyspace_dir + " exists but is not a directory")
                 exit(4)
-            elif not os.access(output_dir, os.W_OK):
-                log.error("Output directory " + output_dir + " exists but is not writable")
+            elif not os.access(keyspace_dir, os.W_OK):
+                log.error("Output directory " + keyspace_dir + " exists but is not writable")
                 exit(5)
 
-            with open(os.path.join(output_dir, "schema"),'w') as schema_file:
+            with open(os.path.join(keyspace_dir, "schema"),'w') as schema_file:
                 log.info("Writing schema for keyspace " + keyspace_obj.name + " to file " + schema_file.name)
                 schema_file.write(exporter.export_schema())
 
-            with open(os.path.join(output_dir, "metadata.json"),'w') as metadata_file:
+            with open(os.path.join(keyspace_dir, "metadata.json"),'w') as metadata_file:
                 log.info("Writing metadata for keyspace " + keyspace_obj.name + " to file " + metadata_file.name)
                 metadata = exporter.export_metadata()
                 metadata['keyspace_id'] = keyspace_id
@@ -197,10 +197,9 @@ def contribute(ctx, token):
         props = ctx.obj.copy()
         props["output-dir"] = tmpdir
 
-        (keyspace_map, metadata) = build_keyspace_map_and_metadata(ctx.obj)
-        metadata["github_user"] = gh.get_user().login
-
-        export_keyspaces(props, export_cql_schema, keyspace_map, metadata)
+        exporter = build_exporter(CqlExporter, props)
+        exporter.add_metadata("github_user", gh.get_user().login)
+        export_keyspaces(props, exporter)
 
         if not sys.version_info[0] == 3:
             patch_repo(origin_repo)

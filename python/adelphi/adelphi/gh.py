@@ -33,8 +33,10 @@ ORIGIN_REPO = "datastax/adelphi-schemas"
 def build_github(token):
     return Github(token)
 
+
 def build_origin_repo(gh):
     return gh.get_repo(ORIGIN_REPO)
+
 
 def build_branch(gh, repo):
     main_branch = repo.get_branch(MAIN_BRANCH_NAME)
@@ -42,15 +44,23 @@ def build_branch(gh, repo):
     repo.create_git_ref(ref="refs/heads/" + branch_name, sha=main_branch.commit.sha)
     return branch_name
 
-def commit_schemas(gh, repo, schema_dir, branch_name):
+
+def commit_schemas(gh, repo, output_dir, branch_name):
     curr_user_name = gh.get_user().login
-    for schema in os.listdir(schema_dir):
-        repo_path = "/".join([curr_user_name, schema])
-        schema_file_path = os.path.join(schema_dir, schema)
-        schema_str = open(schema_file_path).read()
-        repo.create_file(path=repo_path, message="Schema " + schema, content=schema_str, branch=branch_name)
+    for keyspace_id in os.listdir(output_dir):
+        keyspace_dir = os.path.join(output_dir, keyspace_id)
+        for keyspace_file_name in os.listdir(keyspace_dir):
+            repo_path = "/".join([curr_user_name, keyspace_id, keyspace_file_name])
+            keyspace_file = os.path.join(output_dir, keyspace_id, keyspace_file_name)
+            repo.create_file(path=repo_path, message=_get_keyspace_file_msg(keyspace_id, keyspace_file_name), content=open(keyspace_file).read(), branch=branch_name)
+
 
 def build_pull_request(gh, origin_repo, branch_name):
     curr_user_name = gh.get_user().login
     title_str = "Schemas for user {}".format(curr_user_name)
     origin_repo.create_pull(title = title_str, body = title_str, base = MAIN_BRANCH_NAME, head = ":".join([curr_user_name, branch_name]))
+
+
+def _get_keyspace_file_msg(keyspace_id, keyspace_file_name):
+    file_desc = "Schema" if keyspace_file_name == "schema" else "Metadata"
+    return "{} for keyspace with ID {}".format(file_desc, keyspace_id)
