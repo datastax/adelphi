@@ -21,95 +21,124 @@ from cassandra.cqltypes import cqltype_to_python
 
 from adelphi.store import get_standard_columns_from_table_metadata, set_replication_factor
 
-def export_gemini_schema(keyspace_objs_iter, metadata, options):
+class TooManyKeyspacesException(Exception):
+    """Exception indicinating that more than one keyspace was observed by the Gemini exporter"""
+    pass
 
-    # set replication factor
-    set_replication_factor(keyspace_objs_iter, options['rf'])
+class GeminiExporter:
 
-    keyspace = next(keyspace_objs_iter)
-    replication = json.loads(
-        keyspace.replication_strategy.export_for_schema().replace("'", "\""))
-    data = {
-        "keyspace": {
-            "name": keyspace.name,
-            "replication": replication,
-            "oracle_replication": replication
-        },
-        "tables": []
-    }
+    def __init__(self, cluster, props):
 
-    for t in keyspace.tables.values():
-        table_data = {
-            "name": t.name,
-            "partition_keys": [],
-            "clustering_keys": [],
-            "columns": [],
-            "indexes": []
+        self.props = props
+
+        keyspaces = get_keyspaces(cluster, props)
+        if len(self.keyspace) > 1:
+            raise TooManyKeyspacesException
+        ks_name = props['keyspace-names'][0]
+        self.keyspace = cluster.keyspaces[ks_name]
+
+
+    def each_keyspace(self, ks_fn):
+        # TODO
+        pass
+
+
+    def export_metadata(self):
+        return None
+
+
+    def export_schema(self):
+        return self.__build_schema()
+
+
+    def __build_schema(self):
+
+        set_replication_factor(keyspace_objs_iter, props['rf'])
+
+        keyspace = next(keyspace_objs_iter)
+        replication = json.loads(
+            keyspace.replication_strategy.export_for_schema().replace("'", "\""))
+        data = {
+            "keyspace": {
+                "name": keyspace.name,
+                "replication": replication,
+                "oracle_replication": replication
+            },
+            "tables": []
         }
 
-        for pk in t.partition_key:
-            table_data["partition_keys"].append({
-                "name": pk.name,
-                "type": pk.cql_type
-            })
+        for t in keyspace.tables.values():
+            table_data = {
+                "name": t.name,
+                "partition_keys": [],
+                "clustering_keys": [],
+                "columns": [],
+                "indexes": []
+            }
 
-        for ck in t.clustering_key:
-            table_data["clustering_keys"].append({
-                "name": ck.name,
-                "type": ck.cql_type
-            })
+            for pk in t.partition_key:
+                table_data["partition_keys"].append({
+                    "name": pk.name,
+                    "type": pk.cql_type
+                })
 
-        columns = get_standard_columns_from_table_metadata(t)
-        for c in columns:
-            table_data["columns"].append({
-                "name": c.name,
-                "type": cql_type_to_gemini(cqltype_to_python(c.cql_type))
-            })
+            for ck in t.clustering_key:
+                table_data["clustering_keys"].append({
+                    "name": ck.name,
+                    "type": ck.cql_type
+                })
 
-        for index in t.indexes.values():
-            table_data["indexes"].append({
-                "name": index.name,
-                "column": index.index_options["target"]
-            })
+            columns = get_standard_columns_from_table_metadata(t)
+            for c in columns:
+                table_data["columns"].append({
+                    "name": c.name,
+                    "type": self.__cql_type_to_gemini(cqltype_to_python(c.cql_type))
+                })
 
-        data["tables"].append(table_data)
+            for index in t.indexes.values():
+                table_data["indexes"].append({
+                    "name": index.name,
+                    "column": index.index_props["target"]
+                })
 
-    return json.dumps(data, indent=4)
+            data["tables"].append(table_data)
+
+        return json.dumps(data, indent=4)
 
 
-def cql_type_to_gemini(cql_type, is_frozen=False):
-    """
-    Convert a cql type representation to the gemini json one.
+    def __cql_type_to_gemini(self, cql_type, is_frozen=False):
+        """
+        Convert a cql type representation to the gemini json one.
 
-    Limitations:
-      * no support for udt
-      * limited nested complex types support
-    """
-    if isinstance(cql_type, str):
-        return cql_type
-    elif len(cql_type) == 1:
-        return cql_type[0]
-    else:
-        is_frozen_type = is_frozen
-        gemini_type = {}
-        token = cql_type.pop(0)
+        Limitations:
+        * no support for udt
+        * limited nested complex types support
+        """
+        if isinstance(cql_type, str):
+            return cql_type
+        elif len(cql_type) == 1:
+            return cql_type[0]
+        else:
+            is_frozen_type = is_frozen
+            gemini_type = {}
+            token = cql_type.pop(0)
 
-        if isinstance(token, (list, tuple)):
-            return cql_type_to_gemini(token, is_frozen_type)
-        elif token == 'frozen':
-            return cql_type_to_gemini(cql_type.pop(0), True)
-        elif token == 'map':
-            subtypes = cql_type.pop(0)
-            gemini_type['key_type'] = cql_type_to_gemini(subtypes[0], is_frozen_type)
-            gemini_type['value_type'] = cql_type_to_gemini(subtypes[1], is_frozen_type)
-        elif token == 'list':
-            gemini_type['kind'] = 'list'
-            gemini_type['type'] = cql_type_to_gemini(cql_type.pop(0)[0], is_frozen_type)
-        elif token == 'set':
-            gemini_type['kind'] = 'set'
-            gemini_type['type'] = cql_type_to_gemini(cql_type.pop(0)[0], is_frozen_type)
-        elif token == 'tuple':
-            gemini_type['types'] = cql_type.pop(0)
+            if isinstance(token, (list, tuple)):
+                return cql_type_to_gemini(token, is_frozen_type)
+            elif token == 'frozen':
+                return cql_type_to_gemini(cql_type.pop(0), True)
+            elif token == 'map':
+                subtypes = cql_type.pop(0)
+                gemini_type['key_type'] = cql_type_to_gemini(subtypes[0], is_frozen_type)
+                gemini_type['value_type'] = cql_type_to_gemini(subtypes[1], is_frozen_type)
+            elif token == 'list':
+                gemini_type['kind'] = 'list'
+                gemini_type['type'] = cql_type_to_gemini(cql_type.pop(0)[0], is_frozen_type)
+            elif token == 'set':
+                gemini_type['kind'] = 'set'
+                gemini_type['type'] = cql_type_to_gemini(cql_type.pop(0)[0], is_frozen_type)
+            elif token == 'tuple':
+                gemini_type['types'] = cql_type.pop(0)
 
-        gemini_type['frozen'] = is_frozen_type
-        return gemini_type
+            gemini_type['frozen'] = is_frozen_type
+            return gemini_type

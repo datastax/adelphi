@@ -15,47 +15,24 @@
 # limitations under the License.
 
 import argparse
-import hashlib
+import json
 import logging
 import os
 import os.path
 import sys
-from base64 import urlsafe_b64encode
-from datetime import datetime, tzinfo, timedelta
 from functools import partial
-
-try:
-    from itertools import ifilterfalse as filterfalse
-except ImportError:
-    from itertools import filterfalse
 
 try:
     from tempfile import TemporaryDirectory
 except ImportError:
     from backports.tempfile import TemporaryDirectory
 
-try:
-    from datetime import timezone
-    utc = timezone.utc
-except ImportError:
-    class UTC(tzinfo):
-        def utcoffset(self, dt):
-            return timedelta(0)
-        def tzname(self, dt):
-            return "UTC"
-        def dst(self, dt):
-            return timedelta(0)
-    utc = UTC()
-
-
 import click
 
-from adelphi.anonymize import anonymize_keyspace
-from adelphi.cql import export_cql_schema
-from adelphi.gemini import export_gemini_schema
+from adelphi.cql import CqlExporter, NoKeyspacesSelectedException
+from adelphi.gemini import GeminiExporter, TooManyKeyspacesException
 from adelphi.gh import build_github, build_origin_repo, build_branch, commit_schemas, build_pull_request
-from adelphi.store import build_keyspace_objects
-from adelphi.store import with_cluster as _with_cluster
+from adelphi.store import with_cluster
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger('adelphi')
@@ -131,83 +108,45 @@ def export(ctx, hosts, port, username, password, keyspaces, rf, no_anonymize, ou
     ctx.obj['purpose'] = purpose
     ctx.obj['maturity'] = maturity
 
-# ============================ Utility functions for commands ============================
-# unique_everseen from itertools recipes
-def unique(iterable, key=None):
-    "List unique elements, preserving order. Remember all elements ever seen."
-    # unique_everseen('AAAABBBCCDAABBB') --> A B C D
-    # unique_everseen('ABBCcAD', str.lower) --> A B C D
-    seen = set()
-    seen_add = seen.add
-    if key is None:
-        for element in filterfalse(seen.__contains__, iterable):
-            seen_add(element)
-            yield element
-    else:
-        for element in iterable:
-            k = key(element)
-            if k not in seen:
-                seen_add(k)
-                yield element
 
-
-def with_cluster(cluster_fn, props):
-    return _with_cluster(cluster_fn, **({k:props[k] for k in ["hosts", "port", "username", "password"]}))
-
-
-def build_keyspace_id(ks):
-    m = hashlib.sha256()
-    m.update(ks.name.encode("utf-8"))
-    # Leverage the urlsafe base64 encoding defined in RFC 4648, section 5 to provide an ID which can
-    # safely be used for filenames as well
-    return urlsafe_b64encode(m.digest()).decode('ascii')
-
-
-def get_keyspaces(props, cluster):
-    keyspace_names = props["keyspace-names"]
-    metadata = cluster.metadata
-    keyspaces = build_keyspace_objects(keyspace_names, metadata)
-
-    if len(keyspaces) == 0:
-        log.info("No valid keyspaces selected")
-        exit(1)
-
-    log.info("Processing the following keyspaces: %s", ','.join((ks.name for ks in keyspaces)))
-    base_map = { ks : build_keyspace_id(ks) for ks in keyspaces}
-    return {anonymize_keyspace(ks) if props['anonymize'] else ks : keyspace_id for (ks, keyspace_id) in base_map.items()}
-
-
-def get_cluster_metadata(cluster):
-    hosts = cluster.metadata.all_hosts()
-    unique_dcs = unique((host.datacenter for host in hosts))
-    return {"host-count": len(hosts), "dc-count": sum(1 for i in unique_dcs)}
-
-
-def build_keyspace_map_and_metadata(props):
+def build_exporter(exportclz, props):
     def build_fn(cluster):
-        metadata = {k : props[k] for k in ["purpose", "maturity"] if k in props}
-        metadata.update(get_cluster_metadata(cluster))
-        metadata["creation_timestamp"] = datetime.now(utc).isoformat()
-        return (get_keyspaces(props, cluster), {k : metadata[k] for k in metadata.keys() if metadata[k]})
+        return exportclz(cluster, props)
 
-    return with_cluster(build_fn, props)
+    return with_cluster(build_fn, **({k:props[k] for k in ["hosts", "port", "username", "password"]}))
 
 
-def export_keyspaces(props, export_fn, keyspace_map, metadata):
+def export_keyspaces(props, exporter):
     options = {'rf': props['rf']}
     export_dir = props["output-dir"]
 
     if export_dir is None:
-        print(export_fn(iter(keyspace_map.keys()), metadata, options))
+        print(exporter.export_schema())
     else:
-        for (keyspace_obj, keyspace_id) in keyspace_map.items():
+        def ks_fn(keyspace_obj, keyspace_id):
             # Output filename should use the file-safe alphabet for b64 encoding
-            output_file_name = keyspace_id if props["anonymize"] else keyspace_obj.name
-            with open(os.path.join(export_dir, output_file_name),'w') as output_file:
-                log.info("Writing schema for keyspace " + keyspace_obj.name + " to file " + output_file.name)
+            output_dir_name = keyspace_id if props["anonymize"] else keyspace_obj.name
+            output_dir = os.path.join(export_dir, output_dir_name)
+            if not os.path.exists(output_dir):
+                os.mkdir(output_dir)
+            elif not os.path.isdir(output_dir):
+                log.error("Specified output directory " + output_dir + " exists but is not a directory")
+                exit(4)
+            elif not os.access(output_dir, os.W_OK):
+                log.error("Output directory " + output_dir + " exists but is not writable")
+                exit(5)
+
+            with open(os.path.join(output_dir, "schema"),'w') as schema_file:
+                log.info("Writing schema for keyspace " + keyspace_obj.name + " to file " + schema_file.name)
+                schema_file.write(exporter.export_schema())
+
+            with open(os.path.join(output_dir, "metadata.json"),'w') as metadata_file:
+                log.info("Writing metadata for keyspace " + keyspace_obj.name + " to file " + metadata_file.name)
+                metadata = exporter.export_metadata()
                 metadata['keyspace_id'] = keyspace_id
-                output_file.write(export_fn(iter([keyspace_obj]), metadata, options))
-                del metadata['keyspace_id']
+                metadata_file.write(json.dumps(metadata))
+
+        exporter.each_keyspace(ks_fn)
 
 
 # ============================ Command implementations ============================
@@ -215,21 +154,27 @@ def export_keyspaces(props, export_fn, keyspace_map, metadata):
 @click.pass_context
 def export_cql(ctx):
     """Export a schema as raw CQL statements"""
-    (keyspace_map, metadata) = build_keyspace_map_and_metadata(ctx.obj)
-    export_keyspaces(ctx.obj, export_cql_schema, keyspace_map, metadata)
+    try:
+        exporter = build_exporter(CqlExporter, ctx.obj)
+        export_keyspaces(ctx.obj, exporter)
+    except NoKeyspacesSelectedException:
+        log.info("No valid keyspaces selected")
+        exit(1)
 
 
 @export.command()
 @click.pass_context
 def export_gemini(ctx):
     """Export a schema in a format suitable for use with the the Gemini data integrity test framework"""
-    (keyspace_map, metadata) = build_keyspace_map_and_metadata(ctx.obj)
-
-    if len(keyspace_map) > 1:
+    try:
+        exporter = build_exporter(GeminiExporter, ctx.obj)
+        export_keyspaces(ctx.obj, exporter)
+    except NoKeyspacesSelectedException:
+        log.info("No valid keyspaces selected")
+        exit(1)
+    except TooManyKeyspacesException:
         log.error("Gemini schema doesn't support multiple keyspaces.")
         exit(2)
-
-    export_keyspaces(ctx.obj, export_gemini_schema, keyspace_map, metadata)
 
 
 @export.command()
