@@ -13,7 +13,7 @@
 # limitations under the License.
 
 
-# Logic necessary to generate a string representation of a standard CQL schema
+import json
 
 from adelphi.export import BaseExporter
 from adelphi.store import set_replication_factor
@@ -27,9 +27,11 @@ class CqlExporter(BaseExporter):
         self.metadata = self.get_common_metadata(cluster, props)
 
 
-    def each_keyspace(self, ks_fn):
-        for (ks, keyspace_id) in self.keyspaces.items():
-            ks_fn(ks, keyspace_id)
+    def export_all(self):
+        metadata_str = json.dumps(self.export_metadata(), indent=4)
+        metadata_comments = "\n".join("//{}".format(line).strip() for line in metadata_str.splitlines())
+
+        return metadata_comments + "\n\n" + self.export_schema()
 
 
     def export_metadata(self):
@@ -49,6 +51,11 @@ class CqlExporter(BaseExporter):
                       .replace("CREATE KEYSPACE", "CREATE KEYSPACE IF NOT EXISTS") \
                       .replace("CREATE TYPE", "CREATE TYPE IF NOT EXISTS") \
                       .replace("CREATE INDEX", "CREATE INDEX IF NOT EXISTS")
+
+
+    def each_keyspace(self, ks_fn):
+        for (ks, keyspace_id) in self.keyspaces.items():
+            ks_fn(ks, keyspace_id)
 
 
     def add_metadata(self, k, v):

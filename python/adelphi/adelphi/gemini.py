@@ -13,8 +13,6 @@
 # limitations under the License.
 
 
-# Logic necessary to generate a string representation of a Gemini schema
-
 import json
 
 from cassandra.cqltypes import cqltype_to_python
@@ -42,8 +40,10 @@ class GeminiExporter(BaseExporter):
             self.keyspace_id = keyspace_id
 
 
-    def each_keyspace(self, ks_fn):
-        ks_fn(self.keyspace, self.keyspace_id)
+    def export_all(self):
+        # Exported Gemini schema is a formatted JSON doc and we don't have any way to add
+        # metadata/comments to that... so unfortunately this is the best we can do.
+        return self.export_schema()
 
 
     def export_metadata(self):
@@ -52,6 +52,10 @@ class GeminiExporter(BaseExporter):
 
     def export_schema(self):
         return self.__build_schema()
+
+
+    def each_keyspace(self, ks_fn):
+        ks_fn(self.keyspace, self.keyspace_id)
 
 
     def __build_schema(self):

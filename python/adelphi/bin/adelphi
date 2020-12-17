@@ -122,7 +122,7 @@ def export_keyspaces(props, exporter):
     export_dir = props["output-dir"]
 
     if export_dir is None:
-        print(exporter.export_schema())
+        print(exporter.export_all())
     else:
         def ks_fn(keyspace_obj, keyspace_id):
             # Output filename should use the file-safe alphabet for b64 encoding
