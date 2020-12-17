@@ -89,7 +89,8 @@ class BaseExporter:
     def get_cluster_metadata(self, cluster):
         hosts = cluster.metadata.all_hosts()
         unique_dcs = self.__unique((host.datacenter for host in hosts))
-        return {"host-count": len(hosts), "dc-count": sum(1 for i in unique_dcs)}
+        unique_cass_vers = self.__unique((host.release_version for host in hosts))
+        return {"host-count": len(hosts), "dc-count": sum(1 for _ in unique_dcs), "cassandra-versions": ",".join(unique_cass_vers)}
 
 
     def get_common_metadata(self, cluster, props):
