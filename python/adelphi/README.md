@@ -3,7 +3,7 @@
 ## Introduction
 A tool for interacting with the DataStax [Adelphi](https://github.com/datastax/adelphi) project.  This package provides the "adelphi" application which in turn provides the following features:
 
-* Extraction of schemas for one or more keyspaces from a running Cassandra cluster
+* Extraction of schemas for one or more keyspaces from a running Apache Cassandra&trade; cluster
 * Optionally anonymizing these schemas
 * Formatting these schemas as CQL statements or as JSON documents
 * Displaying these formatted schemas on standard out or writing them to the filesystem
