@@ -41,6 +41,9 @@ spec:
     - name: workload
       configMap:
         name: nosqlbench-workload-configmap
+    - name: results-pv
+      persistentVolumeClaim:
+        claimName: results-pvc
   - name: nosqlbench-target
     container:
       image: nosqlbench/nosqlbench:latest
@@ -75,3 +78,6 @@ spec:
     - name: workload
       configMap:
         name: nosqlbench-workload-configmap
+    - name: results-pv
+      persistentVolumeClaim:
+        claimName: results-pvc

@@ -5,14 +5,6 @@ metadata:
 spec:
   entrypoint: execute
   serviceAccountName: cass-operator
-  volumeClaimTemplates:
-  - metadata:
-      name: results-pv
-    spec:
-      accessModes: [ "ReadWriteOnce" ]
-      resources:
-        requests:
-          storage: 1Gi
   templates:
   - name: execute
     dag:
@@ -21,7 +13,7 @@ spec:
         templateRef:                  
           name: registry
           template: registry-template
-      - name: build-cassandra
+      - name: build-cassandra-mgmt-api
         depends: "start-registry"
         when: "{{ not (empty .Values.target.git_identifier) }}"
         arguments:
@@ -30,16 +22,6 @@ spec:
             value: "{{`{{tasks.start-registry.ip}}`}}"
           - name: git_identifier
             value: "{{ .Values.target.git_identifier }}"
-        templateRef:
-          name: cassandra-image
-          template: cassandra-image-template
-      - name: build-cassandra-mgmt-api
-        depends: "build-cassandra"
-        when: "{{ not (empty .Values.target.git_identifier) }}"
-        arguments:
-          parameters:
-          - name: registry_ip
-            value: "{{`{{tasks.start-registry.ip}}`}}"
         templateRef:
           name: cassandra-mgmt-image
           template: cassandra-mgmt-image-template
@@ -95,8 +77,3 @@ spec:
         templateRef:
           name: gemini-job
           template: gemini-oracle-sut
-      - name: start-results-server
-        depends: "gemini-oracle-sut"
-        templateRef:
-          name: results
-          template: results-server

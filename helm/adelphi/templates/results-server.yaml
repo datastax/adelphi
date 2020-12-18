@@ -1,34 +1,21 @@
-apiVersion: argoproj.io/v1alpha1
-kind: WorkflowTemplate
+apiVersion: v1
+kind: Pod
 metadata:
-  name: results
+  name: results-server
   namespace: {{ .Values.namespace }}
-  annotations:
-    "helm.sh/hook": pre-install
 spec:
-  templates:
-  - name: results-server
-    daemon: true
-    container:
+  containers:
+    - name: results
       image: nginx
       volumeMounts:
       - name: config
         mountPath: /etc/nginx/conf.d
       - name: results-pv
         mountPath: /results
-    initContainers:
-    - name: clear-index
-      image: alpine
-      command:
-        - sh
-        - -c
-      args:
-        # remove sample index created by the NFS server
-        - rm /results/index.html
-      volumeMounts:
-      - name: results-pv
-        mountPath: /results
-    volumes:
-    - name: config
-      configMap:
-        name: results-server-configmap
+  volumes:
+  - name: config
+    configMap:
+      name: results-server-configmap
+  - name: results-pv
+    persistentVolumeClaim:
+      claimName: results-pvc

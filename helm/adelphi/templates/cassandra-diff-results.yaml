@@ -38,3 +38,6 @@ spec:
     - name: config
       configMap:
         name: cassandra-diff-configmap
+    - name: results-pv
+      persistentVolumeClaim:
+        claimName: results-pvc

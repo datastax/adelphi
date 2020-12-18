@@ -11,61 +11,49 @@ spec:
     inputs:
       parameters:
       - name: registry_ip
+      - name: git_identifier
     container:
       image: gcr.io/kaniko-project/executor:v1.0.0
       args:
-      - --dockerfile=/generated/Dockerfile
-      - --context=dir:///build
+      - --dockerfile=/configmap/Dockerfile
+      - --context=dir:///workspace
       - {{`--destination={{inputs.parameters.registry_ip}}:30000/adelphi/management-api-for-apache-cassandra`}}
       - --insecure=true
       volumeMounts:
-        - name: build
-          mountPath: /build
-        - name: generated
-          mountPath: /generated
+        - name: workspace
+          mountPath: /workspace
+        - name: configmap
+          mountPath: /configmap
     initContainers:
-    - name: generate-dockerfile
-      image: alpine
-      command:
-        - sh
-        - -c
-      args:
-        - echo "FROM {{`{{inputs.parameters.registry_ip}}`}}:30000/adelphi/cassandra" | cat - /configmap/Dockerfile > /generated/Dockerfile
-      volumeMounts:
-      - name: generated
-        mountPath: /generated
-      - name: configmap
-        mountPath: /configmap
-    - name: clone-cassandra-mgmt-api
-      image: alpine/git
-      workingDir: /build
-      command:
-        - sh
-        - -c
-      args:
-        - git clone https://github.com/datastax/management-api-for-apache-cassandra .;
-          git checkout v0.1.13;
-          cp /configmap/docker-entrypoint.sh /build;
-      volumeMounts:
-      - name: build
-        mountPath: /build
-      - name: configmap
-        mountPath: /configmap
     - name: build-cassandra-mgmt-api
       image: maven:3-openjdk-11
-      workingDir: /build
+      command:
+        - sh
+        - -c
       args:
-        - mvn
-        - clean
-        - package
-        - -DskipTests
+        - wget -O - https://downloads.apache.org/ant/binaries/apache-ant-1.9.15-bin.tar.gz | tar -zxvf -;
+          chmod +x /apache-ant-1.9.15/bin/ant;
+          ln -s /apache-ant-1.9.15/bin/ant /usr/bin/ant;
+          git clone https://github.com/apache/cassandra /workspace/cassandra;
+          cd /workspace/cassandra;
+          git checkout {{`{{inputs.parameters.git_identifier}}`}};
+          mkdir -p ~/.m2;  
+          cp -f /configmap/settings.xml ~/.m2/settings.xml;
+          ant mvn-install -Duse.jdk11=true;
+          ant artifacts -Duse.jdk11=true -Dant.gen-doc.skip=true -Dno-javadoc=true;
+          mkdir -p /workspace/cassandra-build;
+          tar -zxvf ./build/apache-cassandra-*-bin.tar.gz --strip-components=1 -C /workspace/cassandra-build;
+          git clone https://github.com/datastax/management-api-for-apache-cassandra /workspace/api;
+          cd /workspace/api;
+          mvn clean package -DskipTests;
+          cp /configmap/docker-entrypoint.sh /workspace;
       volumeMounts:
-      - name: build
-        mountPath: /build
+      - name: workspace
+        mountPath: /workspace
+      - name: configmap
+        mountPath: /configmap
     volumes:
-    - name: build
-      emptyDir: {}
-    - name: generated
+    - name: workspace
       emptyDir: {}
     - name: configmap
       configMap:
