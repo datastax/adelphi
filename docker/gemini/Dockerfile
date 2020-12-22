@@ -4,4 +4,4 @@ ENV GEMINI_URL="https://github.com/scylladb/gemini/releases/download/v1.7.3/gemi
 
 RUN wget -O - $GEMINI_URL | tar -zxvf -
 
-CMD /gemini
+CMD /go/gemini
