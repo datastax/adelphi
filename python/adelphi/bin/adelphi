@@ -158,6 +158,8 @@ def export_cql(ctx, no_metadata):
     """Export a schema as raw CQL statements"""
 
     ctx.obj["include-metadata"] = not no_metadata
+    if no_metadata and ctx.obj["output-dir"]:
+        log.info("Metadata is always persisted to a separate metadata file when writing to an output directory")
 
     try:
         exporter = build_exporter(CqlExporter, ctx.obj)
@@ -171,6 +173,9 @@ def export_cql(ctx, no_metadata):
 @click.pass_context
 def export_gemini(ctx):
     """Export a schema in a format suitable for use with the the Gemini data integrity test framework"""
+
+    ctx.obj["include-metadata"] = True
+
     try:
         exporter = build_exporter(GeminiExporter, ctx.obj)
         export_keyspaces(ctx.obj, exporter)
