@@ -122,7 +122,7 @@ def export_keyspaces(props, exporter):
     export_dir = props["output-dir"]
 
     if export_dir is None:
-        print(exporter.export_all())
+        print(exporter.export_all() if props["include-metadata"] else exporter.export_schema())
     else:
         def ks_fn(keyspace_obj, keyspace_id):
             # Output filename should use the file-safe alphabet for b64 encoding
@@ -152,9 +152,13 @@ def export_keyspaces(props, exporter):
 
 # ============================ Command implementations ============================
 @export.command()
+@click.option('--no-metadata', help="Disable display of metadata when writing to standard out", is_flag=True)
 @click.pass_context
-def export_cql(ctx):
+def export_cql(ctx, no_metadata):
     """Export a schema as raw CQL statements"""
+
+    ctx.obj["include-metadata"] = not no_metadata
+
     try:
         exporter = build_exporter(CqlExporter, ctx.obj)
         export_keyspaces(ctx.obj, exporter)

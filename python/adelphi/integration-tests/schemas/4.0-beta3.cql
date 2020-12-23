@@ -1,7 +1,3 @@
-//Schema metadata:
-//@host_count = 1
-//@dc_count = 1
-
 CREATE KEYSPACE IF NOT EXISTS ks_0 WITH replication = {'class': 'SimpleStrategy', 'replication_factor': '1'}  AND durable_writes = true;
 
 CREATE TYPE IF NOT EXISTS ks_0.udt_0 (
