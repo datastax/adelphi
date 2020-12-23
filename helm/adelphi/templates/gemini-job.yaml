@@ -9,7 +9,7 @@ spec:
   templates:
   - name: gemini-oracle-sut
     container:
-      image: adelphidev/gemini:1.7.3
+      image: adelphitools/gemini:1.7.3
       workingDir: /workspace
       command:
         - sh

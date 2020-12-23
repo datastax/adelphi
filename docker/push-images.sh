@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Dockerhub org
-REPO="adelphidev"
+REPO="adelphitools"
 
 # Push cassandra-diff image
 docker tag cassandra-diff:4c9bc4 $REPO/cassandra-diff:4c9bc4
