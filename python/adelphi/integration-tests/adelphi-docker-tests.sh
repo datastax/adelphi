@@ -77,8 +77,7 @@ mkdir -p output logs
 rm -rf output/* logs/*
 
 # C* versions to test with (these must be available Docker images in dockerhub)
-#versions=(2.1.22 2.2.19 3.0.23 3.11.9 4.0-beta3)
-versions=(2.1.22)
+versions=(2.1.22 2.2.19 3.0.23 3.11.9 4.0-beta3)
 
 allPass=""
 for v in "${versions[@]}"
