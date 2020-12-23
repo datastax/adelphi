@@ -13,27 +13,50 @@
 # limitations under the License.
 
 
-# Logic necessary to generate a string representation of a standard CQL schema
+import json
 
-from adelphi.anonymize import anonymize_keyspace
+from adelphi.export import BaseExporter
 from adelphi.store import set_replication_factor
 
-def export_cql_schema(keyspace_objs_iter, metadata, options):
 
-    # set replication factor
-    set_replication_factor(keyspace_objs_iter, options['rf'])
+class CqlExporter(BaseExporter):
 
-    metadata_generator = ("//@{} = {}".format(k,v) for k,v in metadata.items())
-    metadata_str = "//Schema metadata:\n" + "\n".join(metadata_generator)
+    def __init__(self, cluster, props):
+        self.props = props
+        self.keyspaces = self.get_keyspaces(cluster, props)
+        self.metadata = self.get_common_metadata(cluster, props)
 
-    # build CQL statements string
-    cql_str = "\n\n".join(ks.export_as_string() for ks in keyspace_objs_iter)
 
-    # transform CREATE statements to include `IF NOT EXISTS`
-    # TODO: shift this around to a regex so that we can do the whole thing in a single pass
-    cql_str = cql_str.replace("CREATE TABLE", "CREATE TABLE IF NOT EXISTS") \
-        .replace("CREATE KEYSPACE", "CREATE KEYSPACE IF NOT EXISTS") \
-        .replace("CREATE TYPE", "CREATE TYPE IF NOT EXISTS") \
-        .replace("CREATE INDEX", "CREATE INDEX IF NOT EXISTS")
+    def export_all(self):
+        metadata_str = json.dumps(self.export_metadata(), indent=4)
+        metadata_comments = "\n".join("//{}".format(line).strip() for line in metadata_str.splitlines())
 
-    return metadata_str + "\n\n" + cql_str
+        return metadata_comments + "\n\n" + self.export_schema()
+
+
+    def export_metadata(self):
+        return {k : self.metadata[k] for k in self.metadata.keys() if self.metadata[k]}
+
+
+    def export_schema(self):
+
+        set_replication_factor(self.keyspaces, self.props['rf'])
+
+        # build CQL statements string
+        cql_str = "\n\n".join(ks.export_as_string() for ks in self.keyspaces)
+
+        # transform CREATE statements to include `IF NOT EXISTS`
+        # TODO: shift this around to a regex so that we can do the whole thing in a single pass
+        return cql_str.replace("CREATE TABLE", "CREATE TABLE IF NOT EXISTS") \
+                      .replace("CREATE KEYSPACE", "CREATE KEYSPACE IF NOT EXISTS") \
+                      .replace("CREATE TYPE", "CREATE TYPE IF NOT EXISTS") \
+                      .replace("CREATE INDEX", "CREATE INDEX IF NOT EXISTS")
+
+
+    def each_keyspace(self, ks_fn):
+        for (ks, keyspace_id) in self.keyspaces.items():
+            ks_fn(ks, keyspace_id)
+
+
+    def add_metadata(self, k, v):
+        self.metadata[k] = v
