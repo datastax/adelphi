@@ -11,6 +11,6 @@ RUN git clone https://github.com/apache/cassandra-diff.git cassandra-diff; \
 WORKDIR /cassandra-diff
 RUN mvn clean package -DskipTests
 
-FROM adelphi-dev/spark:3.0.0
+FROM spark:3.0.0
 
 COPY --from=builder /cassandra-diff/spark-uberjar/target/spark-uberjar-0.2-SNAPSHOT.jar /opt/spark/jars
