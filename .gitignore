@@ -1,6 +1,9 @@
 # Test output files
 output/
 
+# Spark tarball dir
+Docker/spark
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

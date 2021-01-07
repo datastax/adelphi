@@ -5,6 +5,14 @@ metadata:
 spec:
   entrypoint: execute
   serviceAccountName: cass-operator
+  volumeClaimTemplates:
+  - metadata:
+      name: results-pv
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
   templates:
   - name: execute
     dag:
@@ -53,15 +61,6 @@ spec:
         templateRef:                  
           name: cassandra-status
           template: ready
-      - name: build-spark
-        depends: "start-registry"
-        arguments:
-          parameters:
-          - name: registry_ip
-            value: "{{`{{tasks.start-registry.ip}}`}}"
-        templateRef:
-          name: spark-image
-          template: spark-image-template
       - name: configure-schema
         depends: "cassandra-ready"
         templateRef:
@@ -78,7 +77,7 @@ spec:
           name: nosqlbench-job
           template: nosqlbench-target
       - name: run-diff
-        depends: "build-spark && nosqlbench-source && nosqlbench-target"
+        depends: "nosqlbench-source && nosqlbench-target"
         arguments:
           parameters:
           - name: registry_ip
@@ -96,3 +95,8 @@ spec:
         templateRef:
           name: gemini-job
           template: gemini-oracle-sut
+      - name: start-results-server
+        depends: "gemini-oracle-sut"
+        templateRef:
+          name: results
+          template: results-server

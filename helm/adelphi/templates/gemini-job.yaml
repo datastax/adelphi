@@ -9,14 +9,14 @@ spec:
   templates:
   - name: gemini-oracle-sut
     container:
-      image: golang
+      image: adelphitools/gemini:1.7.3
       workingDir: /workspace
       command:
         - sh
         - -c
       args:
         - mkdir /results/gemini;
-          /workspace/gemini
+          /go/gemini
           --oracle-cluster={{ .Values.source.clusterName }}-{{ .Values.source.dc }}-service
           --oracle-username={{ .Values.source.clusterName }}-superuser
           --oracle-password="`cat /source-secret/password`"
@@ -42,12 +42,14 @@ spec:
       - name: results-pv
         mountPath: /results
     initContainers:
-    - name: download-gemini
-      image: alpine
-      command: ["sh", "-c"]
-      workingDir: /workspace
+      # remove this container when Adelphi is available in PyPI
+    - name: clone-adelphi-cli
+      image: alpine/git
+      command:
+        - sh
+        - -c
       args:
-        - wget -O - {{ .Values.gemini_download_url }} | tar -zxvf -
+        - git clone https://github.com/datastax/adelphi.git /workspace/adelphi
       volumeMounts:
       - name: workspace
         mountPath: /workspace
@@ -57,8 +59,9 @@ spec:
       args:
         - echo "Extract Gemini schema using anonymizer script";
           pip install cassandra-driver;
-          wget -q https://raw.githubusercontent.com/datastax/adelphi/master/schema-anonymizer/anonymizer.py;
-          python anonymizer.py --hosts="{{ .Values.source.clusterName }}-{{ .Values.source.dc }}-service" --username="{{ .Values.source.clusterName }}-superuser" --password="`cat /source-secret/password`" --keyspaces="{{ .Values.gemini_schema_keyspace }}" --format=gemini --no-anonymize > /workspace/gemini_schema.json;
+          cd /workspace/adelphi/python/adelphi;
+          pip install .;
+          adelphi --hosts="{{ .Values.source.clusterName }}-{{ .Values.source.dc }}-service" --username="{{ .Values.source.clusterName }}-superuser" --password="`cat /source-secret/password`" --keyspaces="{{ .Values.gemini_schema_keyspace }}" --no-anonymize export-gemini > /workspace/gemini_schema.json;
           echo "Done";
       volumeMounts:
       - name: workspace
@@ -81,6 +84,3 @@ spec:
         items:
         - key: password
           path: password
-    - name: results-pv
-      persistentVolumeClaim:
-        claimName: results-pvc
