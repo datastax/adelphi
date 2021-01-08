@@ -46,21 +46,21 @@ Provide the content of the schema or a link to the contributed schema if possibl
 **Python Version:**
 
 <pre><code>
-<!-- run `pip --version` and paste the output below. -->
+<!-- run `python --version` and paste the output below. -->
 
 </code></pre>
 
 **pip Version:**
 
 <pre><code>
-<!-- run `python --version` and paste the output below. -->
+<!-- run `pip --version` and paste the output below. -->
 
 </code></pre>
 
 **Anonymizer Package Version:**
 
 <pre><code>
-<!-- run `pip show TBD` and paste the output below. -->
+<!-- run `pip show adelphi` and paste the output below. -->
 
 </code></pre>
 
