@@ -42,25 +42,12 @@ spec:
       - name: results-pv
         mountPath: /results
     initContainers:
-      # remove this container when Adelphi is available in PyPI
-    - name: clone-adelphi-cli
-      image: alpine/git
-      command:
-        - sh
-        - -c
-      args:
-        - git clone https://github.com/datastax/adelphi.git /workspace/adelphi
-      volumeMounts:
-      - name: workspace
-        mountPath: /workspace
     - name: extract-schema
       image: python:3.10.0a1-alpine3.12
       command: ["sh", "-c", "-e"]
       args:
         - echo "Extract Gemini schema using anonymizer script";
-          pip install cassandra-driver;
-          cd /workspace/adelphi/python/adelphi;
-          pip install .;
+          pip install adelphi;
           adelphi --hosts="{{ .Values.source.clusterName }}-{{ .Values.source.dc }}-service" --username="{{ .Values.source.clusterName }}-superuser" --password="`cat /source-secret/password`" --keyspaces="{{ .Values.gemini_schema_keyspace }}" --no-anonymize export-gemini > /workspace/gemini_schema.json;
           echo "Done";
       volumeMounts:

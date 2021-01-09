@@ -24,7 +24,7 @@ spec:
         - -c
       args:
         # remove sample index created by the NFS server
-        - rm /results/index.html
+        - rm -f /results/index.html
       volumeMounts:
       - name: results-pv
         mountPath: /results
