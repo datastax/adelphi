@@ -1,11 +1,15 @@
-apiVersion: v1
-kind: Pod
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
 metadata:
-  name: results-server
+  name: results
   namespace: {{ .Values.namespace }}
+  annotations:
+    "helm.sh/hook": pre-install
 spec:
-  containers:
-    - name: results
+  templates:
+  - name: results-server
+    daemon: true
+    container:
       image: nginx
       volumeMounts:
       - name: config

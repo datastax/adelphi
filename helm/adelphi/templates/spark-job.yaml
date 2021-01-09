@@ -16,7 +16,7 @@ spec:
       labels:
         app: spark-driver
     container:
-      image: adelphidev/cassandra-diff:4c9bc4
+      image: adelphitools/cassandra-diff:4c9bc4
       args: ["driver",
                 "--verbose",
                 "--conf", "spark.driver.bindAddress=0.0.0.0",
@@ -30,7 +30,7 @@ spec:
                 "--conf", "spark.driver.memory=5g",
                 "--conf", "spark.executor.memory=1g",
                 "--conf", "spark.executor.instances=3",
-                "--conf", "spark.kubernetes.container.image=adelphidev/cassandra-diff:4c9bc4",
+                "--conf", "spark.kubernetes.container.image=adelphitools/cassandra-diff:4c9bc4",
                 "--conf", "spark.kubernetes.container.image.pullPolicy=Always",
                 "--conf", "spark.kubernetes.authenticate.driver.serviceAccountName=spark",
                 "--conf", "spark.kubernetes.namespace=cass-operator",

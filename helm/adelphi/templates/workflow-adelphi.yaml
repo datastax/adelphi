@@ -5,6 +5,14 @@ metadata:
 spec:
   entrypoint: execute
   serviceAccountName: cass-operator
+  volumeClaimTemplates:
+  - metadata:
+      name: results-pv
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 1Gi
   templates:
   - name: execute
     dag:
@@ -77,3 +85,8 @@ spec:
         templateRef:
           name: gemini-job
           template: gemini-oracle-sut
+      - name: start-results-server
+        depends: "gemini-oracle-sut"
+        templateRef:
+          name: results
+          template: results-server
