@@ -71,3 +71,6 @@ spec:
         items:
         - key: password
           path: password
+    - name: results-pv
+      persistentVolumeClaim:
+        claimName: gemini-pvc
