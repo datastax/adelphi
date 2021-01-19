@@ -33,6 +33,7 @@ from adelphi import NoKeyspacesSelectedException
 from adelphi.cql import CqlExporter
 from adelphi.gemini import GeminiExporter, TooManyKeyspacesException
 from adelphi.gh import build_github, build_origin_repo, build_branch, commit_schemas, build_pull_request
+from adelphi.nb import NbExporter, TooManySchemasException
 from adelphi.store import with_cluster
 
 logging.basicConfig(level=logging.INFO)
@@ -183,7 +184,7 @@ def export_gemini(ctx):
         log.info("No valid keyspaces selected")
         exit(1)
     except TooManyKeyspacesException:
-        log.error("Gemini schema doesn't support multiple keyspaces.")
+        log.error("Gemini schema doesn't support multiple keyspaces")
         exit(2)
 
 
@@ -218,6 +219,24 @@ def contribute(ctx, token):
         branch_name = build_branch(gh, fork_repo)
         commit_schemas(gh, fork_repo, tmpdir, branch_name)
         build_pull_request(gh, origin_repo, branch_name)
+
+
+@export.command()
+@click.pass_context
+def export_nb(ctx):
+    """Export a schema in a format suitable for use with the the nosqlbench performance test framework"""
+
+    ctx.obj["include-metadata"] = False
+
+    try:
+        exporter = build_exporter(NbExporter, ctx.obj)
+        export_keyspaces(ctx.obj, exporter)
+    except NoKeyspacesSelectedException:
+        log.info("No valid keyspaces selected")
+        exit(1)
+    except TooManySchemasException:
+        log.error("Only one keyspace/table can be selected for nosqlbench testing")
+        exit(2)
 
 
 if __name__ == '__main__':

@@ -25,6 +25,7 @@ class TooManyKeyspacesException(Exception):
     """Exception indicinating that more than one keyspace was observed by the Gemini exporter"""
     pass
 
+
 class GeminiExporter(BaseExporter):
 
     def __init__(self, cluster, props):

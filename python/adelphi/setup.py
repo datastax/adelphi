@@ -7,7 +7,8 @@ PY3 = sys.version_info[0] == 3
 dependencies = [
     'cassandra-driver ~= 3.24.0',
     'click ~= 7.1.0',
-    'PyGithub ~= 1.45'
+    'PyGithub ~= 1.45',
+    'PyYAML ~= 5.3.1'
     ]
 
 if not PY3:
