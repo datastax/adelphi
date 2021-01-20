@@ -31,9 +31,10 @@ import click
 
 from adelphi import NoKeyspacesSelectedException
 from adelphi.cql import CqlExporter
-from adelphi.gemini import GeminiExporter, TooManyKeyspacesException
+from adelphi.exceptions import TooManyKeyspacesException, TooManyTablesException
+from adelphi.gemini import GeminiExporter
 from adelphi.gh import build_github, build_origin_repo, build_branch, commit_schemas, build_pull_request
-from adelphi.nb import NbExporter, TooManySchemasException
+from adelphi.nb import NbExporter
 from adelphi.store import with_cluster
 
 logging.basicConfig(level=logging.INFO)
@@ -234,9 +235,12 @@ def export_nb(ctx):
     except NoKeyspacesSelectedException:
         log.info("No valid keyspaces selected")
         exit(1)
-    except TooManySchemasException:
-        log.error("Only one keyspace/table can be selected for nosqlbench testing")
+    except TooManyKeyspacesException:
+        log.error("Only one keyspace can be selected for nosqlbench testing")
         exit(2)
+    except TooManyTablesException:
+        log.error("Only one table can be selected for nosqlbench testing")
+        exit(3)
 
 
 if __name__ == '__main__':

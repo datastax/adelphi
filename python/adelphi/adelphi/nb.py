@@ -1,10 +1,10 @@
 import yaml
 
+from itertools import chain
+
+from adelphi.exceptions import TooManyKeyspacesException, TooManyTablesException
 from adelphi.export import BaseExporter
 
-class TooManySchemasException(Exception):
-    """Exception indicinating that more than one keyspace was observed by the Gemini exporter"""
-    pass
 
 class NbExporter(BaseExporter):
 
@@ -15,10 +15,12 @@ class NbExporter(BaseExporter):
 
         all_keyspaces = self.get_keyspaces(cluster, props)
         if len(all_keyspaces) > 1:
-            raise TooManySchemasException
-        for (ks, keyspace_id) in all_keyspaces.items():
-            self.keyspace = ks
-            self.keyspace_id = keyspace_id
+            raise TooManyKeyspacesException
+        (ks, keyspace_id) = next(iter(all_keyspaces.items()))
+        if (len(ks.tables)) > 1:
+            raise TooManyTablesException
+        self.keyspace = ks
+        self.keyspace_id = keyspace_id
 
 
     def export_all(self):
@@ -49,8 +51,8 @@ class NbExporter(BaseExporter):
 
         rampup_block = {"name":"rampup", "tags":{"phase":"rampup"}, "params":{"cl":"LOCAL_QUORUM"}}
         verify_block = {"name":"verify", "tags":{"phase":"verify", "type":"read"}, "params":{"cl":"LOCAL_QUORUM"}}
-        main_read_block = {"name":"main-read", "tags":{"phase":"main", "type":"read"}, "params":{"cl":"LOCAL_QUORUM"}}
-        main_write_block = {"name":"main-write", "tags":{"phase":"main", "type":"write"}, "params":{"cl":"LOCAL_QUORUM"}}        
+        main_read_block = {"name":"main-read", "tags":{"phase":"main", "type":"read"}, "params":{"cl":"LOCAL_QUORUM", "ratio":5}}
+        main_write_block = {"name":"main-write", "tags":{"phase":"main", "type":"write"}, "params":{"cl":"LOCAL_QUORUM", "ratio":5}}
         root["blocks"] = [rampup_block, verify_block, main_read_block, main_write_block]
 
         return yaml.dump(root, default_flow_style=False)
