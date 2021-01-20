@@ -9,7 +9,7 @@ spec:
   storageClassName: {{ .Values.storageClassName }}
   resources:
     requests:
-      storage: 100Mi
+      storage: 20Mi
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -22,7 +22,7 @@ spec:
   storageClassName: {{ .Values.storageClassName }}
   resources:
     requests:
-      storage: 100Mi
+      storage: 20Mi
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -35,7 +35,7 @@ spec:
   storageClassName: {{ .Values.storageClassName }}
   resources:
     requests:
-      storage: 100Mi
+      storage: 20Mi
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -48,5 +48,5 @@ spec:
   storageClassName: {{ .Values.storageClassName }}
   resources:
     requests:
-      storage: 100Mi
+      storage: 20Mi
 ---
