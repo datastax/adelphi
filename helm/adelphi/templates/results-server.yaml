@@ -15,6 +15,7 @@ spec:
         kind: Pod
         metadata:
           name: results-server
+          namespace: {{ .Values.namespace }}
           ownerReferences:
           - apiVersion: argoproj.io/v1alpha1
             blockOwnerDeletion: true
