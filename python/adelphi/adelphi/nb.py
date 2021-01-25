@@ -41,7 +41,7 @@ class NbExporter(BaseExporter):
 
     def __build_schema(self):
         """Really more of a config than a schema, but we'll allow it"""
-        root=dict()
+        root={}
 
         rampup_scenario = "run driver=cql tags==phase:rampup cycles===TEMPLATE(rampup-cycles,1000) threads=auto"
         main_scenario = "run driver=cql tags==phase:main cycles===TEMPLATE(main-cycles,1000) threads=auto"
@@ -49,10 +49,14 @@ class NbExporter(BaseExporter):
         
         #root["bindings"] = bindings
 
-        rampup_block = {"name":"rampup", "tags":{"phase":"rampup"}, "params":{"cl":"LOCAL_QUORUM"}}
-        verify_block = {"name":"verify", "tags":{"phase":"verify", "type":"read"}, "params":{"cl":"LOCAL_QUORUM"}}
-        main_read_block = {"name":"main-read", "tags":{"phase":"main", "type":"read"}, "params":{"cl":"LOCAL_QUORUM", "ratio":5}}
-        main_write_block = {"name":"main-write", "tags":{"phase":"main", "type":"write"}, "params":{"cl":"LOCAL_QUORUM", "ratio":5}}
+        cl_map = {"cl":"LOCAL_QUORUM"}
+        cl_ratio_map = {"ratio":5}
+        cl_ratio_map.update(cl_map)
+
+        rampup_block = {"name":"rampup", "tags":{"phase":"rampup"}, "params":cl_map}
+        verify_block = {"name":"verify", "tags":{"phase":"verify", "type":"read"}, "params":cl_map}
+        main_read_block = {"name":"main-read", "tags":{"phase":"main", "type":"read"}, "params":cl_ratio_map}
+        main_write_block = {"name":"main-write", "tags":{"phase":"main", "type":"write"}, "params":cl_ratio_map}
         root["blocks"] = [rampup_block, verify_block, main_read_block, main_write_block]
 
         return yaml.dump(root, default_flow_style=False)
