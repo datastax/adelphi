@@ -1,0 +1,7 @@
+############################ 
+# Config overrides for GKE 
+############################
+
+storageClassName: standard
+
+clusterSize: 3
