@@ -36,4 +36,4 @@ data:
         scheme: http 
         static_configs: 
         - targets: 
-          - graphite-exporter.{{ .Values.namespace }}.svc.cluster.local:9108
+          - graphite-service:9108

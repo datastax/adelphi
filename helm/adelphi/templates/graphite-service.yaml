@@ -1,14 +1,12 @@
 kind: Service
 apiVersion: v1
 metadata:
-  name: graphite-svc
+  name: graphite-service
   namespace: {{ .Values.namespace }}
-  labels:
-    app: graphite
 spec:
   type: NodePort
   selector:
-    app: graphite
+    app: graphite-exporter
   ports:
   - name: http
     port: 9108
