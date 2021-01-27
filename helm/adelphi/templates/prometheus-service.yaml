@@ -1,0 +1,15 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: prometheus-svc
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: prometheus
+spec:
+  type: NodePort
+  selector:
+    app: prometheus
+  ports:
+  - name: http
+    port: 9090
+    targetPort: 9090

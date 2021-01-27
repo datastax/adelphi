@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: prometheus
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: prometheus
+spec:
+  containers:
+  - name: prometheus
+    image: prom/prometheus
+    env:
+      - name: config.file
+        value: /etc/prometheus/prometheus.yml
+      - name: storage.tsdb.path
+        value: /prometheus
+      - name: web.enable-lifecycle
+        value: "true"
+    ports:
+    - containerPort: 9090
+    volumeMounts:
+    - name: config
+      mountPath: /etc/prometheus
+  volumes:
+  - name: config
+    configMap:
+      name: prometheus-configmap

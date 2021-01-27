@@ -1,0 +1,18 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: graphite-svc
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: graphite
+spec:
+  type: NodePort
+  selector:
+    app: graphite
+  ports:
+  - name: http
+    port: 9108
+    targetPort: 9108
+  - name: udp
+    port: 9109
+    targetPort: 9109
