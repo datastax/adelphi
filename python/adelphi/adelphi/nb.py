@@ -5,17 +5,20 @@ from itertools import chain
 from adelphi.exceptions import TooManyKeyspacesException, TooManyTablesException
 from adelphi.export import BaseExporter
 
-TEXT_SEQ="Mod(keycount:1000000000); ToString() -> String"
+TEXT_SEQ="Mod(1000000000); ToString() -> String"
 TEXT_DIST="Hash(); Mod(1000000000); ToString() -> String"
 
 class NbExporter(BaseExporter):
 
     def __init__(self, cluster, props):
 
-        self.props = props
-        self.metadata = self.get_common_metadata(cluster, props)
+        # Always disable anonymization when generating nosqlbench configs
+        self.props = props.copy()
+        self.props["anonymize"] = False
 
-        all_keyspaces = self.get_keyspaces(cluster, props)
+        self.metadata = self.get_common_metadata(cluster, self.props)
+
+        all_keyspaces = self.get_keyspaces(cluster, self.props)
         if len(all_keyspaces) > 1:
             raise TooManyKeyspacesException
         (ks, keyspace_id) = next(iter(all_keyspaces.items()))
@@ -47,8 +50,11 @@ class NbExporter(BaseExporter):
         for (col_name, col) in self.table.columns.items():
             if col.cql_type == 'text':
                 rv["{}_seq".format(col.name)] = TEXT_SEQ
-                rv["{}_dist".format(col.name)] = TEXT_DIST
+                # If we have a primary key we'll also need a general distribution for select statements
+                if col_name in [c.name for c in self.table.primary_key]:
+                    rv["{}_dist".format(col.name)] = TEXT_DIST
         return rv
+
 
     def __build_rampup_insert_block(self):
         base_block = {"tags":{"name":"rampup-insert"}}
@@ -71,10 +77,8 @@ class NbExporter(BaseExporter):
         cl_ratio_map.update(cl_map)
 
         rampup_block = {"name":"rampup", "tags":{"phase":"rampup"}, "params":cl_map, "statements": self.__build_rampup_insert_block()}
-
-        verify_block = {"name":"verify", "tags":{"phase":"verify", "type":"read"}, "params":cl_map}
         main_read_block = {"name":"main-read", "tags":{"phase":"main", "type":"read"}, "params":cl_ratio_map}
         main_write_block = {"name":"main-write", "tags":{"phase":"main", "type":"write"}, "params":cl_ratio_map}
-        root["blocks"] = [rampup_block, verify_block, main_read_block, main_write_block]
+        root["blocks"] = [rampup_block, main_read_block, main_write_block]
 
         return yaml.dump(root, default_flow_style=False)
