@@ -8,27 +8,48 @@ metadata:
 spec:
   templates:
   - name: results-server
-    daemon: true
-    container:
-      image: nginx
-      volumeMounts:
-      - name: config
-        mountPath: /etc/nginx/conf.d
-      - name: results-pv
-        mountPath: /results
-    initContainers:
-    - name: clear-index
-      image: alpine
-      command:
-        - sh
-        - -c
-      args:
-        # remove sample index created by the NFS server
-        - rm -f /results/index.html
-      volumeMounts:
-      - name: results-pv
-        mountPath: /results
-    volumes:
-    - name: config
-      configMap:
-        name: results-server-configmap
+    resource:
+      action: create
+      manifest: |
+        apiVersion: v1
+        kind: Pod
+        metadata:
+          name: results-server
+          namespace: {{ .Values.namespace }}
+          ownerReferences:
+          - apiVersion: argoproj.io/v1alpha1
+            blockOwnerDeletion: true
+            kind: Workflow
+            name: "{{`{{workflow.name}}`}}"
+            uid: "{{`{{workflow.uid}}`}}"
+        spec:
+          containers:
+          - name : nginx
+            image: nginx
+            volumeMounts:
+            - name: config
+              mountPath: /etc/nginx/conf.d
+            - name: gemini
+              mountPath: /results/gemini
+            - name: nosqlbench-source
+              mountPath: /results/nosqlbench-source
+            - name: nosqlbench-target
+              mountPath: /results/nosqlbench-target
+            - name: cassandra-diff
+              mountPath: /results/cassandra-diff
+          volumes:
+          - name: config
+            configMap:
+              name: results-server-configmap
+          - name: gemini
+            persistentVolumeClaim:
+              claimName: gemini-pvc
+          - name: nosqlbench-source
+            persistentVolumeClaim:
+              claimName: nosqlbench-source-pvc
+          - name: nosqlbench-target
+            persistentVolumeClaim:
+              claimName: nosqlbench-target-pvc
+          - name: cassandra-diff
+            persistentVolumeClaim:
+              claimName: cassandra-diff-pvc

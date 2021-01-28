@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: gemini-pvc
+  namespace: {{ .Values.namespace }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: {{ .Values.storageClassName }}
+  resources:
+    requests:
+      storage: 20Mi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nosqlbench-source-pvc
+  namespace: {{ .Values.namespace }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: {{ .Values.storageClassName }}
+  resources:
+    requests:
+      storage: 20Mi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: nosqlbench-target-pvc
+  namespace: {{ .Values.namespace }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: {{ .Values.storageClassName }}
+  resources:
+    requests:
+      storage: 20Mi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: cassandra-diff-pvc
+  namespace: {{ .Values.namespace }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: {{ .Values.storageClassName }}
+  resources:
+    requests:
+      storage: 20Mi
+---

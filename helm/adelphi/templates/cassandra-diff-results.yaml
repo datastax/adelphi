@@ -13,7 +13,7 @@ spec:
       command: ["sh", "-c", "-e"]
       args:
         - VERSION=$(wget -q -O - https://storage.googleapis.com/kubernetes-release/release/stable.txt 2> /dev/null);
-          OUTPUT=/results/cassandra-diff;
+          OUTPUT=/results;
           wget -q -O /usr/sbin/kubectl https://storage.googleapis.com/kubernetes-release/release/$VERSION/bin/linux/amd64/kubectl;
           pip install cassandra-driver;
           chmod +x /usr/sbin/kubectl;
@@ -38,3 +38,6 @@ spec:
     - name: config
       configMap:
         name: cassandra-diff-configmap
+    - name: results-pv
+      persistentVolumeClaim:
+        claimName: cassandra-diff-pvc
