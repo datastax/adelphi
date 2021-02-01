@@ -9,9 +9,7 @@ spec:
   containers:
   - name: graphite-exporter
     image: prom/graphite-exporter
-    env:
-      - name: graphite.mapping-config
-        value: "/config/graphite_mapping.conf"
+    args: ["--graphite.mapping-config=/config/graphite_mapping.conf"]
     ports:
     - containerPort: 9108
     - containerPort: 9109
