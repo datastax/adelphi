@@ -13,6 +13,7 @@ spec:
       args: [
         "--show-stacktraces",
         "--report-csv-to=/results",
+        "--report-graphite-to=graphite-service:9109",
         "/config/workload.yaml",
         "hosts={{ .Values.source.clusterName }}-{{ .Values.source.dc }}-service",
         "username={{ .Values.source.clusterName }}-superuser",
@@ -49,6 +50,7 @@ spec:
       image: nosqlbench/nosqlbench:latest
       args: [
         "--show-stacktraces",
+        "--report-csv-to=/results",
         "--report-graphite-to=graphite-service:9109",
         "/config/workload.yaml",
         "hosts={{ .Values.target.clusterName }}-{{ .Values.target.dc }}-service",
