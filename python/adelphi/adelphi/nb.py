@@ -89,10 +89,6 @@ class NbExporter(BaseExporter):
         return self.__build_schema()
 
 
-    def each_keyspace(self, ks_fn):
-        ks_fn(self.keyspace, self.keyspace_id)
-
-
     def __build_rampup_statement(self):
         return {"tags":{"name":"rampup-insert"}, "rampup-insert": build_insert_statements(self.keyspace, self.table)}
 

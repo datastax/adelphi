@@ -51,10 +51,6 @@ class GeminiExporter(BaseExporter):
         return self.__build_schema()
 
 
-    def each_keyspace(self, ks_fn):
-        ks_fn(self.keyspace, self.keyspace_id)
-
-
     def __build_schema(self):
 
         set_replication_factor(self.keyspace, self.props['rf'])
