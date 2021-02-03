@@ -5,8 +5,56 @@ from itertools import chain
 from adelphi.exceptions import TooManyKeyspacesException, TooManyTablesException
 from adelphi.export import BaseExporter
 
-TEXT_SEQ="Mod(1000000000); ToString() -> String"
-TEXT_DIST="Hash(); Mod(1000000000); ToString() -> String"
+SEQS={}
+SEQS["text"] = "Mod(1000000000); ToString() -> String"
+DISTS={}
+DISTS["text"] = "Hash(); Mod(1000000000); ToString() -> String"
+
+# A collection of functionally static functions
+def dist_binding_name(col):
+    return "{}_dist".format(col.name)
+
+
+def seq_binding_name(col):
+    return "{}_seq".format(col.name)
+
+
+def build_bindings(table):
+    rv = {}
+    for (col_name, col) in table.columns.items():
+        if col.cql_type not in DISTS.keys():
+            raise UnsupportedColumnTypeException("No nosqlbench distribution configured for type {}".format(col.cql_type))
+        rv[dist_binding_name(col)] = DISTS[col.cql_type]
+
+        # If we have a primary key we'll also need a seq for insert statements
+        if col_name in [c.name for c in table.primary_key]:
+            if col.cql_type not in SEQS.keys():
+                raise UnsupportedColumnTypeException("No nosqlbench sequence configured for type {}".format(col.cql_type))
+            rv[seq_binding_name(col)] = SEQS[col.cql_type]
+
+    return rv
+
+
+def build_select_statements(keyspace, table):
+    key_bindings = " and ".join(["{} = {}".format(key.name, "{" + dist_binding_name(key) + "}") for key in table.primary_key])
+    return "select * from  {}.{} where {}".format(keyspace.name, table.name, key_bindings)
+
+
+def build_insert_statements(keyspace, table):
+    cols = table.columns.values()
+    primary_keys = set(table.primary_key)
+    col_names = ",".join([col.name for col in cols])
+    def binding_name(col):
+        return seq_binding_name(c) if col in primary_keys else dist_binding_name(c)
+    col_bindings = ",".join(["{" + binding_name(c) + "}" for c in cols])
+    return "insert into {}.{} ({}) values ({})".format(keyspace.name, table.name, col_names, col_bindings)
+
+
+class UnsupportedColumnTypeException(Exception):
+    """Exception indicinating that we can't create nosqlbench structures for a column type"""
+    def __init__(self, msg):
+        self.message = msg
+
 
 class NbExporter(BaseExporter):
 
@@ -45,21 +93,16 @@ class NbExporter(BaseExporter):
         ks_fn(self.keyspace, self.keyspace_id)
 
 
-    def __build_bindings(self):
-        rv = {}
-        for (col_name, col) in self.table.columns.items():
-            if col.cql_type == 'text':
-                rv["{}_seq".format(col.name)] = TEXT_SEQ
-                # If we have a primary key we'll also need a general distribution for select statements
-                if col_name in [c.name for c in self.table.primary_key]:
-                    rv["{}_dist".format(col.name)] = TEXT_DIST
-        return rv
+    def __build_rampup_statement(self):
+        return {"tags":{"name":"rampup-insert"}, "rampup-insert": build_insert_statements(self.keyspace, self.table)}
 
 
-    def __build_rampup_insert_block(self):
-        base_block = {"tags":{"name":"rampup-insert"}}
-        # TODO: gen CQL string + add here
-        #base_block["rampup-insert"] = 
+    def __build_main_read_statement(self):
+        return {"tags":{"name":"main-select"}, "main-select": build_select_statements(self.keyspace, self.table)}
+
+
+    def __build_main_write_statement(self):
+        return {"tags":{"name":"main-insert"}, "main-insert": build_insert_statements(self.keyspace, self.table)}
 
 
     def __build_schema(self):
@@ -70,15 +113,15 @@ class NbExporter(BaseExporter):
         main_scenario = "run driver=cql tags==phase:main cycles===TEMPLATE(main-cycles,1000) threads=auto"
         root["scenarios"] = {"default":[rampup_scenario, main_scenario]}
         
-        root["bindings"] = self.__build_bindings()
+        root["bindings"] = build_bindings(self.table)
 
         cl_map = {"cl":"LOCAL_QUORUM"}
         cl_ratio_map = {"ratio":5}
         cl_ratio_map.update(cl_map)
 
-        rampup_block = {"name":"rampup", "tags":{"phase":"rampup"}, "params":cl_map, "statements": self.__build_rampup_insert_block()}
-        main_read_block = {"name":"main-read", "tags":{"phase":"main", "type":"read"}, "params":cl_ratio_map}
-        main_write_block = {"name":"main-write", "tags":{"phase":"main", "type":"write"}, "params":cl_ratio_map}
+        rampup_block = {"name":"rampup", "tags":{"phase":"rampup"}, "params":cl_map, "statements": [self.__build_rampup_statement()]}
+        main_read_block = {"name":"main-read", "tags":{"phase":"main", "type":"read"}, "params":cl_ratio_map, "statements": [self.__build_main_read_statement()]}
+        main_write_block = {"name":"main-write", "tags":{"phase":"main", "type":"write"}, "params":cl_ratio_map, "statements": [self.__build_main_write_statement()]}
         root["blocks"] = [rampup_block, main_read_block, main_write_block]
 
         return yaml.dump(root, default_flow_style=False)
