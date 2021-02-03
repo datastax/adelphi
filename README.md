@@ -150,22 +150,6 @@ In general, with helm, there are two ways to modify the values provided to a dep
 * via the command line using `--set value.path=value`
 * via a `yaml` file via `-f custom.values.yaml`
 
-#### Examples
-
-##### Test Apache Cassandra 3.11.6 and 3.11.9
-
-adelphi.values.yaml
-```
-source:
-  version: "3.11.6"
-target:
-  version: "4.0.0"
-```
-
-```
-helm install adelphi helm/adelphi -n cass-operator -f adelphi.values.yaml
-```
-
 ## Observing Workflow Progress
 
 ### Argo CLI
