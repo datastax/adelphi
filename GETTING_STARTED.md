@@ -292,7 +292,9 @@ helm uninstall adelphi --namespace cass-operator
 
 ### Ingress
 
-It's also possible to expose the `argo-server` or `results-server` using Kubernetes ingress configuration.  This approach may be necessary if you're running on an existing cluster that already uses or requires load balancer ingress for access.  For more information on Kubernetes ingress configuration, check out the official Kubernetes [documentation](https://kubernetes.io/docs/concepts/services-networking/ingress/).
+#### Argo Server
+
+It's also possible to expose the `argo-server` using Kubernetes ingress configuration.  This approach may be necessary if you're running on an existing cluster that already uses or requires load balancer ingress for access.  For more information on Kubernetes ingress configuration, check out the official Kubernetes [documentation](https://kubernetes.io/docs/concepts/services-networking/ingress/).
 
 To use ingress to expose an HTTP service, you'll need an [ingress controller](https://kubernetes.io/docs/concepts/services-networking/ingress-controllers/) deployed within the cluster.  Depending on the environment, you may already have one available.  If not, there are many available as referenced in the Kubernetes [ingress controller](https://kubernetes.io/docs/concepts/services-networking/ingress-controllers/) documentation.
 
