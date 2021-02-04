@@ -23,13 +23,13 @@ def build_bindings(table):
     rv = {}
     for (col_name, col) in table.columns.items():
         if col.cql_type not in DISTS.keys():
-            raise UnsupportedColumnTypeException("No nosqlbench distribution configured for type {}".format(col.cql_type))
+            raise ColumnTypeException("No nosqlbench distribution configured for type {}".format(col.cql_type))
         rv[dist_binding_name(col)] = DISTS[col.cql_type]
 
         # If we have a primary key we'll also need a seq for insert statements
         if col_name in [c.name for c in table.primary_key]:
             if col.cql_type not in SEQS.keys():
-                raise UnsupportedColumnTypeException("No nosqlbench sequence configured for type {}".format(col.cql_type))
+                raise ColumnTypeException("No nosqlbench sequence configured for type {}".format(col.cql_type))
             rv[seq_binding_name(col)] = SEQS[col.cql_type]
 
     return rv
@@ -50,10 +50,10 @@ def build_insert_statements(keyspace, table):
     return "insert into {}.{} ({}) values ({})".format(keyspace.name, table.name, col_names, col_bindings)
 
 
-class UnsupportedColumnTypeException(Exception):
-    """Exception indicinating that we can't create nosqlbench structures for a column type"""
+class ColumnTypeException(Exception):
+    """Exception indicinating an error in the handling of a specific column type"""
     def __init__(self, msg):
-        self.message = msg
+        super(ColumnTypeException, self).__init__(msg)
 
 
 class NbExporter(BaseExporter):
@@ -69,13 +69,25 @@ class NbExporter(BaseExporter):
         all_keyspaces = self.get_keyspaces(cluster, self.props)
         if len(all_keyspaces) > 1:
             raise TooManyKeyspacesException
-        (ks, keyspace_id) = next(iter(all_keyspaces.items()))
-        if (len(ks.tables)) > 1:
-            raise TooManyTablesException
+        (ks, _) = next(iter(all_keyspaces.items()))
         self.keyspace = ks
-        self.keyspace_id = keyspace_id
-        self.table = next(iter(ks.tables.values()))
 
+        # If a table is specified just select it, otherwise check to see if there's
+        # only one table in the keyspace.  If there is then just use that, otherwise
+        # throw.
+        table = None
+        table_name = self.props["table-name"]
+        if table_name:
+            if not table_name in self.keyspace.tables:
+                raise TooManyTablesException
+            table = self.keyspace.tables[table_name]
+        elif len(self.keyspace.tables) == 1:
+            table = next(iter(self.keyspace.tables.values()))
+        else:
+            raise TooManyTablesException
+
+        assert table is not None
+        self.table = table
 
     def export_all(self):
         return self.export_schema()

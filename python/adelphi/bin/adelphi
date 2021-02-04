@@ -34,7 +34,7 @@ from adelphi.cql import CqlExporter
 from adelphi.exceptions import TooManyKeyspacesException, TooManyTablesException
 from adelphi.gemini import GeminiExporter
 from adelphi.gh import build_github, build_origin_repo, build_branch, commit_schemas, build_pull_request
-from adelphi.nb import NbExporter, UnsupportedColumnTypeException
+from adelphi.nb import NbExporter, ColumnTypeException
 from adelphi.store import with_cluster
 
 logging.basicConfig(level=logging.INFO)
@@ -194,6 +194,7 @@ def export_gemini(ctx):
 @click.pass_context
 def contribute(ctx, token):
     """Contribute schemas to Adelphi"""
+
     if not ctx.obj["anonymize"]:
         log.error("All schemas contributed to Adelphi must be anonymized")
         exit(6)
@@ -223,11 +224,13 @@ def contribute(ctx, token):
 
 
 @export.command()
+@click.option('--table', help='The table that should be used for generating the nosqlbench config')
 @click.pass_context
-def export_nb(ctx):
+def export_nb(ctx, table):
     """Export a schema in a format suitable for use with the the nosqlbench performance test framework"""
 
     ctx.obj["include-metadata"] = False
+    ctx.obj["table-name"] = table
 
     try:
         exporter = build_exporter(NbExporter, ctx.obj)
@@ -241,7 +244,7 @@ def export_nb(ctx):
     except TooManyTablesException:
         log.error("Only one table can be selected for nosqlbench testing")
         exit(3)
-    except UnsupportedColumnTypeException as exc:
+    except ColumnTypeException as exc:
         log.error(exc.message)
         exit(4)
 
