@@ -13,7 +13,10 @@ spec:
       args: [
         "--show-stacktraces",
         "--report-csv-to=/results",
+        "--report-graphite-to=graphite-service:9109",
         "/config/workload.yaml",
+        "source",
+        "scenarioname=source",
         "hosts={{ .Values.source.clusterName }}-{{ .Values.source.dc }}-service",
         "username={{ .Values.source.clusterName }}-superuser",
         "passfile=/secret/password"
@@ -50,7 +53,10 @@ spec:
       args: [
         "--show-stacktraces",
         "--report-csv-to=/results",
+        "--report-graphite-to=graphite-service:9109",
         "/config/workload.yaml",
+        "target",
+        "scenarioname=target",
         "hosts={{ .Values.target.clusterName }}-{{ .Values.target.dc }}-service",
         "username={{ .Values.target.clusterName }}-superuser",
         "passfile=/secret/password"

@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: grafana
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: grafana
+spec:
+  containers:
+  - name: grafana
+    image: grafana/grafana
+    env:
+      - name: GF_PATHS_PROVISIONING
+        value: /provisioning
+    ports:
+    - containerPort: 9090
+    volumeMounts:
+    - name: config
+      mountPath: /provisioning/datasources/datasource.yaml
+      subPath: datasource.yaml
+    - name: config
+      mountPath: /provisioning/dashboards/dashboard.yaml
+      subPath: dashboard.yaml
+    - name: config
+      mountPath: /dashboards/nb4-new-dashboard.json
+      subPath: nb4-new-dashboard.json
+  volumes:
+  - name: config
+    configMap:
+      name: grafana-configmap

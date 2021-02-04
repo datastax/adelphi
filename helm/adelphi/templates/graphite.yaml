@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: graphite-exporter
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: graphite-exporter
+spec:
+  containers:
+  - name: graphite-exporter
+    image: prom/graphite-exporter
+    args: ["--graphite.mapping-config=/config/graphite_mapping.conf"]
+    ports:
+    - containerPort: 9108
+    - containerPort: 9109
+    volumeMounts:
+    - name: config
+      mountPath: /config
+  volumes:
+  - name: config
+    configMap:
+      name: graphite-configmap
