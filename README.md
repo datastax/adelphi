@@ -1,75 +1,46 @@
-## TL;DR
+# Adelphi
 
-```
-git clone https://github.com/datastax/adelphi
-cd adelphi
-helm install adelphi helm/adelphi -n cass-operator
-```
+Adelphi is an opinionated testing stack for Apache Cassandra(TM) assembled based on best practices to help operators and developers test new versions of Apache Cassandra for both integrity and performance.
 
-> :warning: This assumes your KUBECONFIG is set to the right k8s cluster and that you have the Helm package manager installed.
-For complete setup instructions, check [Local Setup](#local-setup).
-                                     
-## What is Adelphi?
-It is an automation tool for testing C* OSS that assembles [NoSQLBench](https://github.com/nosqlbench/nosqlbench) and
-[cassandra-diff](https://github.com/apache/cassandra-diff) (with other tools coming soon!).
+## Architecture
 
-It consists of a set of Kubernetes templates orchestrated by an Argo workflow, which allows for easily deploying a test
-scenario into a running k8s cluster. The primary goal is comparing a stable C* version (the "source") against a new or unstable
-version (the "target").
+Adelphi orchestrates a dual-cluster testing workflow within an existing Kubernetes cluster.  
 
-The base workflow launches two C* clusters simultaneously (**source** and **target**), then it runs NoSQLBench on both and finally
-compares the stored data with cassandra-diff.
+The primary goal of Adelphi is to compare a "stable" `source` version of Apache Cassandra with a "new" `target` version of Apache Cassandra.
 
-With the provided anonymizer script, you can export a copy of your production cluster schema and replicate it in the
-Kubernetes environment for testing.
+This comparison is done using a collection of best-of-breed tools:
 
-## Pre-requisites
+* [NoSQLBench](https://github.com/nosqlbench/nosqlbench)
+* [Gemini](https://github.com/scylladb/gemini)
+* [Apache Cassandra diff](https://github.com/apache/cassandra-diff)
+* (Coming Soon) [Harry](https://github.com/apache/cassandra-harry)
 
-In order to run Adelphi, you will need:
+### Kubernetes Orchestration
 
-- A running Kubernetes cluster (or use [k3d](https://k3d.io/) to run locally)
-- [Helm](https://helm.sh/) CLI (a k8s package manager)
-- Docker
-- [Argo](https://argoproj.github.io/) CLI (optional - for pretty printing progress output)
+The testing workflow is orchestrated within a [Kubernetes](https://kubernetes.io/) cluster using [helm](https://helm.sh/) and [Argo](https://argoproj.github.io/).
 
-## Local Setup
+## Real-World Schemas
 
-If you don't have a k8s cluster available you can create one locally using k3d.  The instructions below assume the use of a local k3d cluster;
-if you're using some other existing cluster you can skip to step 4.
+Adelphi also provides a tool that will allow users to extract, anonymize, share, and use the real schemas from their environments to drive testing.
 
-1. [Install k3d](https://k3d.io/#installation) with the following command (or use one of the other options):
+For more information on the schema extraction tooling, check out our [documentation](python/adelphi/README.md).
 
-    ```
-    curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | bash
-    ```
+## Getting Started
 
-2. Create a k8s cluster with 3 worker nodes that we will use to test Cassandra:
+To start using Adelphi, check out our [Getting Start](GETTING_STARTED.md) guide.
 
-    ```
-    k3d cluster create adelphi --servers 3 --wait
-    ```
+## Contributing
 
-3. When that completes, set the KUBECONFIG environment variable to make sure you're working in the right context:
+We're always open to suggestions and contributions across the project!
 
-    ```
-    export KUBECONFIG="$(k3d kubeconfig get adelphi)"
-    ```
+For questions, suggestions, or bug reports please reach out to the project by submitting an [Issue](https://github.com/datastax/adelphi/issues/new/choose).
 
-4. If you don't have Helm installed you can [install](https://helm.sh/docs/intro/install/) it with the following command:
+## License
 
-    ```
-    curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
-    ``` 
-   
-5. At this point, you should be ready to install the Adelphi chart into your cluster. From the project root folder, execute:
+Copyright DataStax, Inc.
 
-    ```
-   helm install adelphi helm/adelphi -n cass-operator
-    ```
-   
-6. (Optional) [Install the Argo CLI](https://github.com/argoproj/argo/releases) then track the workflow progress with:
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
 
-    ```
-   argo watch -n cass-operator @latest
-    ``` 
+http://www.apache.org/licenses/LICENSE-2.0
 
+Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
