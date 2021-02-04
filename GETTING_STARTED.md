@@ -113,6 +113,14 @@ helm install adelphi helm/adelphi -n cass-operator
 
 This will deploy Adelphi with the default [values](helm/adelphi/values.yaml) configuration.
 
+To get up and running quickly on [Google Kubernetes Engine](https://cloud.google.com/kubernetes-engine), a reasonable set of default values have been provided in [gke-values.yaml](helm/adelphi/gke-values.yaml).  They can be deplyed by running:
+
+```
+helm install adelphi helm/adelphi -n cass-operator -f helm/adelphi/gke-values.yaml
+```
+
+This will start a 3-node test using the `standard` storage class.
+
 ### Configuration
 
 To control the deployment configuration, many options are made available via the helm charts included with Adelphi.
@@ -132,7 +140,7 @@ For example, when deploying to a cluster within [Google Kubernetes Engine](https
 This can also be applied via the helm CLI with:
 
 ```
-helm install adelphi helm/adelphi --namespace cass-operator --set storageClass=standard
+helm install adelphi helm/adelphi --n cass-operator --set storageClass=standard
 ```
 
 ## Observing Workflow Progress
@@ -186,7 +194,7 @@ Argo also provides a web application that provides a richer experience when used
 To access the Argo web application, the `argo-server` service will need to be exposed from within the cluster.  When running locally, this can be done using `kubeclt port-forward` as shown:
 
 ```
-kubectl port-forward service/argo-server --namespace cass-operator 9191:2746 
+kubectl port-forward service/argo-server -n cass-operator 9191:2746 
 ```
 
 In this example, the `9191:2746` will expose port `9191` on the cluster and map it to port `2746` on the pod.  If port `9191` is already in use, you can change that to any available port that works best for your environment.
@@ -258,7 +266,7 @@ As testing completes within the workflow, results are made available via a webse
 To access the Adelphi results web server, the `results-server` pod will need to be exposed from within the cluster.  For shorter-term exposure, `kubeclt port-forward` can be used as shown:
 
 ```
-kubectl port-forward pod/results-server --namespace cass-operator 9090:8080 
+kubectl port-forward pod/results-server -n cass-operator 9090:8080 
 ```
 
 In this example, the `9090:8080` will expose port `9090` on the cluster and map it to port `8080` on the pod.  If port `9090` is already in use, you can change that to any available port that works best for your environment.
@@ -283,7 +291,7 @@ wget -r http://localhost:9090/
 After the workflow has completed and any desired results have been retrieved from the results server the resources deployed by Adelphi can be removed by uninstalling Adelphi via helm.
 
 ```
-helm uninstall adelphi --namespace cass-operator
+helm uninstall adelphi -n cass-operator
 ```
 
 > :warning: After uninstalling via helm, some of the customer resources installed will remain. For more information on removing the remaining resources, and to follow as we work to provide automatic ways to fully remove all resources, see [#98](https://github.com/datastax/adelphi/issues/98).
