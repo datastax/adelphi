@@ -20,7 +20,7 @@ Adelphi uses Argo to orchestrate the testing workflow within kubernetes.  The Ar
 
 ### Docker (recommended for local deployment)
 
-If you need to install a local Kubernetes cluster using at tool like k3d, as described later in this guide, you'll also need to have Docker running locally.  To learn more about Docker and install it, check out the Docker [documentation](https://docs.docker.com/get-docker/).
+If you need to install a local Kubernetes cluster using a tool like k3d, as described later in this guide, you'll also need to have Docker running locally.  To learn more about Docker and install it, check out the Docker [documentation](https://docs.docker.com/get-docker/).
 
 ## Kubernetes Environment
 
