@@ -22,8 +22,8 @@ try:
 except ImportError:
     from itertools import filterfalse
 
-from adelphi import NoKeyspacesSelectedException
 from adelphi.anonymize import anonymize_keyspace
+from adelphi.exceptions import KeyspaceSelectionException
 from adelphi.store import build_keyspace_objects
 
 
@@ -77,7 +77,7 @@ class BaseExporter:
         keyspaces = build_keyspace_objects(keyspace_names, metadata)
 
         if len(keyspaces) == 0:
-            raise NoKeyspacesSelectedException
+            raise KeyspaceSelectionException("Unable to select a keyspace from specified keyspace names")
 
         log.info("Processing the following keyspaces: %s", ','.join((ks.name for ks in keyspaces)))
 

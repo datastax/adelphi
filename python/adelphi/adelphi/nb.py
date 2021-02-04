@@ -2,7 +2,7 @@ import yaml
 
 from itertools import chain
 
-from adelphi.exceptions import TooManyKeyspacesException, TooManyTablesException
+from adelphi.exceptions import KeyspaceSelectionException, TableSelectionException
 from adelphi.export import BaseExporter
 
 SEQS={}
@@ -68,7 +68,7 @@ class NbExporter(BaseExporter):
 
         all_keyspaces = self.get_keyspaces(cluster, self.props)
         if len(all_keyspaces) > 1:
-            raise TooManyKeyspacesException
+            raise KeyspaceSelectionException("nosqlbench export doesn't support multiple keyspaces")
         (ks, _) = next(iter(all_keyspaces.items()))
         self.keyspace = ks
 
@@ -79,12 +79,12 @@ class NbExporter(BaseExporter):
         table_name = self.props["table-name"]
         if table_name:
             if not table_name in self.keyspace.tables:
-                raise TooManyTablesException
+                raise TableSelectionException("Table name {} was specified but couldn't be found in keyspace {}".format(table_name, self.keyspace.name))
             table = self.keyspace.tables[table_name]
-        elif len(self.keyspace.tables) == 1:
-            table = next(iter(self.keyspace.tables.values()))
+        elif len(self.keyspace.tables) > 1:
+            raise TableSelectionException("Unable to select a table: no table specified and multiple tables found in keyspace {}".format(self.keyspace.name))
         else:
-            raise TooManyTablesException
+            table = next(iter(self.keyspace.tables.values()))
 
         assert table is not None
         self.table = table
