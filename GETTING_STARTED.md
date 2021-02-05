@@ -75,12 +75,6 @@ k3d-adelphi-server-1   Ready    etcd,master   10m     v1.19.3+k3s2
 k3d-adelphi-server-2   Ready    etcd,master   9m51s   v1.19.3+k3s2
 ```
 
-When you are done with the cluster, it can be deleted with:
-
-```
-k3d cluster delete adelphi
-```
-
 ## Running Adelphi
 
 With helm installed, a kubernetes cluster deployed, and the kubectl context set appropriately you're now ready to deploy Adelphi.
@@ -295,6 +289,12 @@ helm uninstall adelphi -n cass-operator
 ```
 
 > :warning: After uninstalling via helm, some of the customer resources installed will remain. For more information on removing the remaining resources, and to follow as we work to provide automatic ways to fully remove all resources, see [#98](https://github.com/datastax/adelphi/issues/98).
+
+If you are done with the k3d cluster you can remove it as well. This cluster can be deleted with:
+
+```
+k3d cluster delete adelphi
+```
 
 ## Appendix
 

@@ -27,7 +27,7 @@ For more information on the schema extraction tooling, check out our [documentat
 
 ## Getting Started
 
-To start using Adelphi, check out our [Getting Start](GETTING_STARTED.md) guide.
+To start using Adelphi, check out our [Getting Started](GETTING_STARTED.md) guide.
 
 ## Contributing
 
