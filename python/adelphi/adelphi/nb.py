@@ -92,6 +92,12 @@ class NbExporter(BaseExporter):
         return self.__build_schema()
 
 
+    # Requires custom impl because we don't want to support the notion of an arbitrary keyspace_id.
+    # We don't anonymize nosqlbench configs at all so just explicitly use keyspace name here.
+    def each_keyspace(self, ks_fn):
+        ks_fn(self.keyspace, self.keyspace.name)
+
+
     def __build_rampup_statement(self):
         return {"tags":{"name":"rampup-insert"}, "rampup-insert": build_insert_statements(self.keyspace, self.table)}
 
