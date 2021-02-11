@@ -48,15 +48,14 @@ def build_insert_statements(keyspace, table):
     primary_keys = set(table.primary_key)
     col_names = ",".join([col.name for col in cols])
     def binding_name(col):
-        return seq_binding_name(c) if col in primary_keys else dist_binding_name(c)
+        return seq_binding_name(col) if col in primary_keys else dist_binding_name(col)
     col_bindings = ",".join(["{" + binding_name(c) + "}" for c in cols])
     return "insert into {}.{} ({}) values ({})".format(keyspace.name, table.name, col_names, col_bindings)
 
 
 class ColumnTypeException(Exception):
     """Exception indicinating an error in the handling of a specific column type"""
-    def __init__(self, msg):
-        super(ColumnTypeException, self).__init__(msg)
+    pass
 
 
 class NbExporter(BaseExporter):

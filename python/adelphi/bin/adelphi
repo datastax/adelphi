@@ -175,7 +175,7 @@ def export_cql(ctx, no_metadata):
         exporter = build_exporter(CqlExporter, ctx.obj)
         export_keyspaces(ctx.obj, exporter)
     except KeyspaceSelectionException as exc:
-        log.info(exc.message)
+        log.info(exc.args[0])
         exit(KEYSPACE_SELECTION_EXCEPTION)
 
 
@@ -190,7 +190,7 @@ def export_gemini(ctx):
         exporter = build_exporter(GeminiExporter, ctx.obj)
         export_keyspaces(ctx.obj, exporter)
     except KeyspaceSelectionException as exc:
-        log.info(exc.message)
+        log.info(exc.args[0])
         exit(KEYSPACE_SELECTION_EXCEPTION)
 
 
@@ -239,13 +239,13 @@ def export_nb(ctx):
         exporter = build_exporter(NbExporter, ctx.obj)
         export_keyspaces(ctx.obj, exporter)
     except KeyspaceSelectionException as exc:
-        log.info(exc.message)
+        log.info(exc.args[0])
         exit(KEYSPACE_SELECTION_EXCEPTION)
     except TableSelectionException as exc:
-        log.info(exc.message)
+        log.info(exc.args[0])
         exit(TABLE_SELECTION_EXCEPTION)
     except ColumnTypeException as exc:
-        log.error(exc.message)
+        log.error(exc.args[0])
         exit(COLUMN_TYPE_EXCEPTION)
 
 
