@@ -229,13 +229,11 @@ def contribute(ctx, token):
 
 
 @export.command()
-@click.option('--table', help='The table that should be used for generating the nosqlbench config')
 @click.pass_context
-def export_nb(ctx, table):
+def export_nb(ctx):
     """Export a schema in a format suitable for use with the the nosqlbench performance test framework"""
 
     ctx.obj["include-metadata"] = False
-    ctx.obj["table-name"] = table
 
     try:
         exporter = build_exporter(NbExporter, ctx.obj)

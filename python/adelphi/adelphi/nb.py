@@ -1,3 +1,4 @@
+import logging
 import yaml
 
 from itertools import chain
@@ -9,6 +10,8 @@ SEQS={}
 SEQS["text"] = "Mod(1000000000); ToString() -> String"
 DISTS={}
 DISTS["text"] = "Hash(); Mod(1000000000); ToString() -> String"
+
+log = logging.getLogger('adelphi')
 
 # A collection of functionally static functions
 def dist_binding_name(col):
@@ -69,25 +72,14 @@ class NbExporter(BaseExporter):
         all_keyspaces = self.get_keyspaces(cluster, self.props)
         if len(all_keyspaces) > 1:
             raise KeyspaceSelectionException("nosqlbench export doesn't support multiple keyspaces")
-        (ks, _) = next(iter(all_keyspaces.items()))
-        self.keyspace = ks
+        self.keyspace = next(iter(all_keyspaces.keys()))
 
-        # If a table is specified just select it, otherwise check to see if there's
-        # only one table in the keyspace.  If there is then just use that, otherwise
-        # throw.
-        table = None
-        table_name = self.props["table-name"]
-        if table_name:
-            if not table_name in self.keyspace.tables:
-                raise TableSelectionException("Table name {} was specified but couldn't be found in keyspace {}".format(table_name, self.keyspace.name))
-            table = self.keyspace.tables[table_name]
-        elif len(self.keyspace.tables) > 1:
-            raise TableSelectionException("Unable to select a table: no table specified and multiple tables found in keyspace {}".format(self.keyspace.name))
-        else:
-            table = next(iter(self.keyspace.tables.values()))
+        if len(self.keyspace.tables) == 0:
+            raise TableSelectionException("Keyspace {} contains no tables".format(self.keyspace.name))
+        self.table = next(iter(self.keyspace.tables.values()))
 
-        assert table is not None
-        self.table = table
+        log.info("Creating nosqlbench config for {}.{}".format(self.keyspace.name, self.table.name))
+
 
     def export_all(self):
         return self.export_schema()
