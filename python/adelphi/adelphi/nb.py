@@ -22,6 +22,9 @@ def seq_binding_name(col):
     return "{}_seq".format(col.name)
 
 
+def quote_str(s):
+    return "\"{}\"".format(s)
+
 def build_bindings(table):
     rv = {}
     for (col_name, col) in table.columns.items():
@@ -39,18 +42,18 @@ def build_bindings(table):
 
 
 def build_select_statements(keyspace, table):
-    key_bindings = " and ".join(["{} = {}".format(key.name, "{" + dist_binding_name(key) + "}") for key in table.primary_key])
-    return "select * from  {}.{} where {}".format(keyspace.name, table.name, key_bindings)
+    key_bindings = " and ".join(["{} = {}".format(quote_str(key.name), "{" + dist_binding_name(key) + "}") for key in table.primary_key])
+    return "select * from  {}.{} where {}".format(quote_str(keyspace.name), quote_str(table.name), key_bindings)
 
 
 def build_insert_statements(keyspace, table):
     cols = table.columns.values()
     primary_keys = set(table.primary_key)
-    col_names = ",".join([col.name for col in cols])
+    col_names = ",".join([quote_str(col.name) for col in cols])
     def binding_name(col):
         return seq_binding_name(col) if col in primary_keys else dist_binding_name(col)
     col_bindings = ",".join(["{" + binding_name(c) + "}" for c in cols])
-    return "insert into {}.{} ({}) values ({})".format(keyspace.name, table.name, col_names, col_bindings)
+    return "insert into {}.{} ({}) values ({})".format(quote_str(keyspace.name), quote_str(table.name), col_names, col_bindings)
 
 
 class ColumnTypeException(Exception):
