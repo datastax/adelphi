@@ -6,7 +6,7 @@ from adelphi.anonymize import KEYSPACE_PREFIX,\
 	FIELD_PREFIX,\
 	INDEX_PREFIX,\
 	get_name
-from schema_util import get_schema
+from tests.unit.schema_util import get_schema
 
 try:
     import unittest2 as unittest
