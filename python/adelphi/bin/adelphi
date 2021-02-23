@@ -29,11 +29,21 @@ except ImportError:
 
 import click
 
-from adelphi import NoKeyspacesSelectedException
 from adelphi.cql import CqlExporter
-from adelphi.gemini import GeminiExporter, TooManyKeyspacesException
+from adelphi.exceptions import KeyspaceSelectionException, TableSelectionException
+from adelphi.gemini import GeminiExporter
 from adelphi.gh import build_github, build_origin_repo, build_branch, commit_schemas, build_pull_request
+from adelphi.nb import NbExporter, ColumnTypeException
 from adelphi.store import with_cluster
+
+# Exit codes
+KEYSPACE_SELECTION_EXCEPTION = 1
+TABLE_SELECTION_EXCEPTION = 2
+COLUMN_TYPE_EXCEPTION = 3
+OUTPUT_DOES_NOT_EXIST = 4
+OUTPUT_NOT_DIRECTORY = 5
+OUTPUT_NOT_WRITABLE = 6
+MUST_ANONYMIZE_SCHEMA = 7
 
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger('adelphi')
@@ -90,13 +100,13 @@ def export(ctx, hosts, port, username, password, keyspaces, rf, no_anonymize, ou
     if output_dir is not None:
         if not os.path.exists(output_dir):
             log.error("Output directory " + output_dir + " does not exist")
-            exit(3)
+            exit(OUTPUT_DOES_NOT_EXIST)
         if not os.path.isdir(output_dir):
             log.error("Specified output directory " + output_dir + " exists but is not a directory")
-            exit(4)
+            exit(OUTPUT_NOT_DIRECTORY)
         if not os.access(output_dir, os.W_OK):
             log.error("Output directory " + output_dir + " exists but is not writable")
-            exit(5)
+            exit(OUTPUT_NOT_WRITABLE)
 
     ctx.obj['hosts'] = hosts.split(',')
     ctx.obj['port'] = port
@@ -132,10 +142,10 @@ def export_keyspaces(props, exporter):
                 os.mkdir(keyspace_dir)
             elif not os.path.isdir(keyspace_dir):
                 log.error("Specified output directory " + keyspace_dir + " exists but is not a directory")
-                exit(4)
+                exit(OUTPUT_NOT_DIRECTORY)
             elif not os.access(keyspace_dir, os.W_OK):
                 log.error("Output directory " + keyspace_dir + " exists but is not writable")
-                exit(5)
+                exit(OUTPUT_NOT_WRITABLE)
 
             with open(os.path.join(keyspace_dir, "schema"),'w') as schema_file:
                 log.info("Writing schema for keyspace " + keyspace_obj.name + " to file " + schema_file.name)
@@ -164,9 +174,9 @@ def export_cql(ctx, no_metadata):
     try:
         exporter = build_exporter(CqlExporter, ctx.obj)
         export_keyspaces(ctx.obj, exporter)
-    except NoKeyspacesSelectedException:
-        log.info("No valid keyspaces selected")
-        exit(1)
+    except KeyspaceSelectionException as exc:
+        log.info(exc.args[0])
+        exit(KEYSPACE_SELECTION_EXCEPTION)
 
 
 @export.command()
@@ -179,12 +189,9 @@ def export_gemini(ctx):
     try:
         exporter = build_exporter(GeminiExporter, ctx.obj)
         export_keyspaces(ctx.obj, exporter)
-    except NoKeyspacesSelectedException:
-        log.info("No valid keyspaces selected")
-        exit(1)
-    except TooManyKeyspacesException:
-        log.error("Gemini schema doesn't support multiple keyspaces.")
-        exit(2)
+    except KeyspaceSelectionException as exc:
+        log.info(exc.args[0])
+        exit(KEYSPACE_SELECTION_EXCEPTION)
 
 
 @export.command()
@@ -192,9 +199,10 @@ def export_gemini(ctx):
 @click.pass_context
 def contribute(ctx, token):
     """Contribute schemas to Adelphi"""
+
     if not ctx.obj["anonymize"]:
         log.error("All schemas contributed to Adelphi must be anonymized")
-        exit(6)
+        exit(MUST_ANONYMIZE_SCHEMA)
 
     if ctx.obj["output-dir"]:
         log.info("Output directory argument is ignored when contributing a schema to Adelphi")
@@ -218,6 +226,27 @@ def contribute(ctx, token):
         branch_name = build_branch(gh, fork_repo)
         commit_schemas(gh, fork_repo, tmpdir, branch_name)
         build_pull_request(gh, origin_repo, branch_name)
+
+
+@export.command()
+@click.pass_context
+def export_nb(ctx):
+    """Export a schema in a format suitable for use with the the nosqlbench performance test framework"""
+
+    ctx.obj["include-metadata"] = False
+
+    try:
+        exporter = build_exporter(NbExporter, ctx.obj)
+        export_keyspaces(ctx.obj, exporter)
+    except KeyspaceSelectionException as exc:
+        log.info(exc.args[0])
+        exit(KEYSPACE_SELECTION_EXCEPTION)
+    except TableSelectionException as exc:
+        log.info(exc.args[0])
+        exit(TABLE_SELECTION_EXCEPTION)
+    except ColumnTypeException as exc:
+        log.error(exc.args[0])
+        exit(COLUMN_TYPE_EXCEPTION)
 
 
 if __name__ == '__main__':
