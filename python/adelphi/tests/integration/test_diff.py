@@ -1,6 +1,8 @@
 import logging
-import time
+import os
 import sys
+import tempfile
+import time
 
 try:
     import unittest2 as unittest
@@ -14,14 +16,6 @@ logging.basicConfig(filename="adelphi.log", level=logging.INFO)
 log = logging.getLogger('adelphi')
 
 class TestDiff(unittest.TestCase):
-
-    def setUp(self):
-        self.client = docker.from_env()
-
-
-    def testSimple(self):
-        self.__testCassandraVersion("4.0-beta4")
-
 
     def __connectToCassandra(self):
         self.session = None
@@ -40,6 +34,8 @@ class TestDiff(unittest.TestCase):
                 log.info("Exception connecting, will retry", exc_info=sys.exc_info()[0])
                 time.sleep(10)
 
+        log.info("Cassandra cluster ready")
+
 
     def __createSchema(self):
         log.info("Creating schema on Cassandra cluster")
@@ -52,18 +48,42 @@ class TestDiff(unittest.TestCase):
                     log.info("Skipping commented statement {}".format(stmt))
                     continue
                 realStmt = stmt + ';'
-                log.info("Executing statement {}".format(realStmt))
-                self.session.execute(realStmt)
+                log.debug("Executing statement {}".format(realStmt))
+                try:
+                    self.session.execute(realStmt)
+                except:
+                    log.info("Exception executing statement: {}".format(realStmt), exc_info=sys.exc_info()[0])
+
+
+    def __runAdelphi(self, tmpdir=None, version=None):
+        log.info("Running Adelphi")
+        outputPath = os.path.join(tmpdir, "output")
+        os.mkdir(outputPath)
+        logPath = os.path.join(tmpdir, "logs")
+        os.mkdir(logPath)
+
+        stdoutLog = os.path.join(outputPath, "{}-stdout.cql".format(version))
+        stderrLog = os.path.join(logPath, "{}.log".format(version))
+        os.system("adelphi export-cql --no-metadata > {} 2>> {}".format(stdoutLog, stderrLog))
+
+        log.info("Adelphi completed, output/logs at {}".format(tmpdir))
 
 
     def __testCassandraVersion(self, version):
         container = self.client.containers.run(name="adelphi", remove=True, detach=True, ports={9042:9042}, image="cassandra:{}".format(version))
 
+        tmpdir = tempfile.mkdtemp()
         self.__connectToCassandra()
-
-        log.info("Cassandra cluster ready")
-
         self.__createSchema()
+        self.__runAdelphi(tmpdir=tmpdir, version=version)
 
         self.cluster.shutdown()
-        #container.stop()
+        container.stop()
+
+
+    def setUp(self):
+        self.client = docker.from_env()
+
+
+    def testSimple(self):
+        self.__testCassandraVersion("4.0-beta4")
