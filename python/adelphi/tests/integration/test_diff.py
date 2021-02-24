@@ -9,35 +9,45 @@ try:
 except ImportError:
     import unittest
 
-from cassandra.cluster import Cluster
+from collections import namedtuple
+
+from cassandra.cluster import Cluster, NoHostAvailable
 import docker
 
 logging.basicConfig(filename="adelphi.log", level=logging.INFO)
 log = logging.getLogger('adelphi')
 
+TempDirs = namedtuple('TempDirs', 'basePath, outputPath, logPath')
+
 class TestDiff(unittest.TestCase):
 
+    def __makeTempDirs(self):
+        basePath = tempfile.mkdtemp()
+        outputPath = os.path.join(basePath, "output")
+        os.mkdir(outputPath)
+        logPath = os.path.join(basePath, "logs")
+        os.mkdir(logPath)
+        return TempDirs(basePath, outputPath, logPath)
+
+
     def __connectToCassandra(self):
-        self.session = None
-        while not self.session:
-            # Old version based on literal adaptation of prior shell script, probably not applicable at all now
-            #(exitcode,output) = container.exec_run(cmd="cqlsh -e 'select * from system.local'")
-            #containerReady = (exitcode == 0)
+        session = None
+        while not session:
             try:
-                self.cluster = Cluster(["127.0.0.1"],port=9042)
-                self.session = self.cluster.connect()
+                cluster = Cluster(["127.0.0.1"],port=9042)
+                session = cluster.connect()
 
                 # Confirm that the session is actually functioning before calling things good
-                rs = self.session.execute("select * from system.local")
+                rs = session.execute("select * from system.local")
                 log.info("Connected to Cassandra cluster, first row of system.local: {}".format(rs.one()))
+                log.info("Cassandra cluster ready")
+                return (cluster,session)
             except:
-                log.info("Exception connecting, will retry", exc_info=sys.exc_info()[0])
-                time.sleep(10)
-
-        log.info("Cassandra cluster ready")
+                log.info("Couldn't quite connect yet, will retry")
+                time.sleep(1)
 
 
-    def __createSchema(self):
+    def __createSchema(self, session=None):
         log.info("Creating schema on Cassandra cluster")
         with open("integration-tests/base-schema.cql") as schema:
             for stmt in [s.strip() for s in schema.read().split(';')]:
@@ -50,35 +60,33 @@ class TestDiff(unittest.TestCase):
                 realStmt = stmt + ';'
                 log.debug("Executing statement {}".format(realStmt))
                 try:
-                    self.session.execute(realStmt)
+                    session.execute(realStmt)
                 except:
                     log.info("Exception executing statement: {}".format(realStmt), exc_info=sys.exc_info()[0])
 
 
-    def __runAdelphi(self, tmpdir=None, version=None):
+    def __runAdelphi(self, version=None, dirs=None):
         log.info("Running Adelphi")
-        outputPath = os.path.join(tmpdir, "output")
-        os.mkdir(outputPath)
-        logPath = os.path.join(tmpdir, "logs")
-        os.mkdir(logPath)
-
-        stdoutLog = os.path.join(outputPath, "{}-stdout.cql".format(version))
-        stderrLog = os.path.join(logPath, "{}.log".format(version))
+        stdoutLog = os.path.join(dirs.outputPath, "{}-stdout.cql".format(version))
+        stderrLog = os.path.join(dirs.logPath, "{}.log".format(version))
         os.system("adelphi export-cql --no-metadata > {} 2>> {}".format(stdoutLog, stderrLog))
-
-        log.info("Adelphi completed, output/logs at {}".format(tmpdir))
+        log.info("Adelphi completed, output/logs at {}".format(dirs.basePath))
 
 
     def __testCassandraVersion(self, version):
         container = self.client.containers.run(name="adelphi", remove=True, detach=True, ports={9042:9042}, image="cassandra:{}".format(version))
+        dirs = self.__makeTempDirs()
 
-        tmpdir = tempfile.mkdtemp()
-        self.__connectToCassandra()
-        self.__createSchema()
-        self.__runAdelphi(tmpdir=tmpdir, version=version)
+        (cluster,session) = (None,None)
+        try:
+            (cluster,session) = self.__connectToCassandra()
+            self.__createSchema(session=session)
+            self.__runAdelphi(version, dirs)
+        finally:
+            if cluster:
+                cluster.shutdown()
 
-        self.cluster.shutdown()
-        container.stop()
+            #container.stop()
 
 
     def setUp(self):
