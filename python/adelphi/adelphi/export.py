@@ -15,6 +15,7 @@
 import hashlib
 import logging
 from base64 import urlsafe_b64encode
+from collections import OrderedDict
 from datetime import datetime, tzinfo, timedelta
 
 try:
@@ -81,9 +82,26 @@ class BaseExporter:
 
         log.info("Processing the following keyspaces: %s", ','.join((ks.name for ks in keyspaces)))
 
-        # anonymize_keyspace mutates keyspace state so we must trap keyspace_id before we (possibly) call it
-        base_map = { ks : self.build_keyspace_id(ks) for ks in keyspaces}
-        return base_map if not props['anonymize'] else {anonymize_keyspace(ks) : keyspace_id for (ks, keyspace_id) in base_map.items()}
+        def process_keyspace(ks):
+            # Anonymize keyspace first.  This has to be done before any re-ordering since
+            # names may/will change as a result of this process
+            if props['anonymize']:
+                anonymize_keyspace(ks)
+
+            # Make sure tables, UDFs and indexes are ordered by name
+            tables = ks.tables.items()
+            tables.sort(key=lambda x: x[0])
+            ks.tables = OrderedDict(tables)
+            user_types = ks.user_types.items()
+            user_types.sort(key=lambda x:x[0])
+            ks.user_types = OrderedDict(user_types)
+            indexes = ks.indexes.items()
+            indexes.sort(key=lambda x:x[0])
+            ks.indexes = OrderedDict(indexes)
+
+            return ks
+
+        return {process_keyspace(ks) : self.build_keyspace_id(ks) for ks in keyspaces}
 
 
     def get_cluster_metadata(self, cluster):
