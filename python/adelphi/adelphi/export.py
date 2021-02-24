@@ -90,13 +90,13 @@ class BaseExporter:
 
             # Make sure tables, UDFs and indexes are ordered by name
             tables = ks.tables.items()
-            tables.sort(key=lambda x: x[0])
+            sorted(tables, key=lambda x: x[0])
             ks.tables = OrderedDict(tables)
             user_types = ks.user_types.items()
-            user_types.sort(key=lambda x:x[0])
+            sorted(user_types, key=lambda x:x[0])
             ks.user_types = OrderedDict(user_types)
             indexes = ks.indexes.items()
-            indexes.sort(key=lambda x:x[0])
+            sorted(indexes, key=lambda x:x[0])
             ks.indexes = OrderedDict(indexes)
 
             return ks
