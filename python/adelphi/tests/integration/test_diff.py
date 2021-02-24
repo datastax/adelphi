@@ -4,6 +4,11 @@ import sys
 import tempfile
 import time
 
+if os.name == 'posix' and sys.version_info[0] < 3:
+    import subprocess32 as subprocess
+else:
+    import subprocess
+
 try:
     import unittest2 as unittest
 except ImportError:
@@ -11,7 +16,7 @@ except ImportError:
 
 from collections import namedtuple
 
-from cassandra.cluster import Cluster, NoHostAvailable
+from cassandra.cluster import Cluster
 import docker
 
 logging.basicConfig(filename="adelphi.log", level=logging.INFO)
@@ -20,6 +25,10 @@ log = logging.getLogger('adelphi')
 TempDirs = namedtuple('TempDirs', 'basePath, outputPath, logPath')
 
 class TestDiff(unittest.TestCase):
+
+    def __stdoutPath(self, version=None, dirs=None):
+        return os.path.join(dirs.outputPath, "{}-stdout.cql".format(version))
+
 
     def __makeTempDirs(self):
         basePath = tempfile.mkdtemp()
@@ -67,10 +76,17 @@ class TestDiff(unittest.TestCase):
 
     def __runAdelphi(self, version=None, dirs=None):
         log.info("Running Adelphi")
-        stdoutLog = os.path.join(dirs.outputPath, "{}-stdout.cql".format(version))
-        stderrLog = os.path.join(dirs.logPath, "{}.log".format(version))
-        os.system("adelphi export-cql --no-metadata > {} 2>> {}".format(stdoutLog, stderrLog))
+        stdoutPath = self.__stdoutPath(version, dirs)
+        stderrPath = os.path.join(dirs.logPath, "{}.log".format(version))
+        subprocess.run("adelphi export-cql --no-metadata > {} 2>> {}".format(stdoutPath, stderrPath), shell=True)
         log.info("Adelphi completed, output/logs at {}".format(dirs.basePath))
+
+
+    def __compare(self, version=None, dirs=None):
+        stdoutPath = self.__stdoutPath(version, dirs)
+        referencePath = "integration-tests/schemas/{}.cql".format(version)
+        rv = subprocess.run("diff {} {}".format(stdoutPath, referencePath), shell=True)
+        self.assertEqual(rv.returncode, 0)
 
 
     def __testCassandraVersion(self, version):
@@ -82,6 +98,7 @@ class TestDiff(unittest.TestCase):
             (cluster,session) = self.__connectToCassandra()
             self.__createSchema(session=session)
             self.__runAdelphi(version, dirs)
+            self.__compare(version, dirs)
         finally:
             if cluster:
                 cluster.shutdown()
@@ -94,4 +111,4 @@ class TestDiff(unittest.TestCase):
 
 
     def testSimple(self):
-        self.__testCassandraVersion("4.0-beta4")
+        self.__testCassandraVersion("4.0-beta3")
