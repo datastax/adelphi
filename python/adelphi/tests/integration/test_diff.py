@@ -59,7 +59,7 @@ class TestDiff(unittest.TestCase):
 
     def __createSchema(self, session=None):
         log.info("Creating schema on Cassandra cluster")
-        with open("integration-tests/base-schema.cql") as schema:
+        with open("tests/integration/resources/base-schema.cql") as schema:
             for stmt in [s.strip() for s in schema.read().split(';')]:
                 if len(stmt) == 0:
                     log.info("Skipping empty statement")
@@ -78,14 +78,14 @@ class TestDiff(unittest.TestCase):
     def __runAdelphi(self, version=None, dirs=None):
         log.info("Running Adelphi")
         stdoutPath = self.__stdoutPath(version, dirs)
-        stderrPath = os.path.join(dirs.logPath, "{}.log".format(version))
+        stderrPath = os.path.join(dirs.logPath, "{}-stderr.log".format(version))
         subprocess.run("adelphi export-cql --no-metadata > {} 2>> {}".format(stdoutPath, stderrPath), shell=True)
         log.info("Adelphi completed")
 
 
     def __compare(self, version=None, dirs=None):
         stdoutPath = self.__stdoutPath(version, dirs)
-        referencePath = "integration-tests/schemas/{}.cql".format(version)
+        referencePath = "tests/integration/resources/schemas/{}.cql".format(version)
         rv = subprocess.run("diff {} {}".format(stdoutPath, referencePath), shell=True)
         self.assertEqual(rv.returncode, 0)
 
