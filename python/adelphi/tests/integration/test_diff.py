@@ -1,5 +1,6 @@
 import logging
 import os
+import shutil
 import sys
 import tempfile
 import time
@@ -79,7 +80,7 @@ class TestDiff(unittest.TestCase):
         stdoutPath = self.__stdoutPath(version, dirs)
         stderrPath = os.path.join(dirs.logPath, "{}.log".format(version))
         subprocess.run("adelphi export-cql --no-metadata > {} 2>> {}".format(stdoutPath, stderrPath), shell=True)
-        log.info("Adelphi completed, output/logs at {}".format(dirs.basePath))
+        log.info("Adelphi completed")
 
 
     def __compare(self, version=None, dirs=None):
@@ -90,25 +91,41 @@ class TestDiff(unittest.TestCase):
 
 
     def __testCassandraVersion(self, version):
+        log.info("Testing Cassandra version {}".format(version))
+
         container = self.client.containers.run(name="adelphi", remove=True, detach=True, ports={9042:9042}, image="cassandra:{}".format(version))
         dirs = self.__makeTempDirs()
 
         (cluster,session) = (None,None)
         try:
             (cluster,session) = self.__connectToCassandra()
-            self.__createSchema(session=session)
+            self.__createSchema(session)
             self.__runAdelphi(version, dirs)
             self.__compare(version, dirs)
         finally:
             if cluster:
                 cluster.shutdown()
 
-            #container.stop()
+            if "KEEP_CONTAINER" in os.environ:
+                log.info("KEEP_CONTAINER env var set, preserving Cassandra container 'adelphi'")
+            else:
+                container.stop()
+
+            if "KEEP_LOGS" in os.environ:
+                log.info("KEEP_LOGS env var set, preserving logs/output at {}".format(dirs.basePath))
+            else:
+                shutil.rmtree(dirs.basePath)
 
 
     def setUp(self):
         self.client = docker.from_env()
 
 
-    def testSimple(self):
-        self.__testCassandraVersion("4.0-beta3")
+    def testDiff(self):
+        versions = ["2.1.22", "2.2.19", "3.0.23", "3.11.9", "4.0-beta3"]
+        if "CASSANDRA_VERSIONS" in os.environ:
+            versions = os.environ["CASSANDRA_VERSIONS"].split(',')
+            log.info("CASSANDRA_VERSIONS set, using version list {}".format(versions))
+
+        for version in versions:
+            self.__testCassandraVersion(version)
