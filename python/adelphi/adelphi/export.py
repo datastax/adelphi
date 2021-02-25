@@ -88,7 +88,7 @@ class BaseExporter:
             if props['anonymize']:
                 anonymize_keyspace(ks)
 
-            # Make sure tables, UDFs and indexes are ordered by name
+            # Make sure tables, UDTs and indexes are ordered by name
             tables = ks.tables.items()
             ks.tables = OrderedDict(sorted(tables, key=lambda x: x[0]))
             user_types = ks.user_types.items()
