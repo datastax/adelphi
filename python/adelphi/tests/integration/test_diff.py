@@ -1,3 +1,4 @@
+import glob
 import logging
 import os
 import shutil
@@ -29,6 +30,10 @@ class TestDiff(unittest.TestCase):
 
     def __stdoutPath(self, version=None, dirs=None):
         return os.path.join(dirs.outputPath, "{}-stdout.cql".format(version))
+
+
+    def __outputDirPath(self, version=None, dirs=None):
+        return os.path.join(dirs.outputPath, version)
 
 
     def __makeTempDirs(self):
@@ -78,17 +83,28 @@ class TestDiff(unittest.TestCase):
     def __runAdelphi(self, version=None, dirs=None):
         log.info("Running Adelphi")
         stdoutPath = self.__stdoutPath(version, dirs)
+        outputDirPath = self.__outputDirPath(version, dirs)
+        os.mkdir(outputDirPath)
         stderrPath = os.path.join(dirs.logPath, "{}-stderr.log".format(version))
         subprocess.run("adelphi export-cql --no-metadata > {} 2>> {}".format(stdoutPath, stderrPath), shell=True)
+        subprocess.run("adelphi --output-dir={} export-cql 2>> {}".format(outputDirPath, stderrPath), shell=True)
         log.info("Adelphi completed")
 
 
     def __compare(self, version=None, dirs=None):
-        stdoutPath = self.__stdoutPath(version, dirs)
         referencePath = "tests/integration/resources/schemas/{}.cql".format(version)
-        rv = subprocess.run("diff {} {}".format(stdoutPath, referencePath), shell=True)
-        self.assertEqual(rv.returncode, 0)
 
+        stdoutPath = self.__stdoutPath(version, dirs)
+        rv1 = subprocess.run("diff -Z {} {}".format(stdoutPath, referencePath), shell=True)
+        self.assertEqual(rv1.returncode, 0)
+
+        # Find the created schema underneath the output dir.  Note that this logic will have to be fixed
+        # once https://github.com/datastax/adelphi/issues/106 is resolved
+        outputDirPath = self.__outputDirPath(version, dirs)
+        schemas = glob.glob("{}/*/schema".format(outputDirPath))
+        log.info("Found schema file in output directory, path: {}".format(schemas[0]))
+        rv2 = subprocess.run("diff -Z {} {}".format(schemas[0], referencePath), shell=True)
+        self.assertEqual(rv2.returncode, 0)
 
     def __testCassandraVersion(self, version):
         log.info("Testing Cassandra version {}".format(version))
