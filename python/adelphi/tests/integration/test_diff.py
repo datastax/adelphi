@@ -19,7 +19,7 @@ from collections import namedtuple
 
 import docker
 
-from tests.integration import BaseIntegrationTest
+from tests.integration import BaseIntegrationTest, CASSANDRA_VERSIONS
 
 logging.basicConfig(filename="adelphi.log", level=logging.INFO)
 log = logging.getLogger('adelphi')
@@ -105,10 +105,11 @@ class TestDiff(unittest.TestCase, BaseIntegrationTest):
 
 
     def testDiff(self):
-        versions = ["2.1.22", "2.2.19", "3.0.23", "3.11.9", "4.0-beta3"]
+        versions = CASSANDRA_VERSIONS
         if "CASSANDRA_VERSIONS" in os.environ:
             versions = os.environ["CASSANDRA_VERSIONS"].split(',')
-            log.info("CASSANDRA_VERSIONS set, using version list {}".format(versions))
+
+        log.info("Will test the following Cassandra versions: {}".format(versions))
 
         for version in versions:
             self.runTestForVersion(version)

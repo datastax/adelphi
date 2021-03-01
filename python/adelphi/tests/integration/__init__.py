@@ -5,6 +5,9 @@ import time
 
 from cassandra.cluster import Cluster
 
+# Default C* versions to include in all integration tests
+CASSANDRA_VERSIONS = ["2.1.22", "2.2.19", "3.0.23", "3.11.9", "4.0-beta3"]
+
 log = logging.getLogger('adelphi')
 
 class BaseIntegrationTest:
