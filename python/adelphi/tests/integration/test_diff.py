@@ -30,6 +30,10 @@ class TestDiff(BaseIntegrationTest, unittest.TestCase):
         return os.path.join(self.dirs.outputPath, "{}-stdout.cql".format(version))
 
 
+    def stderrPath(self, version=None):
+        return os.path.join(self.dirs.outputPath, "{}-stderr.log".format(version))
+
+
     def outputDirPath(self, version=None):
         return os.path.join(self.dirs.outputPath, version)
 
@@ -46,10 +50,10 @@ class TestDiff(BaseIntegrationTest, unittest.TestCase):
     def runAdelphi(self, version=None):
         log.info("Running Adelphi")
         stdoutPath = self.stdoutPath(version)
+        stderrPath = self.stderrPath(version)
+        subprocess.run("adelphi export-cql --no-metadata > {} 2>> {}".format(stdoutPath, stderrPath), shell=True)
         outputDirPath = self.outputDirPath(version)
         os.mkdir(outputDirPath)
-        stderrPath = os.path.join(self.dirs.logPath, "{}-stderr.log".format(version))
-        subprocess.run("adelphi export-cql --no-metadata > {} 2>> {}".format(stdoutPath, stderrPath), shell=True)
         subprocess.run("adelphi --output-dir={} export-cql 2>> {}".format(outputDirPath, stderrPath), shell=True)
         log.info("Adelphi completed")
 

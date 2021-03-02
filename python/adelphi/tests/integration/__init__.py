@@ -75,7 +75,7 @@ class BaseIntegrationTest:
     def testVersions(self):
         versions = CASSANDRA_VERSIONS
         if "CASSANDRA_VERSIONS" in os.environ:
-            versions = os.environ["CASSANDRA_VERSIONS"].split(',')
+            versions = [s.strip() for s in os.environ["CASSANDRA_VERSIONS"].split(',')]
 
         log.info("Testing the following Cassandra versions: {}".format(versions))
 
