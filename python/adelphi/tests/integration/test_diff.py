@@ -3,7 +3,6 @@ import logging
 import os
 import shutil
 import sys
-import tempfile
 
 if os.name == 'posix' and sys.version_info[0] < 3:
     import subprocess32 as subprocess
@@ -15,37 +14,12 @@ try:
 except ImportError:
     import unittest
 
-from collections import namedtuple
-
-from tests.integration import BaseIntegrationTest, CASSANDRA_VERSIONS
+from tests.integration import RunAdelphiIntegrationTest, CASSANDRA_VERSIONS
 
 logging.basicConfig(filename="adelphi.log", level=logging.INFO)
 log = logging.getLogger('adelphi')
 
-TempDirs = namedtuple('TempDirs', 'basePath, outputPath, logPath')
-
-class TestDiff(BaseIntegrationTest, unittest.TestCase):
-
-    def stdoutPath(self, version=None):
-        return os.path.join(self.dirs.outputPath, "{}-stdout.cql".format(version))
-
-
-    def stderrPath(self, version=None):
-        return os.path.join(self.dirs.outputPath, "{}-stderr.log".format(version))
-
-
-    def outputDirPath(self, version=None):
-        return os.path.join(self.dirs.outputPath, version)
-
-
-    def makeTempDirs(self):
-        basePath = tempfile.mkdtemp()
-        outputPath = os.path.join(basePath, "output")
-        os.mkdir(outputPath)
-        logPath = os.path.join(basePath, "logs")
-        os.mkdir(logPath)
-        return TempDirs(basePath, outputPath, logPath)
-
+class TestDiff(RunAdelphiIntegrationTest, unittest.TestCase):
 
     def runAdelphi(self, version=None):
         log.info("Running Adelphi")

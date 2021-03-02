@@ -1,7 +1,10 @@
 import logging
 import os
 import sys
+import tempfile
 import time
+
+from collections import namedtuple
 
 from cassandra.cluster import Cluster
 
@@ -85,3 +88,28 @@ class BaseIntegrationTest:
 
     def setUp(self):
         self.client = docker.from_env()
+
+
+TempDirs = namedtuple('TempDirs', 'basePath, outputPath, logPath')
+
+class RunAdelphiIntegrationTest(BaseIntegrationTest):
+
+    def stdoutPath(self, version=None):
+        return os.path.join(self.dirs.outputPath, "{}-stdout.cql".format(version))
+
+
+    def stderrPath(self, version=None):
+        return os.path.join(self.dirs.outputPath, "{}-stderr.log".format(version))
+
+
+    def outputDirPath(self, version=None):
+        return os.path.join(self.dirs.outputPath, version)
+
+
+    def makeTempDirs(self):
+        basePath = tempfile.mkdtemp()
+        outputPath = os.path.join(basePath, "output")
+        os.mkdir(outputPath)
+        logPath = os.path.join(basePath, "logs")
+        os.mkdir(logPath)
+        return TempDirs(basePath, outputPath, logPath)
