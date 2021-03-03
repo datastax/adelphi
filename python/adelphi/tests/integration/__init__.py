@@ -1,8 +1,15 @@
+import glob
 import logging
 import os
+import shutil
 import sys
 import tempfile
 import time
+
+if os.name == 'posix' and sys.version_info[0] < 3:
+    import subprocess32 as subprocess
+else:
+    import subprocess
 
 from collections import namedtuple
 
@@ -13,9 +20,10 @@ import docker
 # Default C* versions to include in all integration tests
 CASSANDRA_VERSIONS = ["2.1.22", "2.2.19", "3.0.23", "3.11.9", "4.0-beta3"]
 
+logging.basicConfig(filename="adelphi.log", level=logging.INFO)
 log = logging.getLogger('adelphi')
 
-class BaseIntegrationTest:
+class DockerSchemaTestMixin:
 
     def connectToLocalCassandra(self):
         session = None
@@ -56,7 +64,8 @@ class BaseIntegrationTest:
     def runTestForVersion(self, version=None):
         log.info("Testing Cassandra version {}".format(version))
 
-        container = self.client.containers.run(name="adelphi", remove=True, detach=True, ports={9042:9042}, image="cassandra:{}".format(version))
+        client = docker.from_env()
+        container = client.containers.run(name="adelphi", remove=True, detach=True, ports={9042:9042}, image="cassandra:{}".format(version))
 
         (cluster,session) = (None,None)
         try:
@@ -86,16 +95,12 @@ class BaseIntegrationTest:
             self.runTestForVersion(version)
 
 
-    def setUp(self):
-        self.client = docker.from_env()
-
-
 TempDirs = namedtuple('TempDirs', 'basePath, outputPath, logPath')
 
-class RunAdelphiIntegrationTest(BaseIntegrationTest):
+class AdelphiExportMixin:
 
     def stdoutPath(self, version=None):
-        return os.path.join(self.dirs.outputPath, "{}-stdout.cql".format(version))
+        return os.path.join(self.dirs.outputPath, "{}-stdout.out".format(version))
 
 
     def stderrPath(self, version=None):
@@ -112,4 +117,45 @@ class RunAdelphiIntegrationTest(BaseIntegrationTest):
         os.mkdir(outputPath)
         logPath = os.path.join(basePath, "logs")
         os.mkdir(logPath)
-        return TempDirs(basePath, outputPath, logPath)
+        self.dirs = TempDirs(basePath, outputPath, logPath)
+
+
+    def runAdelphi(self, version=None):
+        log.info("Running Adelphi")
+        exportCmd = self.getExportCommand()
+        stdoutPath = self.stdoutPath(version)
+        stderrPath = self.stderrPath(version)
+        subprocess.run("adelphi {} > {} 2>> {}".format(exportCmd, stdoutPath, stderrPath), shell=True)
+        outputDirPath = self.outputDirPath(version)
+        os.mkdir(outputDirPath)
+        subprocess.run("adelphi --output-dir={} {} 2>> {}".format(outputDirPath, exportCmd, stderrPath), shell=True)
+        log.info("Adelphi completed")
+
+
+    def compareSchemas(self, version=None):
+        referencePath = self.getReferenceSchemaPath(version)
+        stdoutPath = self.stdoutPath(version)
+        rv1 = subprocess.run("diff -Z {} {}".format(stdoutPath, referencePath), shell=True)
+        self.assertEqual(rv1.returncode, 0)
+
+        # Find the created schema underneath the output dir.  Note that this logic will have to be fixed
+        # once https://github.com/datastax/adelphi/issues/106 is resolved
+        outputDirPath = self.outputDirPath(version)
+        outputSchemas = glob.glob("{}/*/schema".format(outputDirPath))
+        self.assertGreater(len(outputSchemas), 0)
+        log.info("Found schema file in output directory, path: {}".format(outputSchemas[0]))
+        rv2 = subprocess.run("diff -Z {} {}".format(outputSchemas[0], referencePath), shell=True)
+        self.assertEqual(rv2.returncode, 0)
+
+
+    def runTestWithSchema(self, version):
+        self.makeTempDirs()
+        self.runAdelphi(version, )
+        self.compareSchemas(version)
+
+
+    def cleanUpVersion(self, version):
+        if "KEEP_LOGS" in os.environ:
+            log.info("KEEP_LOGS env var set, preserving logs/output at {}".format(self.dirs.basePath))
+        else:
+            shutil.rmtree(self.dirs.basePath)

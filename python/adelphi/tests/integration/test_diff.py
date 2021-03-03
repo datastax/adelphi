@@ -1,69 +1,23 @@
-import glob
-import logging
-import os
-import shutil
-import sys
-
-if os.name == 'posix' and sys.version_info[0] < 3:
-    import subprocess32 as subprocess
-else:
-    import subprocess
-
 try:
     import unittest2 as unittest
 except ImportError:
     import unittest
 
-from tests.integration import RunAdelphiIntegrationTest, CASSANDRA_VERSIONS
+from tests.integration import DockerSchemaTestMixin, AdelphiExportMixin
 
-logging.basicConfig(filename="adelphi.log", level=logging.INFO)
-log = logging.getLogger('adelphi')
-
-class TestDiff(RunAdelphiIntegrationTest, unittest.TestCase):
-
-    def runAdelphi(self, version=None):
-        log.info("Running Adelphi")
-        stdoutPath = self.stdoutPath(version)
-        stderrPath = self.stderrPath(version)
-        subprocess.run("adelphi export-cql --no-metadata > {} 2>> {}".format(stdoutPath, stderrPath), shell=True)
-        outputDirPath = self.outputDirPath(version)
-        os.mkdir(outputDirPath)
-        subprocess.run("adelphi --output-dir={} export-cql 2>> {}".format(outputDirPath, stderrPath), shell=True)
-        log.info("Adelphi completed")
-
-
-    def compareSchemas(self, version=None):
-        referencePath = "tests/integration/resources/diff-schemas/{}.cql".format(version)
-
-        stdoutPath = self.stdoutPath(version)
-        rv1 = subprocess.run("diff -Z {} {}".format(stdoutPath, referencePath), shell=True)
-        self.assertEqual(rv1.returncode, 0)
-
-        # Find the created schema underneath the output dir.  Note that this logic will have to be fixed
-        # once https://github.com/datastax/adelphi/issues/106 is resolved
-        outputDirPath = self.outputDirPath(version)
-        schemas = glob.glob("{}/*/schema".format(outputDirPath))
-        log.info("Found schema file in output directory, path: {}".format(schemas[0]))
-        rv2 = subprocess.run("diff -Z {} {}".format(schemas[0], referencePath), shell=True)
-        self.assertEqual(rv2.returncode, 0)
-
+class TestDiff(unittest.TestCase, DockerSchemaTestMixin, AdelphiExportMixin):
 
     def setUp(self):
         super(TestDiff, self).setUp()
-        self.dirs = self.makeTempDirs()
 
 
-    def runTestWithSchema(self, version):
-        self.runAdelphi(version)
-        self.compareSchemas(version)
-
-
-    def cleanUpVersion(self, version):
-        if "KEEP_LOGS" in os.environ:
-            log.info("KEEP_LOGS env var set, preserving logs/output at {}".format(self.dirs.basePath))
-        else:
-            shutil.rmtree(self.dirs.basePath)
+    def getExportCommand(self):
+        return "export-cql --no-metadata"
 
 
     def getSchemaPath(self):
         return "tests/integration/resources/diff-base-schema.cql"
+
+
+    def getReferenceSchemaPath(self, version):
+        return "tests/integration/resources/diff-schemas/{}.cql".format(version)
