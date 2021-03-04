@@ -28,7 +28,7 @@ class CqlExporter(BaseExporter):
 
 
     def export_all(self):
-        metadata_str = json.dumps(self.export_metadata(), indent=4)
+        metadata_str = json.dumps(self.export_metadata_dict(), indent=4)
         metadata_comments = "\n".join("//{}".format(line).strip() for line in metadata_str.splitlines())
 
         return metadata_comments + "\n\n" + self.export_schema()

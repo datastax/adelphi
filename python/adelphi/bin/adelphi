@@ -153,7 +153,7 @@ def export_keyspaces(props, exporter):
 
             with open(os.path.join(keyspace_dir, "metadata.json"),'w') as metadata_file:
                 log.info("Writing metadata for keyspace " + keyspace_obj.name + " to file " + metadata_file.name)
-                metadata = exporter.export_metadata()
+                metadata = exporter.export_metadata_dict()
                 metadata['keyspace_id'] = keyspace_id
                 metadata_file.write(json.dumps(metadata))
 
