@@ -38,7 +38,7 @@ class CqlExporter(BaseExporter):
 
         ks_objs = [self.keyspaces[keyspace].ks_obj] if keyspace else [t.ks_obj for t in self.keyspaces.values()]
 
-        set_replication_factor(keyspaces, self.props['rf'])
+        set_replication_factor(ks_objs, self.props['rf'])
 
         # TODO: shift this around to a regex so that we can do the whole thing in a single pass
         cql_str = "\n\n".join(ks_obj.export_as_string() for ks_obj in ks_objs)
