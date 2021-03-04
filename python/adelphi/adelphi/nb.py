@@ -83,13 +83,6 @@ class NbExporter(BaseExporter):
         log.info("Creating nosqlbench config for {}.{}".format(self.keyspace.name, self.table.name))
 
 
-    def export_all(self):
-        return self.export_schema()
-
-
-    def export_metadata(self):
-        return {k : self.metadata[k] for k in self.metadata.keys() if self.metadata[k]}
-
 
     def export_schema(self):
         return self.__build_schema()

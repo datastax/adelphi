@@ -100,6 +100,21 @@ class BaseExporter:
         return metadata
 
 
-    # Base impl... can be overridden if necessary
+    # Base impls... can be overridden if necessary
+    def export_all(self):
+        return self.export_schema()
+
+
+    def export_metadata(self):
+        return {k : self.metadata[k] for k in self.metadata.keys() if self.metadata[k]}
+
+
     def each_keyspace(self, ks_fn):
         ks_fn(self.keyspace, self.keyspace_id)
+
+
+    # Note that this function sets a metadata value for the entire exporter.  If you
+    # need something keyspace-specific you're probably better off just adding it to the
+    # exported metadata directory.
+    def add_metadata(self, k, v):
+        self.metadata[k] = v

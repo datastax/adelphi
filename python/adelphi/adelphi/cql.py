@@ -34,10 +34,6 @@ class CqlExporter(BaseExporter):
         return metadata_comments + "\n\n" + self.export_schema()
 
 
-    def export_metadata(self):
-        return {k : self.metadata[k] for k in self.metadata.keys() if self.metadata[k]}
-
-
     def export_schema(self):
 
         set_replication_factor(self.keyspaces, self.props['rf'])
@@ -56,7 +52,3 @@ class CqlExporter(BaseExporter):
     def each_keyspace(self, ks_fn):
         for (ks, keyspace_id) in self.keyspaces.items():
             ks_fn(ks, keyspace_id)
-
-
-    def add_metadata(self, k, v):
-        self.metadata[k] = v

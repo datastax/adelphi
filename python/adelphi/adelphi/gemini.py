@@ -37,16 +37,6 @@ class GeminiExporter(BaseExporter):
         self.keyspace_id = keyspace_id
 
 
-    def export_all(self):
-        # Exported Gemini schema is a formatted JSON doc and we don't have any way to add
-        # metadata/comments to that... so unfortunately this is the best we can do.
-        return self.export_schema()
-
-
-    def export_metadata(self):
-        return {k : self.metadata[k] for k in self.metadata.keys() if self.metadata[k]}
-
-
     def export_schema(self):
         return self.__build_schema()
 
