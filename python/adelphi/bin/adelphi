@@ -149,7 +149,7 @@ def export_keyspaces(props, exporter):
 
             with open(os.path.join(keyspace_dir, "schema"),'w') as schema_file:
                 log.info("Writing schema for keyspace " + keyspace_obj.name + " to file " + schema_file.name)
-                schema_file.write(exporter.export_schema())
+                schema_file.write(exporter.export_schema(keyspace=keyspace_obj.name))
 
             with open(os.path.join(keyspace_dir, "metadata.json"),'w') as metadata_file:
                 log.info("Writing metadata for keyspace " + keyspace_obj.name + " to file " + metadata_file.name)

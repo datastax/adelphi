@@ -3,7 +3,7 @@ import yaml
 
 from itertools import chain
 
-from adelphi.exceptions import KeyspaceSelectionException, TableSelectionException
+from adelphi.exceptions import KeyspaceSelectionException, TableSelectionException, ExportException
 from adelphi.export import BaseExporter
 
 SEQS={}
@@ -74,7 +74,7 @@ class NbExporter(BaseExporter):
         all_keyspaces = self.get_keyspaces(cluster, self.props)
         if len(all_keyspaces) > 1:
             raise KeyspaceSelectionException("nosqlbench export doesn't support multiple keyspaces")
-        self.keyspace = next(iter(all_keyspaces.keys()))
+        self.keyspace = next(iter(all_keyspaces.values())).ks_obj
 
         if len(self.keyspace.tables) == 0:
             raise TableSelectionException("Keyspace {} contains no tables".format(self.keyspace.name))
@@ -84,7 +84,9 @@ class NbExporter(BaseExporter):
 
 
 
-    def export_schema(self):
+    def export_schema(self, keyspace=None):
+        if keyspace and keyspace != self.keyspace.name:
+            raise ExportException("Exporter doesn't know about keyspace {} requested for export".format(keyspace))
         return self.__build_schema()
 
 

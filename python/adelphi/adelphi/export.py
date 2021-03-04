@@ -15,6 +15,7 @@
 import hashlib
 import logging
 from base64 import urlsafe_b64encode
+from collections import namedtuple
 from datetime import datetime, tzinfo, timedelta
 
 try:
@@ -41,6 +42,8 @@ except ImportError:
         def dst(self, dt):
             return timedelta(0)
     utc = UTC()
+
+KsTuple = namedtuple('KsTuple',['ks_id', 'ks_obj'])
 
 class BaseExporter:
     
@@ -82,8 +85,10 @@ class BaseExporter:
         log.info("Processing the following keyspaces: %s", ','.join((ks.name for ks in keyspaces)))
 
         # anonymize_keyspace mutates keyspace state so we must trap keyspace_id before we (possibly) call it
-        base_map = { ks : self.build_keyspace_id(ks) for ks in keyspaces}
-        return base_map if not props['anonymize'] else {anonymize_keyspace(ks) : keyspace_id for (ks, keyspace_id) in base_map.items()}
+        ids = {ks.name : self.build_keyspace_id(ks) for ks in keyspaces}
+        def make_tuple(ks):
+            return KsTuple(ids[ks.name], anonymize_keyspace(ks) if props['anonymize'] else ks)
+        return { ks.name : make_tuple(ks) for ks in keyspaces }
 
 
     def get_cluster_metadata(self, cluster):
@@ -105,6 +110,7 @@ class BaseExporter:
         return self.export_schema()
 
 
+    # Note assumption of keyspace and keyspace_id as attrs
     def each_keyspace(self, ks_fn):
         ks_fn(self.keyspace, self.keyspace_id)
 

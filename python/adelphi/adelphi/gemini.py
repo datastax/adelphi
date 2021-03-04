@@ -17,7 +17,7 @@ import json
 
 from cassandra.cqltypes import cqltype_to_python
 
-from adelphi.exceptions import KeyspaceSelectionException
+from adelphi.exceptions import KeyspaceSelectionException, ExportException
 from adelphi.export import BaseExporter
 from adelphi.store import get_standard_columns_from_table_metadata, set_replication_factor
 
@@ -32,12 +32,14 @@ class GeminiExporter(BaseExporter):
         all_keyspaces = self.get_keyspaces(cluster, props)
         if len(all_keyspaces) > 1:
             raise KeyspaceSelectionException("Gemini schema doesn't support multiple keyspaces")
-        (ks, keyspace_id) = next(iter(all_keyspaces.items()))
-        self.keyspace = ks
-        self.keyspace_id = keyspace_id
+        (ks_name, ks_tuple) = next(iter(all_keyspaces.items()))
+        self.keyspace = ks_tuple.ks_obj
+        self.keyspace_id = ks_tuple.ks_id
 
 
-    def export_schema(self):
+    def export_schema(self, keyspace=None):
+        if keyspace and keyspace != self.keyspace.name:
+            raise ExportException("Exporter doesn't know about keyspace {} requested for export".format(keyspace))
         return self.__build_schema()
 
 
