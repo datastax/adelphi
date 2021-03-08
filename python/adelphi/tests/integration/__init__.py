@@ -95,29 +95,27 @@ class DockerSchemaTestMixin:
             self.runTestForVersion(version)
 
 
-TempDirs = namedtuple('TempDirs', 'basePath, outputPath, logPath')
+TempDirs = namedtuple('TempDirs', 'basePath, outputDirPath')
 
 class AdelphiExportMixin:
 
     def stdoutPath(self, version=None):
-        return os.path.join(self.dirs.outputPath, "{}-stdout.out".format(version))
+        return os.path.join(self.dirs.basePath, "{}-stdout.out".format(version))
 
 
     def stderrPath(self, version=None):
-        return os.path.join(self.dirs.outputPath, "{}-stderr.log".format(version))
+        return os.path.join(self.dirs.basePath, "{}-stderr.log".format(version))
 
 
     def outputDirPath(self, version=None):
-        return os.path.join(self.dirs.outputPath, version)
+        return os.path.join(self.dirs.outputDirPath, version)
 
 
     def makeTempDirs(self):
         basePath = tempfile.mkdtemp()
-        outputPath = os.path.join(basePath, "output")
-        os.mkdir(outputPath)
-        logPath = os.path.join(basePath, "logs")
-        os.mkdir(logPath)
-        self.dirs = TempDirs(basePath, outputPath, logPath)
+        outputDirPath = os.path.join(basePath, "outputDir")
+        os.mkdir(outputDirPath)
+        self.dirs = TempDirs(basePath, outputDirPath)
 
 
     def runAdelphi(self, version=None):
@@ -150,7 +148,7 @@ class AdelphiExportMixin:
 
     def runTestWithSchema(self, version):
         self.makeTempDirs()
-        self.runAdelphi(version, )
+        self.runAdelphi(version)
         self.compareSchemas(version)
 
 
