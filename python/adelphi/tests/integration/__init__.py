@@ -17,6 +17,8 @@ from cassandra.cluster import Cluster
 
 import docker
 
+from tests.util.schemadiff import cqlAndDigest
+
 # Default C* versions to include in all integration tests
 CASSANDRA_VERSIONS = ["2.1.22", "2.2.19", "3.0.23", "3.11.9", "4.0-beta3"]
 
@@ -97,6 +99,14 @@ class DockerSchemaTestMixin:
 
 TempDirs = namedtuple('TempDirs', 'basePath, outputDirPath')
 
+
+def computeDigestSet(cqlPath):
+    rv = set()
+    for (_, digest) in cqlAndDigest(open(cqlPath)):
+        rv.add(digest)
+    return rv
+
+
 class AdelphiExportMixin:
 
     def stdoutPath(self, version=None):
@@ -130,11 +140,23 @@ class AdelphiExportMixin:
         log.info("Adelphi completed")
 
 
-    def compareSchemas(self, version=None):
+    def _compareToReference(self, comparePath, version=None):
         referencePath = self.getReferenceSchemaPath(version)
-        stdoutPath = self.stdoutPath(version)
-        rv1 = subprocess.run("diff -Z {} {}".format(stdoutPath, referencePath), shell=True)
-        self.assertEqual(rv1.returncode, 0)
+        referenceSet = computeDigestSet(referencePath)
+        compareSet = computeDigestSet(comparePath)
+
+        log.info("Comparing reference {} to comparison {}".format(referencePath, comparePath))
+
+        for digest in (referenceSet - compareSet):
+            log.info("Digest in reference set, not in compare set: {}".format(digest))
+        for digest in (compareSet - referenceSet):
+            log.info("Digest in compare set, not in reference set: {}".format(digest))
+        self.assertEqual(referenceSet, compareSet)
+
+
+    def compareSchemas(self, version=None):
+
+        self._compareToReference(self.stdoutPath(version), version)
 
         # Find the created schema underneath the output dir.  Note that this logic will have to be fixed
         # once https://github.com/datastax/adelphi/issues/106 is resolved
@@ -142,8 +164,7 @@ class AdelphiExportMixin:
         outputSchemas = glob.glob("{}/*/schema".format(outputDirPath))
         self.assertGreater(len(outputSchemas), 0)
         log.info("Found schema file in output directory, path: {}".format(outputSchemas[0]))
-        rv2 = subprocess.run("diff -Z {} {}".format(outputSchemas[0], referencePath), shell=True)
-        self.assertEqual(rv2.returncode, 0)
+        self._compareToReference(outputSchemas[0], version)
 
 
     def runTestWithSchema(self, version):
