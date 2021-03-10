@@ -132,4 +132,4 @@ class NbExporter(BaseExporter):
         main_write_block = {"name":"main-write", "tags":{"phase":"main", "type":"write"}, "params":cl_ratio_map, "statements": [self.__build_main_write_statement()]}
         root["blocks"] = [rampup_block, main_read_block, main_write_block]
 
-        return yaml.dump(root, default_flow_style=False).strip()
+        return yaml.dump(root, default_flow_style=False)
