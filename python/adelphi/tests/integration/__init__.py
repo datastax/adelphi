@@ -17,7 +17,7 @@ from cassandra.cluster import Cluster
 
 import docker
 
-from tests.util.schemadiff import cqlAndDigest
+from tests.util.schemadiff import cqlDigestGenerator
 
 # Default C* versions to include in all integration tests
 CASSANDRA_VERSIONS = ["2.1.22", "2.2.19", "3.0.23", "3.11.9", "4.0-beta3"]
@@ -99,13 +99,17 @@ class DockerSchemaTestMixin:
 
 TempDirs = namedtuple('TempDirs', 'basePath, outputDirPath')
 
-
-def computeDigestSet(cqlPath):
+def digestSet(schemaFile):
     rv = set()
-    for (_, digest) in cqlAndDigest(open(cqlPath)):
+    for (_, digest) in cqlDigestGenerator(schemaFile):
         rv.add(digest)
     return rv
 
+
+def logCqlDigest(schemaFile, digestSet):
+    for (cql, digest) in cqlDigestGenerator(schemaFile):
+        if digest in digestSet:
+            log.info("Digest: {}, CQL: {}".format(digest,cql))
 
 class AdelphiExportMixin:
 
@@ -142,15 +146,18 @@ class AdelphiExportMixin:
 
     def _compareToReference(self, comparePath, version=None):
         referencePath = self.getReferenceSchemaPath(version)
-        referenceSet = computeDigestSet(referencePath)
-        compareSet = computeDigestSet(comparePath)
+        referenceSet = digestSet(referencePath)
+        compareSet = digestSet(comparePath)
 
-        log.info("Comparing reference {} to comparison {}".format(referencePath, comparePath))
+        refOnlySet = referenceSet - compareSet
+        if len(refOnlySet) > 0:
+            log.info("Statements in reference file {} but not in compare file {}:".format(referencePath, comparePath))
+            logCqlDigest(referencePath, refOnlySet)
+        compareOnlySet = compareSet - referenceSet
+        if len(compareOnlySet) > 0:
+            log.info("Statements in compare file {} but not in reference file{}:".format(comparePath, referencePath))
+            logCqlDigest(comparePath, compareOnlySet)
 
-        for digest in (referenceSet - compareSet):
-            log.info("Digest in reference set, not in compare set: {}".format(digest))
-        for digest in (compareSet - referenceSet):
-            log.info("Digest in compare set, not in reference set: {}".format(digest))
         self.assertEqual(referenceSet, compareSet)
 
 

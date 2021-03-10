@@ -83,19 +83,8 @@ class BaseExporter:
         log.info("Processing the following keyspaces: %s", ','.join((ks.name for ks in keyspaces)))
 
         def process_keyspace(ks):
-            # Anonymize keyspace first.  This has to be done before any re-ordering since
-            # names may/will change as a result of this process
             if props['anonymize']:
                 anonymize_keyspace(ks)
-
-            # Make sure tables, UDTs and indexes are ordered by name
-            tables = ks.tables.items()
-            ks.tables = OrderedDict(sorted(tables, key=lambda x: x[0]))
-            user_types = ks.user_types.items()
-            ks.user_types = OrderedDict(sorted(user_types, key=lambda x:x[0]))
-            indexes = ks.indexes.items()
-            ks.indexes = OrderedDict(sorted(indexes, key=lambda x:x[0]))
-
             return ks
 
         return {process_keyspace(ks) : self.build_keyspace_id(ks) for ks in keyspaces}

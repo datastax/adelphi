@@ -1,25 +1,27 @@
+import base64
 import hashlib
+import logging
 
 # Imports required by the __main__ case below
-import base64
 import sys
 
-def cqlAndDigest(schemaFile):
+def cqlDigestGenerator(schemaFile):
     buff = ""
-    m = hashlib.sha256()
-    for line in schemaFile:
+    for line in open(schemaFile):
         realLine = line.strip()
         if len(realLine) == 0 or realLine.isspace():
             continue
-        buff += (" " if len(buff) > 0 else "") + realLine
+        buff += (" " if len(buff) > 0 else "")
+        buff += realLine
         if realLine.endswith(';'):
-            rv = buff
+            cqlStmt = buff
             buff = ""
-            m.update(rv.encode('utf-8'))
-            yield (rv, m.digest())
+            m = hashlib.sha256()
+            m.update(cqlStmt.encode('utf-8'))
+            yield (cqlStmt, base64.b64encode(m.digest()).decode('utf-8'))
 
 
 if __name__ == "__main__":
     """Preserving this for validation of the logic above"""
-    for (cql, digest) in cqlAndDigest(open(sys.argv[1])):
-        print("Digest: {}, CQL: {}".format(str(base64.b64encode(digest)),cql))
+    for (cql, digest) in cqlDigestGenerator(sys.argv[1]):
+        print("Digest: {}, CQL: {}".format(digest,cql))
