@@ -15,7 +15,7 @@ class TestNb(unittest.TestCase, DockerSchemaTestMixin, AdelphiExportMixin):
         return "export-nb"
 
 
-    def getSchemaPath(self):
+    def getBaseSchemaPath(self):
         return "tests/integration/resources/nb-base-schema.cql"
 
 

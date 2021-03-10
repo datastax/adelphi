@@ -45,22 +45,27 @@ class DockerSchemaTestMixin:
 
 
     def createSchema(self, session=None):
-        schemaPath = self.getSchemaPath()
+        schemaPath = self.getBaseSchemaPath()
         log.info("Creating schema on Cassandra cluster from file {}".format(schemaPath))
         with open(schemaPath) as schema:
-            for stmt in [s.strip() for s in schema.read().split(';')]:
-                if len(stmt) == 0:
+            buff = ""
+            for line in schema:
+                realLine = line.strip()
+                if len(realLine) == 0:
                     log.debug("Skipping empty statement")
                     continue
-                if stmt.startswith("//"):
+                if realLine.startswith("//"):
                     log.debug("Skipping commented statement {}".format(stmt))
                     continue
-                realStmt = stmt + ';'
-                log.debug("Executing statement {}".format(realStmt))
-                try:
-                    session.execute(realStmt)
-                except:
-                    log.info("Exception executing statement: {}".format(realStmt), exc_info=sys.exc_info()[0])
+                buff += (" " if len(buff) > 0 else "")
+                buff += realLine
+                if realLine.endswith(';'):
+                    log.debug("Executing statement {}".format(buff))
+                    try:
+                        session.execute(buff)
+                    except:
+                        log.info("Exception executing statement: {}".format(buff), exc_info=sys.exc_info()[0])
+                    buff = ""
 
 
     def runTestForVersion(self, version=None):
@@ -155,7 +160,7 @@ class AdelphiExportMixin:
             logCqlDigest(referencePath, refOnlySet)
         compareOnlySet = compareSet - referenceSet
         if len(compareOnlySet) > 0:
-            log.info("Statements in compare file {} but not in reference file{}:".format(comparePath, referencePath))
+            log.info("Statements in compare file {} but not in reference file {}:".format(comparePath, referencePath))
             logCqlDigest(comparePath, compareOnlySet)
 
         self.assertEqual(referenceSet, compareSet)

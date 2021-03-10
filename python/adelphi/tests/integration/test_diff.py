@@ -15,7 +15,7 @@ class TestDiff(unittest.TestCase, DockerSchemaTestMixin, AdelphiExportMixin):
         return "export-cql --no-metadata"
 
 
-    def getSchemaPath(self):
+    def getBaseSchemaPath(self):
         return "tests/integration/resources/diff-base-schema.cql"
 
 
