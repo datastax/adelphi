@@ -3,9 +3,10 @@ try:
 except ImportError:
     import unittest
 
-from tests.integration import DockerSchemaTestMixin, AdelphiExportMixin
+from tests.integration import SchemaTestMixin
+from tests.util.schema_util import get_schema
 
-class TestDiff(unittest.TestCase, DockerSchemaTestMixin, AdelphiExportMixin):
+class TestDiff(unittest.TestCase, SchemaTestMixin):
 
     def setUp(self):
         super(TestDiff, self).setUp()
@@ -16,7 +17,10 @@ class TestDiff(unittest.TestCase, DockerSchemaTestMixin, AdelphiExportMixin):
 
 
     def getBaseSchemaPath(self):
-        return "tests/integration/resources/diff-base-schema.cql"
+        baseSchemaPath = self.basePath("diff-base-schema.cql")
+        with open(baseSchemaPath) as f:
+            f.write("\n\n".join(ks.export_as_string() for ks in get_schema().keyspaces))
+        return baseSchemaPath
 
 
     def getReferenceSchemaPath(self, version):

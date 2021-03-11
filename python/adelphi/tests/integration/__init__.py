@@ -25,7 +25,45 @@ CASSANDRA_VERSIONS = ["2.1.22", "2.2.19", "3.0.23", "3.11.9", "4.0-beta3"]
 logging.basicConfig(filename="adelphi.log", level=logging.INFO)
 log = logging.getLogger('adelphi')
 
-class DockerSchemaTestMixin:
+TempDirs = namedtuple('TempDirs', 'basePath, outputDirPath')
+
+def digestSet(schemaFile):
+    rv = set()
+    for (_, digest) in cqlDigestGenerator(schemaFile):
+        rv.add(digest)
+    return rv
+
+
+def logCqlDigest(schemaFile, digestSet):
+    for (cql, digest) in cqlDigestGenerator(schemaFile):
+        if digest in digestSet:
+            log.info("Digest: {}, CQL: {}".format(digest,cql))
+
+
+class SchemaTestMixin:
+
+    def basePath(self, name):
+        return os.path.join(self.dirs.basePath, name)
+
+
+    def outputDirPath(self, name):
+        return os.path.join(self.dirs.outputDirPath, name)
+
+
+    def stdoutPath(self, version=None):
+        return self.basePath("{}-stdout.out".format(version))
+
+
+    def stderrPath(self, version=None):
+        return self.basePath("{}-stderr.log".format(version))
+
+
+    def makeTempDirs(self):
+        base = tempfile.mkdtemp()
+        outputDir = os.path.join(base, "outputDir")
+        os.mkdir(outputDir)
+        self.dirs = TempDirs(base, outputDir)
+
 
     def connectToLocalCassandra(self):
         session = None
@@ -66,75 +104,6 @@ class DockerSchemaTestMixin:
                     except:
                         log.info("Exception executing statement: {}".format(buff), exc_info=sys.exc_info()[0])
                     buff = ""
-
-
-    def runTestForVersion(self, version=None):
-        log.info("Testing Cassandra version {}".format(version))
-
-        client = docker.from_env()
-        container = client.containers.run(name="adelphi", remove=True, detach=True, ports={9042:9042}, image="cassandra:{}".format(version))
-
-        (cluster,session) = (None,None)
-        try:
-            (cluster,session) = self.connectToLocalCassandra()
-            self.createSchema(session)
-            self.runTestWithSchema(version)
-        finally:
-            if cluster:
-                cluster.shutdown()
-
-            if "KEEP_CONTAINER" in os.environ:
-                log.info("KEEP_CONTAINER env var set, preserving Cassandra container 'adelphi'")
-            else:
-                container.stop()
-
-            self.cleanUpVersion(version)
-
-
-    def testVersions(self):
-        versions = CASSANDRA_VERSIONS
-        if "CASSANDRA_VERSIONS" in os.environ:
-            versions = [s.strip() for s in os.environ["CASSANDRA_VERSIONS"].split(',')]
-
-        log.info("Testing the following Cassandra versions: {}".format(versions))
-
-        for version in versions:
-            self.runTestForVersion(version)
-
-
-TempDirs = namedtuple('TempDirs', 'basePath, outputDirPath')
-
-def digestSet(schemaFile):
-    rv = set()
-    for (_, digest) in cqlDigestGenerator(schemaFile):
-        rv.add(digest)
-    return rv
-
-
-def logCqlDigest(schemaFile, digestSet):
-    for (cql, digest) in cqlDigestGenerator(schemaFile):
-        if digest in digestSet:
-            log.info("Digest: {}, CQL: {}".format(digest,cql))
-
-class AdelphiExportMixin:
-
-    def stdoutPath(self, version=None):
-        return os.path.join(self.dirs.basePath, "{}-stdout.out".format(version))
-
-
-    def stderrPath(self, version=None):
-        return os.path.join(self.dirs.basePath, "{}-stderr.log".format(version))
-
-
-    def outputDirPath(self, version=None):
-        return os.path.join(self.dirs.outputDirPath, version)
-
-
-    def makeTempDirs(self):
-        basePath = tempfile.mkdtemp()
-        outputDirPath = os.path.join(basePath, "outputDir")
-        os.mkdir(outputDirPath)
-        self.dirs = TempDirs(basePath, outputDirPath)
 
 
     def runAdelphi(self, version=None):
@@ -180,9 +149,46 @@ class AdelphiExportMixin:
 
 
     def runTestWithSchema(self, version):
-        self.makeTempDirs()
         self.runAdelphi(version)
         self.compareSchemas(version)
+
+
+    def runTestForVersion(self, version=None):
+        log.info("Testing Cassandra version {}".format(version))
+
+        client = docker.from_env()
+        container = client.containers.run(name="adelphi", remove=True, detach=True, ports={9042:9042}, image="cassandra:{}".format(version))
+
+        self.makeTempDirs()
+
+        (cluster,session) = (None,None)
+        try:
+            (cluster,session) = self.connectToLocalCassandra()
+            self.createSchema(session)
+            self.runTestWithSchema(version)
+        except:
+            log.info("Exception running test for version {}".format(version), exc_info=sys.exc_info()[0])
+        finally:
+            if cluster:
+                cluster.shutdown()
+
+            if "KEEP_CONTAINER" in os.environ:
+                log.info("KEEP_CONTAINER env var set, preserving Cassandra container 'adelphi'")
+            else:
+                container.stop()
+
+            self.cleanUpVersion(version)
+
+
+    def testVersions(self):
+        versions = CASSANDRA_VERSIONS
+        if "CASSANDRA_VERSIONS" in os.environ:
+            versions = [s.strip() for s in os.environ["CASSANDRA_VERSIONS"].split(',')]
+
+        log.info("Testing the following Cassandra versions: {}".format(versions))
+
+        for version in versions:
+            self.runTestForVersion(version)
 
 
     def cleanUpVersion(self, version):

@@ -3,9 +3,9 @@ try:
 except ImportError:
     import unittest
 
-from tests.integration import DockerSchemaTestMixin, AdelphiExportMixin
+from tests.integration import SchemaTestMixin
 
-class TestNb(unittest.TestCase, DockerSchemaTestMixin, AdelphiExportMixin):
+class TestNb(unittest.TestCase, SchemaTestMixin):
 
     def setUp(self):
         super(TestNb, self).setUp()
