@@ -22,7 +22,7 @@ def column(table_metadata, column_name, cql_type, is_static=False, is_reversed=F
 def index(keyspace, table_name, index_name, kind, index_options):
 	return IndexMetadata(keyspace.name, table_name, index_name, kind, index_options)
 
-def get_table(keyspace, name):
+def get_table(keyspace, name, sasi=True):
 	table = TableMetadata(keyspace.name, name)
 	# build columns for each data type
 	columns_dict = {}
@@ -60,8 +60,9 @@ def get_table(keyspace, name):
 	regular_index = index(keyspace, name, "regular_index_" + name, None, {"target": "my_column_0"})
 	indexes[regular_index.name] = regular_index
 	# add a CUSTOM index (this must be removed by the anonymizer)
-	custom_index = index(keyspace, name, "custom_index_" + name, "CUSTOM", {"target": "my_column_5", "class_name": "org.apache.cassandra.index.sasi.SASIIndex"})
-	indexes[custom_index.name] = custom_index
+	if sasi:
+		custom_index = index(keyspace, name, "custom_index_" + name, "CUSTOM", {"target": "my_column_5", "class_name": "org.apache.cassandra.index.sasi.SASIIndex"})
+		indexes[custom_index.name] = custom_index
 	table.indexes = indexes
 
 	# table options compatible with C* 2.1+
@@ -76,22 +77,22 @@ def get_table(keyspace, name):
 
 	return table
 
-def get_keyspace(name, durable_writes, strategy_class, strategy_options):
+def get_keyspace(name, durable_writes, strategy_class, strategy_options, sasi=True):
 	keyspace = KeyspaceMetadata(name, durable_writes, strategy_class, strategy_options)
 	# build some tables
 	tables = {}
 	for t in range(3):
-		table = get_table(keyspace, "my_table_%s" % t)
+		table = get_table(keyspace, "my_table_%s" % t, sasi=sasi)
 		tables[table.name] = table
 
 	keyspace.tables = tables
 	return keyspace
 
-def get_schema():
+def get_schema(sasi=True):
 	# build a couple of keyspaces
 	keyspaces = []
 	for k in range(2):
-		keyspace = get_keyspace("my_ks_%s" % k, True, "SimpleStrategy", {"replication_factor": 1})
+		keyspace = get_keyspace("my_ks_%s" % k, True, "SimpleStrategy", {"replication_factor": 1}, sasi=sasi)
 		keyspaces.append(keyspace)
 
 	schema = Metadata()
@@ -103,4 +104,4 @@ if __name__ == "__main__":
 	Use this to print the test schema.
 	The output can be used in the integration tests too.
 	"""
-	print("\n\n".join(ks.export_as_string() for ks in get_schema().keyspaces))
+	print("\n\n".join(ks.export_as_string() for ks in get_schema(sasi=False).keyspaces))
