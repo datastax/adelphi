@@ -102,7 +102,8 @@ class SchemaTestMixin:
                     try:
                         session.execute(buff)
                     except:
-                        log.info("Exception executing statement: {}".format(buff), exc_info=sys.exc_info()[0])
+                        log.error("Exception executing statement: {}".format(buff), exc_info=sys.exc_info()[0])
+                        self.fail("Exception executing statement: {}, check log for details".format(buff))
                     buff = ""
 
 
@@ -167,7 +168,8 @@ class SchemaTestMixin:
             self.createSchema(session)
             self.runTestWithSchema(version)
         except:
-            log.info("Exception running test for version {}".format(version), exc_info=sys.exc_info()[0])
+            log.error("Exception running test for version {}".format(version), exc_info=sys.exc_info()[0])
+            self.fail("Exception running test for version {}, check log for details".format(version))
         finally:
             if cluster:
                 cluster.shutdown()
