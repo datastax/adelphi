@@ -25,19 +25,40 @@ def seq_binding_name(col):
 def quote_str(s):
     return "\"{}\"".format(s)
 
+
+def is_supported_plain_type(col):
+    """Returns true if we have the ability to create a distribution for this column type, false otherwise"""
+    return col.cql_type in DISTS
+
+
+def is_supported_pk_type(col):
+    """Returns true if we have the ability to create a sequence for this column type, false otherwise"""
+    return col.cql_type in SEQS
+
+
+def is_supported_type(col):
+    """Returns true if we have the ability to create a distribution or sequence for this column type, false otherwise"""
+    return is_supported_plain_type(col) or is_supported_pk_type(col)
+
+
+def partition_cols(table):
+    pk_set = set(table.primary_key)
+    plain_cols = [c for c in table.columns.values() if c not in pk_set]
+    return (table.primary_key, plain_cols)
+
+
 def build_bindings(table):
-    rv = {}
-    for (col_name, col) in table.columns.items():
-        if col.cql_type not in DISTS.keys():
-            raise ColumnTypeException("No nosqlbench distribution configured for type {}".format(col.cql_type))
-        rv[dist_binding_name(col)] = DISTS[col.cql_type]
+    (pk_cols, plain_cols) = partition_cols(table)
+    rv = {dist_binding_name(plain_col): DISTS[plain_col.cql_type] for plain_col in plain_cols if is_supported_plain_type(plain_col)}
 
-        # If we have a primary key we'll also need a seq for insert statements
-        if col_name in [c.name for c in table.primary_key]:
-            if col.cql_type not in SEQS.keys():
-                raise ColumnTypeException("No nosqlbench sequence configured for type {}".format(col.cql_type))
-            rv[seq_binding_name(col)] = SEQS[col.cql_type]
-
+    def pk_generator():
+        for pk_col in pk_cols:
+            if not is_supported_pk_type(pk_col):
+                raise UnsupportedPrimaryKeyTypeException("No sequence definition for primary key column {} of type {}".format(pk_col.name, pk_col.cql_type))
+            yield((seq_binding_name(pk_col), SEQS[pk_col.cql_type]))
+            # Each pk col also gets a DIST def because we may want to execute selects against it
+            yield((dist_binding_name(pk_col), DISTS[pk_col.cql_type]))
+    rv.update(dict(pk_generator()))
     return rv
 
 
@@ -47,17 +68,18 @@ def build_select_statements(keyspace, table):
 
 
 def build_insert_statements(keyspace, table):
-    cols = table.columns.values()
-    primary_keys = set(table.primary_key)
-    col_names = ",".join([quote_str(col.name) for col in cols])
-    def binding_name(col):
-        return seq_binding_name(col) if col in primary_keys else dist_binding_name(col)
-    col_bindings = ",".join(["{" + binding_name(c) + "}" for c in cols])
-    return "insert into {}.{} ({}) values ({})".format(quote_str(keyspace.name), quote_str(table.name), col_names, col_bindings)
+    (pk_cols, plain_cols) = partition_cols(table)
+    col_names = [c.name for c in (table.primary_key + plain_cols) if is_supported_type(c)]
+
+    pk_bindings = ["{" + seq_binding_name(c) + "}" for c in table.primary_key if is_supported_pk_type(c)]
+    plain_bindings = ["{" + dist_binding_name(c) + "}" for c in plain_cols if is_supported_plain_type(c)]
+    col_bindings = ",".join(pk_bindings + plain_bindings)
+
+    return "insert into {}.{} ({}) values ({})".format(quote_str(keyspace.name), quote_str(table.name), ",".join(col_names), col_bindings)
 
 
-class ColumnTypeException(Exception):
-    """Exception indicinating an error in the handling of a specific column type"""
+class UnsupportedPrimaryKeyTypeException(Exception):
+    """Exception indicating a primary key column for which there is no sequence support"""
     pass
 
 
@@ -79,6 +101,8 @@ class NbExporter(BaseExporter):
         if len(self.keyspace.tables) == 0:
             raise TableSelectionException("Keyspace {} contains no tables".format(self.keyspace.name))
         self.table = next(iter(self.keyspace.tables.values()))
+
+        self.bindings = build_bindings(self.table)
 
         log.info("Creating nosqlbench config for {}.{}".format(self.keyspace.name, self.table.name))
 
@@ -121,7 +145,7 @@ class NbExporter(BaseExporter):
         main_scenario = "run driver=cql tags==phase:main cycles===TEMPLATE(main-cycles,1000) threads=auto"
         root["scenarios"] = {"default":[rampup_scenario, main_scenario]}
         
-        root["bindings"] = build_bindings(self.table)
+        root["bindings"] = self.bindings
 
         cl_map = {"cl":"LOCAL_QUORUM"}
         cl_ratio_map = {"ratio":5}
