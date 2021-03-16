@@ -18,7 +18,7 @@ class TestDiff(unittest.TestCase, SchemaTestMixin):
 
     def getBaseSchemaPath(self):
         baseSchemaPath = self.basePath("diff-base-schema.cql")
-        with open(baseSchemaPath) as f:
+        with open(baseSchemaPath, "w") as f:
             f.write("\n\n".join(ks.export_as_string() for ks in get_schema().keyspaces))
         return baseSchemaPath
 
