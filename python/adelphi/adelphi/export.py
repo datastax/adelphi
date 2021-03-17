@@ -15,7 +15,6 @@
 import hashlib
 import logging
 from base64 import urlsafe_b64encode
-from collections import OrderedDict
 from datetime import datetime, tzinfo, timedelta
 
 try:
