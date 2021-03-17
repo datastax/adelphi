@@ -23,11 +23,15 @@ def index(keyspace, table_name, index_name, kind, index_options):
 	return IndexMetadata(keyspace.name, table_name, index_name, kind, index_options)
 
 def get_table(keyspace, name, sasi=True):
+
+	def data_type_column_name(idx):
+		return "my_column_{}".format(idx)
+
 	table = TableMetadata(keyspace.name, name)
 	# build columns for each data type
 	columns_dict = {}
 	for i in range(len(data_types)):
-		col = column(table, "my_column_%s" % i, data_types[i])
+		col = column(table, data_type_column_name(i), data_types[i])
 		columns_dict[col.name] = col
 
 	# create some udts
@@ -46,13 +50,12 @@ def get_table(keyspace, name, sasi=True):
 	columns_dict["collections"] = column(table, collections_udt.name, "frozen<%s>" % collections_udt.name)
 
 	# set some pk's and ck's
-	columns = list(columns_dict.values())
-	partition_keys = [columns[0], columns[1]]
-	clustering_keys = [columns[2], columns[3]]
+	def data_type_column(idx):
+		return columns_dict[data_type_column_name(idx)]
 
 	table.columns = columns_dict
-	table.partition_key = partition_keys
-	table.clustering_key = clustering_keys
+	table.partition_key = [data_type_column(0), data_type_column(1)]
+	table.clustering_key = [data_type_column(2), data_type_column(3)]
 
 	# indexes
 	indexes = {}

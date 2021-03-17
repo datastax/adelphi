@@ -88,19 +88,29 @@ class TestCqlAnonymize(unittest.TestCase):
 		schema = get_schema()
 		keyspace = schema.keyspaces[0]
 		table = keyspace.tables["my_table_0"]
+		origin_pk = table.partition_key
+		origin_ck = table.clustering_key
+		origin_col_cnt = len(table.columns)
+
 		anonymize.anonymize_table(table)
 		self.assertTrue(table.keyspace_name.startswith("ks"))
 		self.assertTrue(table.name.startswith("tbl"))
 
-		# check all columns at once
-		columns = [column.name for column in table.columns.values()]
-		self.assertPrefixes(columns, "col")
+		self.assertEqual(origin_col_cnt, len(table.columns))
 
-		# check standard columns match their pk and ck definitions
-		self.assertEqual(columns[0], table.partition_key[0].name)
-		self.assertEqual(columns[1], table.partition_key[1].name)
-		self.assertEqual(columns[2], table.clustering_key[0].name)
-		self.assertEqual(columns[3], table.clustering_key[1].name)
+		# check all columns at once
+		self.assertPrefixes([column.name for column in table.columns.values()], "col")
+
+		# Check standard columns match their pk and ck definitions.
+		#
+		# Note that table.columns imposes no guaranteed ordering (particularly on Python2) and
+		# that we have no mapping between original and anonymized column names.  As such all
+		# we can do here is compare the types of the partition and clustering keys for both
+		# tables and validate that they match.
+		self.assertEqual(origin_pk[0].cql_type, table.partition_key[0].cql_type)
+		self.assertEqual(origin_pk[1].cql_type, table.partition_key[1].cql_type)
+		self.assertEqual(origin_ck[0].cql_type, table.clustering_key[0].cql_type)
+		self.assertEqual(origin_ck[1].cql_type, table.clustering_key[1].cql_type)
 
 	def test_anonymize_keyspace(self):
 		schema = get_schema()
