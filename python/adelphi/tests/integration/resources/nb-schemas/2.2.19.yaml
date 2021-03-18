@@ -1,0 +1,43 @@
+bindings:
+  key1_dist: Hash(); Mod(1000000000); ToString() -> String
+  key1_seq: Mod(1000000000); ToString() -> String
+  key2_dist: Hash(); Mod(1000000000); ToString() -> String
+  key2_seq: Mod(1000000000); ToString() -> String
+  value_dist: Hash(); Mod(1000000000); ToString() -> String
+blocks:
+- name: rampup
+  params:
+    cl: LOCAL_QUORUM
+  statements:
+  - rampup-insert: insert into "testkeyspace"."testtable" ("key1","key2","value")
+      values ({key1_seq},{key2_dist},{value_dist})
+    tags:
+      name: rampup-insert
+  tags:
+    phase: rampup
+- name: main-read
+  params: &id001
+    cl: LOCAL_QUORUM
+    ratio: 5
+  statements:
+  - main-select: select * from  "testkeyspace"."testtable" where "key1" = {key1_dist}
+      and "key2" = {key2_dist}
+    tags:
+      name: main-select
+  tags:
+    phase: main
+    type: read
+- name: main-write
+  params: *id001
+  statements:
+  - main-insert: insert into "testkeyspace"."testtable" ("key1","key2","value") values
+      ({key1_seq},{key2_dist},{value_dist})
+    tags:
+      name: main-insert
+  tags:
+    phase: main
+    type: write
+scenarios:
+  default:
+  - run driver=cql tags==phase:rampup cycles===TEMPLATE(rampup-cycles,1000) threads=auto
+  - run driver=cql tags==phase:main cycles===TEMPLATE(main-cycles,1000) threads=auto
