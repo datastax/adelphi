@@ -81,9 +81,12 @@ class BaseExporter:
 
         log.info("Processing the following keyspaces: %s", ','.join((ks.name for ks in keyspaces)))
 
-        # anonymize_keyspace mutates keyspace state so we must trap keyspace_id before we (possibly) call it
-        base_map = { ks : self.build_keyspace_id(ks) for ks in keyspaces}
-        return base_map if not props['anonymize'] else {anonymize_keyspace(ks) : keyspace_id for (ks, keyspace_id) in base_map.items()}
+        def process_keyspace(ks):
+            if props['anonymize']:
+                anonymize_keyspace(ks)
+            return ks
+
+        return {process_keyspace(ks) : self.build_keyspace_id(ks) for ks in keyspaces}
 
 
     def get_cluster_metadata(self, cluster):
