@@ -86,9 +86,16 @@ class BaseExporter:
 
         # anonymize_keyspace mutates keyspace state so we must trap keyspace_id before we (possibly) call it
         ids = {ks.name : self.build_keyspace_id(ks) for ks in keyspaces}
+
+        # Create a tuple to represent this keyspace.  Note that we must perform anonymization as part of this
+        # operation because we need the keyspace name before anonymization to access the correct ID from the
+        # dict above.
         def make_tuple(ks):
-            return KsTuple(ids[ks.name], anonymize_keyspace(ks) if props['anonymize'] else ks)
-        return { ks.name : make_tuple(ks) for ks in keyspaces }
+            orig_name = ks.name
+            if props['anonymize']:
+                anonymize_keyspace(ks)
+            return KsTuple(ids[orig_name], ks)
+        return {t.ks_obj.name : t for t in [make_tuple(ks) for ks in keyspaces]}
 
 
     def get_cluster_metadata(self, cluster):
