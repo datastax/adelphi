@@ -16,6 +16,10 @@ class TestDiff(unittest.TestCase, SchemaTestMixin):
         return "export-cql --no-metadata"
 
 
+    # TODO: Note that we currently have to disable support for SASI indexes when creating
+    # a schema since the base config for the Cassandra Docker images doesn't enable it.
+    # https://github.com/datastax/adelphi/issues/105 aims to fix this problem but until
+    # that's in place we simply exclude SASI indexes from testing.
     def getBaseSchemaPath(self):
         baseSchemaPath = self.basePath("diff-base-schema.cql")
         with open(baseSchemaPath, "w") as f:
