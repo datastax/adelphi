@@ -140,13 +140,18 @@ class SchemaTestMixin:
 
         self._compareToReference(self.stdoutPath(version), version)
 
-        # Find the created schema underneath the output dir.  Note that this logic will have to be fixed
-        # once https://github.com/datastax/adelphi/issues/106 is resolved
         outputDirPath = self.outputDirPath(version)
+        allOutputFileName = "{}-all".format(version)
+        allOutputPath = self.outputDirPath(allOutputFileName)
+
         outputSchemas = glob.glob("{}/*/schema".format(outputDirPath))
         self.assertGreater(len(outputSchemas), 0)
-        log.info("Found schema file in output directory, path: {}".format(outputSchemas[0]))
-        self._compareToReference(outputSchemas[0], version)
+        with open(allOutputPath, "w+") as allOutputFile:
+            for outputSchema in outputSchemas:
+                with open(outputSchema) as outputSchemaFile:
+                    shutil.copyfileobj(outputSchemaFile, allOutputFile)
+                    allOutputFile.write("\n")
+        self._compareToReference(allOutputPath, version)
 
 
     def runTestWithSchema(self, version):
