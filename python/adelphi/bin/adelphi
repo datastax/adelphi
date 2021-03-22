@@ -229,11 +229,15 @@ def contribute(ctx, token):
 
 
 @export.command()
+@click.option('--rampup-cycles', type=int, default=1000, help='Number of cycles to use for the nosqlbench rampup phase')
+@click.option('--main-cycles', type=int, default=1000, help='Number of cycles to use for the nosqlbench main phase')
 @click.pass_context
-def export_nb(ctx):
+def export_nb(ctx, rampup_cycles, main_cycles):
     """Export a schema in a format suitable for use with the the nosqlbench performance test framework"""
 
     ctx.obj["include-metadata"] = False
+    ctx.obj["rampup-cycles"] = rampup_cycles
+    ctx.obj["main-cycles"] = main_cycles
 
     try:
         exporter = build_exporter(NbExporter, ctx.obj)

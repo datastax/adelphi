@@ -6,10 +6,14 @@ from itertools import chain
 from adelphi.exceptions import KeyspaceSelectionException, TableSelectionException
 from adelphi.export import BaseExporter
 
+MAX_NUMERIC_VAL = 1000 ** 3
+RAMPUP_SCENARIO = "run driver=cql tags=phase:rampup cycles={} threads=auto"
+MAIN_SCENARIO = "run driver=cql tags=phase:main cycles={} threads=auto"
+
 SEQS={}
-SEQS["text"] = "Mod(1000000000); ToString() -> String"
+SEQS["text"] = "Mod({}); ToString() -> String"
 DISTS={}
-DISTS["text"] = "Hash(); Mod(1000000000); ToString() -> String"
+DISTS["text"] = "Hash(); Mod({}); ToString() -> String"
 
 log = logging.getLogger('adelphi')
 
@@ -47,21 +51,6 @@ def partition_cols(table):
     return (table.primary_key, plain_cols)
 
 
-def build_bindings(table):
-    (pk_cols, plain_cols) = partition_cols(table)
-    rv = {dist_binding_name(plain_col): DISTS[plain_col.cql_type] for plain_col in plain_cols if is_supported_plain_type(plain_col)}
-
-    def pk_generator():
-        for pk_col in pk_cols:
-            if not is_supported_pk_type(pk_col):
-                raise UnsupportedPrimaryKeyTypeException("No sequence definition for primary key column {} of type {}".format(pk_col.name, pk_col.cql_type))
-            yield((seq_binding_name(pk_col), SEQS[pk_col.cql_type]))
-            # Each pk col also gets a DIST def because we may want to execute selects against it
-            yield((dist_binding_name(pk_col), DISTS[pk_col.cql_type]))
-    rv.update(dict(pk_generator()))
-    return rv
-
-
 def build_select_statements(keyspace, table):
     key_bindings = " and ".join(["{} = {}".format(quote_str(key.name), "{" + dist_binding_name(key) + "}") for key in table.primary_key])
     return "select * from  {}.{} where {}".format(quote_str(keyspace.name), quote_str(table.name), key_bindings)
@@ -87,13 +76,17 @@ class NbExporter(BaseExporter):
 
     def __init__(self, cluster, props):
 
+        self.rampup_cycles = props["rampup-cycles"]
+        self.main_cycles = props["main-cycles"]
+        self.numeric_max = min((self.rampup_cycles + self.main_cycles) * 1000, MAX_NUMERIC_VAL)
+
         # Always disable anonymization when generating nosqlbench configs
-        self.props = props.copy()
-        self.props["anonymize"] = False
+        real_props = props.copy()
+        real_props["anonymize"] = False
 
-        self.metadata = self.get_common_metadata(cluster, self.props)
+        self.metadata = self.get_common_metadata(cluster, real_props)
 
-        all_keyspaces = self.get_keyspaces(cluster, self.props)
+        all_keyspaces = self.get_keyspaces(cluster, real_props)
         if len(all_keyspaces) > 1:
             raise KeyspaceSelectionException("nosqlbench export doesn't support multiple keyspaces")
         self.keyspace = next(iter(all_keyspaces.keys()))
@@ -102,10 +95,10 @@ class NbExporter(BaseExporter):
             raise TableSelectionException("Keyspace {} contains no tables".format(self.keyspace.name))
         self.table = next(iter(self.keyspace.tables.values()))
 
-        self.bindings = build_bindings(self.table)
-
         log.info("Creating nosqlbench config for {}.{}".format(self.keyspace.name, self.table.name))
-
+        log.info("Number of cycles for rampup phase = {}".format(self.rampup_cycles))
+        log.info("Number of cycles for main phase = {}".format(self.main_cycles))
+        log.info("Max numeric value = {}".format(self.numeric_max))
 
     def export_all(self):
         return self.export_schema()
@@ -125,6 +118,22 @@ class NbExporter(BaseExporter):
         ks_fn(self.keyspace, self.keyspace.name)
 
 
+    def __get_rampup_scenario(self):
+        return RAMPUP_SCENARIO.format(self.rampup_cycles)
+
+
+    def __get_main_scenario(self):
+        return MAIN_SCENARIO.format(self.main_cycles)
+
+
+    def __get_dist(self, typename):
+        return DISTS[typename].format(self.numeric_max)
+
+
+    def __get_seq(self, typename):
+        return SEQS[typename].format(self.numeric_max)
+
+
     def __build_rampup_statement(self):
         return {"tags":{"name":"rampup-insert"}, "rampup-insert": build_insert_statements(self.keyspace, self.table)}
 
@@ -137,15 +146,28 @@ class NbExporter(BaseExporter):
         return {"tags":{"name":"main-insert"}, "main-insert": build_insert_statements(self.keyspace, self.table)}
 
 
+    def __build_bindings(self, table):
+        (pk_cols, plain_cols) = partition_cols(table)
+        rv = {dist_binding_name(plain_col): self.__get_dist(plain_col.cql_type) for plain_col in plain_cols if is_supported_plain_type(plain_col)}
+
+        def pk_generator():
+            for pk_col in pk_cols:
+                if not is_supported_pk_type(pk_col):
+                    raise UnsupportedPrimaryKeyTypeException("No sequence definition for primary key column {} of type {}".format(pk_col.name, pk_col.cql_type))
+                yield((seq_binding_name(pk_col), self.__get_seq(pk_col.cql_type)))
+                # Each pk col also gets a DIST def because we may want to execute selects against it
+                yield((dist_binding_name(pk_col), self.__get_dist(pk_col.cql_type)))
+        rv.update(dict(pk_generator()))
+        return rv
+
+
     def __build_schema(self):
         """Really more of a config than a schema, but we'll allow it"""
         root = {}
 
-        rampup_scenario = "run driver=cql tags==phase:rampup cycles===TEMPLATE(rampup-cycles,1000) threads=auto"
-        main_scenario = "run driver=cql tags==phase:main cycles===TEMPLATE(main-cycles,1000) threads=auto"
-        root["scenarios"] = {"default":[rampup_scenario, main_scenario]}
+        root["scenarios"] = {"default":[self.__get_rampup_scenario(), self.__get_main_scenario()]}
         
-        root["bindings"] = self.bindings
+        root["bindings"] = self.__build_bindings(self.table)
 
         cl_map = {"cl":"LOCAL_QUORUM"}
         cl_ratio_map = {"ratio":5}
