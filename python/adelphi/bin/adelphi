@@ -33,7 +33,7 @@ from adelphi.cql import CqlExporter
 from adelphi.exceptions import KeyspaceSelectionException, TableSelectionException
 from adelphi.gemini import GeminiExporter
 from adelphi.gh import build_github, build_origin_repo, build_branch, commit_schemas, build_pull_request
-from adelphi.nb import NbExporter, ColumnTypeException
+from adelphi.nb import NbExporter, UnsupportedPrimaryKeyTypeException
 from adelphi.store import with_cluster
 
 # Exit codes
@@ -244,7 +244,7 @@ def export_nb(ctx):
     except TableSelectionException as exc:
         log.info(exc.args[0])
         exit(TABLE_SELECTION_EXCEPTION)
-    except ColumnTypeException as exc:
+    except UnsupportedPrimaryKeyTypeException as exc:
         log.error(exc.args[0])
         exit(COLUMN_TYPE_EXCEPTION)
 
