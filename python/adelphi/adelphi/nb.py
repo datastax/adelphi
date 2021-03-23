@@ -12,8 +12,18 @@ MAIN_SCENARIO = "run driver=cql tags=phase:main cycles={} threads=auto"
 
 SEQS={}
 SEQS["text"] = "Mod({}); ToString() -> String"
+SEQS["ascii"] = "Mod({}); ToString() -> String"
+SEQS["int"] = "Mod({}); ToInt() -> int"
+SEQS["bigint"] = "Mod({}); ToLong() -> long"
+SEQS["float"] = "Mod({}); ToFloat()"
+SEQS["double"] = "Mod({}); ToDouble()"
 DISTS={}
 DISTS["text"] = "Hash(); Mod({}); ToString() -> String"
+DISTS["ascii"] = "Hash(); Mod({}); ToString() -> String"
+DISTS["int"] = "Hash(); Mod({}); ToInt() -> int"
+DISTS["bigint"] = "Hash(); Mod({}); ToLong() -> long"
+DISTS["float"] = "Hash(); Mod({}); ToFloat()"
+DISTS["double"] = "Hash(); Mod({}); ToDouble()"
 
 log = logging.getLogger('adelphi')
 
