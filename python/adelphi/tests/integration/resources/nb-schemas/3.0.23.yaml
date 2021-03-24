@@ -10,7 +10,7 @@ blocks:
     cl: LOCAL_QUORUM
   statements:
   - rampup-insert: insert into "testkeyspace"."testtable" ("key1","key2","value")
-      values ({key1_seq},{key2_dist},{value_dist})
+      values ({key1_seq},{key2_seq},{value_dist})
     tags:
       name: rampup-insert
   tags:
@@ -31,7 +31,7 @@ blocks:
   params: *id001
   statements:
   - main-insert: insert into "testkeyspace"."testtable" ("key1","key2","value") values
-      ({key1_seq},{key2_dist},{value_dist})
+      ({key1_seq},{key2_seq},{value_dist})
     tags:
       name: main-insert
   tags:

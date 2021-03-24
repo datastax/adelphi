@@ -47,11 +47,14 @@ def build_select_statements(keyspace, table):
 
 
 def build_insert_statements(keyspace, table):
+    # Note that both the sequence of column names and column bindings are built off of
+    # the same base sequence (cols below) in order to make sure column names and binding
+    # names line up in the generated CQL.  Order is pretty important here.
     cols = table.columns.values()
-    primary_keys = set(table.primary_key)
+    primary_keys = set([c.name for c in table.primary_key])
     col_names = ",".join([quote_str(col.name) for col in cols])
     def binding_name(col):
-        return seq_binding_name(col) if col in primary_keys else dist_binding_name(col)
+        return seq_binding_name(col) if col.name in primary_keys else dist_binding_name(col)
     col_bindings = ",".join(["{" + binding_name(c) + "}" for c in cols])
     return "insert into {}.{} ({}) values ({})".format(quote_str(keyspace.name), quote_str(table.name), col_names, col_bindings)
 
