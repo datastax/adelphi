@@ -31,7 +31,7 @@ class ExportCqlMixin:
 
 
     def compareToReferenceCql(self, comparePath, version=None):
-        referencePath = "tests/integration/resources/diff-schemas/{}.cql".format(version)
+        referencePath = "tests/integration/resources/cql-schemas/{}.cql".format(version)
         referenceSet = digestSet(referencePath)
         compareSet = digestSet(comparePath)
 
