@@ -25,14 +25,15 @@ class TestCqlExportOutputDir(unittest.TestCase, SchemaTestMixin, ExportCqlMixin)
         super(TestCqlExportOutputDir, self).setUp()
 
 
-    def runAdelphi(self, version=None):
+    def runAdelphi(self, version):
         stderrPath = self.stderrPath(version)
         outputDirPath = self.outputDirPath(version)
         os.mkdir(outputDirPath)
         subprocess.run("adelphi --output-dir={} export-cql --no-metadata 2>> {}".format(outputDirPath, stderrPath), shell=True)
 
 
-    def evalAdelphiOutput(self, version=None):
+    def evalAdelphiOutput(self, version):
+        referencePath = "tests/integration/resources/cql-schemas/{}.cql".format(version)
         outputDirPath = self.outputDirPath(version)
         allOutputFileName = "{}-all".format(version)
         allOutputPath = self.outputDirPath(allOutputFileName)
@@ -44,4 +45,4 @@ class TestCqlExportOutputDir(unittest.TestCase, SchemaTestMixin, ExportCqlMixin)
                 with open(outputSchema) as outputSchemaFile:
                     shutil.copyfileobj(outputSchemaFile, allOutputFile)
                     allOutputFile.write("\n")
-        self.compareToReferenceCql(allOutputPath, version)
+        self.compareToReferenceCql(referencePath, allOutputPath)

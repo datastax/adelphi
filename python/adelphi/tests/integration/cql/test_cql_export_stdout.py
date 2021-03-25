@@ -23,13 +23,14 @@ class TestCqlExportStdout(unittest.TestCase, SchemaTestMixin, ExportCqlMixin):
         super(TestCqlExportStdout, self).setUp()
 
 
-    def runAdelphi(self, version=None):
+    def runAdelphi(self, version):
         stdoutPath = self.stdoutPath(version)
         stderrPath = self.stderrPath(version)
         subprocess.run("adelphi export-cql --no-metadata > {} 2>> {}".format(stdoutPath, stderrPath), shell=True)
 
 
-    def evalAdelphiOutput(self, version=None):
-        self.compareToReferenceCql(self.stdoutPath(version), version)
+    def evalAdelphiOutput(self, version):
+        referencePath = "tests/integration/resources/cql-schemas/{}.cql".format(version)
+        self.compareToReferenceCql(referencePath, self.stdoutPath(version))
 
 
