@@ -14,16 +14,22 @@ SEQS={}
 SEQS["text"] = "Mod({}); ToString() -> String"
 SEQS["ascii"] = "Mod({}); ToString() -> String"
 SEQS["int"] = "Mod({}); ToInt() -> int"
+SEQS["smallint"] = "Mod({}); ToShort()"
 SEQS["bigint"] = "Mod({}); ToLong() -> long"
 SEQS["float"] = "Mod({}); ToFloat()"
 SEQS["double"] = "Mod({}); ToDouble()"
+SEQS["decimal"] = "ModuloToBigDecimal({})"
+SEQS["boolean"] = "Mod({}); ToBoolean()"
 DISTS={}
 DISTS["text"] = "Hash(); Mod({}); ToString() -> String"
 DISTS["ascii"] = "Hash(); Mod({}); ToString() -> String"
 DISTS["int"] = "Hash(); Mod({}); ToInt() -> int"
+DISTS["smallint"] = "Hash(); Mod({}); ToShort()"
 DISTS["bigint"] = "Hash(); Mod({}); ToLong() -> long"
 DISTS["float"] = "Hash(); Mod({}); ToFloat()"
 DISTS["double"] = "Hash(); Mod({}); ToDouble()"
+DISTS["decimal"] = "Hash(); ModuloToBigDecimal({})"
+DISTS["boolean"] = "Hash(); Mod({}); ToBoolean()"
 
 log = logging.getLogger('adelphi')
 
