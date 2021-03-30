@@ -25,6 +25,8 @@ CQL_TYPES["blob"] = "Mod({}); ToByteBuffer() -> java.nio.ByteBuffer"
 CQL_TYPES["timestamp"] = "Mod({}); ToDate() -> java.util.Date"
 CQL_TYPES["date"] = "Mod({}); LongToLocalDateDays() -> com.datastax.driver.core.LocalDate"
 CQL_TYPES["time"] = "Mod({}); ToLong() -> long"
+CQL_TYPES["uuid"] = "Mod({}); ToHashedUUID() -> java.util.UUID"
+CQL_TYPES["timeuuid"] = "Mod({}); ToTimeUUIDMax() -> java.util.UUID"
 
 log = logging.getLogger('adelphi')
 
