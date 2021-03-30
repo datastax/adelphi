@@ -22,6 +22,9 @@ SEQS["decimal"] = "ModuloToBigDecimal({}) -> java.math.BigDecimal"
 SEQS["boolean"] = "Mod({}); ToBoolean() -> java.lang.Boolean"
 SEQS["varint"] = "ModuloToBigInt({}) -> java.math.BigInteger"
 SEQS["blob"] = "Mod({}); ToByteBuffer() -> java.nio.ByteBuffer"
+SEQS["timestamp"] = "Mod({}); ToDate() -> java.util.Date"
+SEQS["date"] = "Mod({}); LongToLocalDateDays() -> com.datastax.driver.core.LocalDate"
+SEQS["time"] = "Mod({}); ToLong() -> long"
 DISTS={}
 DISTS["text"] = "Hash(); Mod({}); ToString() -> String"
 DISTS["ascii"] = "Hash(); Mod({}); ToString() -> String"
@@ -34,6 +37,9 @@ DISTS["decimal"] = "Hash(); ModuloToBigDecimal({}) -> java.math.BigDecimal"
 DISTS["boolean"] = "Hash(); Mod({}); ToBoolean() -> java.lang.Boolean"
 DISTS["varint"] = "Hash(); ModuloToBigInt({}) -> java.math.BigInteger"
 DISTS["blob"] = "Hash(); Mod({}); ToByteBuffer() -> java.nio.ByteBuffer"
+DISTS["timestamp"] = "Hash(); Mod({}); ToDate() -> java.util.Date"
+DISTS["date"] = "Hash(); Mod({}); LongToLocalDateDays() -> com.datastax.driver.core.LocalDate"
+DISTS["time"] = "Hash(); Mod({}); ToLong() -> long"
 
 log = logging.getLogger('adelphi')
 
