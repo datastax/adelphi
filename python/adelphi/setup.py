@@ -8,7 +8,7 @@ dependencies = [
     'cassandra-driver ~= 3.24',
     'click ~= 7.1',
     'PyGithub ~= 1.45',
-    'PyYAML ~= 5.3'
+    'PyYAML ~= 5.4'
     ]
 
 if not PY3:
