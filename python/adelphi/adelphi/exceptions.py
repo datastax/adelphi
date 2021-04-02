@@ -10,3 +10,7 @@ class KeyspaceSelectionException(SelectionException):
 class TableSelectionException(SelectionException):
     """Exception indicinating an error in the selection of tables"""
     pass
+
+
+class ExportException(Exception):
+    pass

@@ -15,6 +15,7 @@
 import hashlib
 import logging
 from base64 import urlsafe_b64encode
+from collections import namedtuple
 from datetime import datetime, tzinfo, timedelta
 
 try:
@@ -41,6 +42,8 @@ except ImportError:
         def dst(self, dt):
             return timedelta(0)
     utc = UTC()
+
+KsTuple = namedtuple('KsTuple',['ks_id', 'ks_obj'])
 
 class BaseExporter:
     
@@ -81,12 +84,18 @@ class BaseExporter:
 
         log.info("Processing the following keyspaces: %s", ','.join((ks.name for ks in keyspaces)))
 
-        def process_keyspace(ks):
+        # anonymize_keyspace mutates keyspace state so we must trap keyspace_id before we (possibly) call it
+        ids = {ks.name : self.build_keyspace_id(ks) for ks in keyspaces}
+
+        # Create a tuple to represent this keyspace.  Note that we must perform anonymization as part of this
+        # operation because we need the keyspace name before anonymization to access the correct ID from the
+        # dict above.
+        def make_tuple(ks):
+            orig_name = ks.name
             if props['anonymize']:
                 anonymize_keyspace(ks)
-            return ks
-
-        return {process_keyspace(ks) : self.build_keyspace_id(ks) for ks in keyspaces}
+            return KsTuple(ids[orig_name], ks)
+        return {t.ks_obj.name : t for t in [make_tuple(ks) for ks in keyspaces]}
 
 
     def get_cluster_metadata(self, cluster):
@@ -103,6 +112,23 @@ class BaseExporter:
         return metadata
 
 
-    # Base impl... can be overridden if necessary
+    # Remaining methods in this class represent default impls of methods for subclasses
+    def export_all(self):
+        return self.export_schema()
+
+
+    # Note assumption of keyspace and keyspace_id as attrs
     def each_keyspace(self, ks_fn):
         ks_fn(self.keyspace, self.keyspace_id)
+
+
+    # Functions below assume self.metadata as a dict
+    def export_metadata_dict(self):
+        return {k : self.metadata[k] for k in self.metadata.keys() if self.metadata[k]}
+
+
+    def add_metadata(self, k, v):
+        """Note that this function sets a metadata value for the entire exporter.  If you
+        need something keyspace-specific you're probably better off just adding it to the
+        exported metadata directory."""
+        self.metadata[k] = v
