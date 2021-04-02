@@ -166,7 +166,7 @@ class NbExporter(BaseExporter):
         """Really more of a config than a schema, but we'll allow it"""
         root = {}
 
-        root["scenarios"] = {"default":[self.__get_rampup_scenario(), self.__get_main_scenario()]}
+        root["scenarios"] = {"TEMPLATE(scenarioname,default)":[self.__get_rampup_scenario(), self.__get_main_scenario()]}
         
         root["bindings"] = self.__build_bindings(self.table)
 
