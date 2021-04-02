@@ -28,25 +28,20 @@ class CqlExporter(BaseExporter):
 
 
     def export_all(self):
-        metadata_str = json.dumps(self.export_metadata(), indent=4)
+        metadata_str = json.dumps(self.export_metadata_dict(), indent=4)
         metadata_comments = "\n".join("//{}".format(line).strip() for line in metadata_str.splitlines())
 
         return metadata_comments + "\n\n" + self.export_schema()
 
 
-    def export_metadata(self):
-        return {k : self.metadata[k] for k in self.metadata.keys() if self.metadata[k]}
+    def export_schema(self, keyspace=None):
 
+        ks_objs = [self.keyspaces[keyspace].ks_obj] if keyspace else [t.ks_obj for t in self.keyspaces.values()]
 
-    def export_schema(self):
+        set_replication_factor(ks_objs, self.props['rf'])
 
-        set_replication_factor(self.keyspaces, self.props['rf'])
-
-        # build CQL statements string
-        cql_str = "\n\n".join(ks.export_as_string() for ks in self.keyspaces)
-
-        # transform CREATE statements to include `IF NOT EXISTS`
         # TODO: shift this around to a regex so that we can do the whole thing in a single pass
+        cql_str = "\n\n".join(ks_obj.export_as_string() for ks_obj in ks_objs)
         return cql_str.replace("CREATE TABLE", "CREATE TABLE IF NOT EXISTS") \
                       .replace("CREATE KEYSPACE", "CREATE KEYSPACE IF NOT EXISTS") \
                       .replace("CREATE TYPE", "CREATE TYPE IF NOT EXISTS") \
@@ -54,9 +49,5 @@ class CqlExporter(BaseExporter):
 
 
     def each_keyspace(self, ks_fn):
-        for (ks, keyspace_id) in self.keyspaces.items():
-            ks_fn(ks, keyspace_id)
-
-
-    def add_metadata(self, k, v):
-        self.metadata[k] = v
+        for (ks_name, ks_tuple) in self.keyspaces.items():
+            ks_fn(ks_tuple.ks_obj, ks_tuple.ks_id)

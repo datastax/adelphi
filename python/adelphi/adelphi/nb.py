@@ -3,7 +3,7 @@ import yaml
 
 from itertools import chain
 
-from adelphi.exceptions import KeyspaceSelectionException, TableSelectionException
+from adelphi.exceptions import KeyspaceSelectionException, TableSelectionException, ExportException
 from adelphi.export import BaseExporter
 
 MAX_NUMERIC_VAL = 1000 ** 3
@@ -49,8 +49,8 @@ def is_supported_type(col):
 
 
 def partition_cols(table):
-    pk_set = set(table.primary_key)
-    plain_cols = [c for c in table.columns.values() if c not in pk_set]
+    pk_set = set([c.name for c in table.primary_key])
+    plain_cols = [c for c in table.columns.values() if c.name not in pk_set]
     return (table.primary_key, plain_cols)
 
 
@@ -60,14 +60,16 @@ def build_select_statements(keyspace, table):
 
 
 def build_insert_statements(keyspace, table):
-    (pk_cols, plain_cols) = partition_cols(table)
-    col_names = [c.name for c in (table.primary_key + plain_cols) if is_supported_type(c)]
-
-    pk_bindings = ["{" + seq_binding_name(c) + "}" for c in table.primary_key if is_supported_type(c)]
-    plain_bindings = ["{" + dist_binding_name(c) + "}" for c in plain_cols if is_supported_type(c)]
-    col_bindings = ",".join(pk_bindings + plain_bindings)
-
-    return "insert into {}.{} ({}) values ({})".format(quote_str(keyspace.name), quote_str(table.name), ",".join(col_names), col_bindings)
+    # Note that both the sequence of column names and column bindings are built off of
+    # the same base sequence (cols below) in order to make sure column names and binding
+    # names line up in the generated CQL.  Order is pretty important here.
+    cols = table.columns.values()
+    primary_keys = set([c.name for c in table.primary_key])
+    col_names = ",".join([quote_str(col.name) for col in cols])
+    def binding_name(col):
+        return seq_binding_name(col) if col.name in primary_keys else dist_binding_name(col)
+    col_bindings = ",".join(["{" + binding_name(c) + "}" for c in cols])
+    return "insert into {}.{} ({}) values ({})".format(quote_str(keyspace.name), quote_str(table.name), col_names, col_bindings)
 
 
 class UnsupportedPrimaryKeyTypeException(Exception):
@@ -92,7 +94,7 @@ class NbExporter(BaseExporter):
         all_keyspaces = self.get_keyspaces(cluster, real_props)
         if len(all_keyspaces) > 1:
             raise KeyspaceSelectionException("nosqlbench export doesn't support multiple keyspaces")
-        self.keyspace = next(iter(all_keyspaces.keys()))
+        self.keyspace = next(iter(all_keyspaces.values())).ks_obj
 
         if len(self.keyspace.tables) == 0:
             raise TableSelectionException("Keyspace {} contains no tables".format(self.keyspace.name))
@@ -103,15 +105,10 @@ class NbExporter(BaseExporter):
         log.info("Number of cycles for main phase = {}".format(self.main_cycles))
         log.info("Max numeric value = {}".format(self.numeric_max))
 
-    def export_all(self):
-        return self.export_schema()
 
-
-    def export_metadata(self):
-        return {k : self.metadata[k] for k in self.metadata.keys() if self.metadata[k]}
-
-
-    def export_schema(self):
+    def export_schema(self, keyspace=None):
+        if keyspace and keyspace != self.keyspace.name:
+            raise ExportException("Exporter doesn't know about keyspace {} requested for export".format(keyspace))
         return self.__build_schema()
 
 
