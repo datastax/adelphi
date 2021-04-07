@@ -14,12 +14,14 @@ CQL_TYPES={}
 CQL_TYPES["text"] = "Mod({}); ToString() -> String"
 CQL_TYPES["ascii"] = "Mod({}); ToString() -> String"
 CQL_TYPES["int"] = "Mod({}); ToInt() -> int"
+CQL_TYPES["tinyint"] = "Mod({}); ToByte() -> java.lang.Byte"
 CQL_TYPES["smallint"] = "Mod({}); ToShort() -> java.lang.Short"
 CQL_TYPES["bigint"] = "Mod({}); ToLong() -> long"
 CQL_TYPES["float"] = "Mod({}); ToFloat() -> java.lang.Float"
 CQL_TYPES["double"] = "Mod({}); ToDouble() -> double"
 CQL_TYPES["decimal"] = "ModuloToBigDecimal({}) -> java.math.BigDecimal"
 CQL_TYPES["boolean"] = "Mod({}); ToBoolean() -> java.lang.Boolean"
+CQL_TYPES["varchar"] = "Mod({}); ToString() -> String"
 CQL_TYPES["varint"] = "ModuloToBigInt({}) -> java.math.BigInteger"
 CQL_TYPES["blob"] = "Mod({}); ToByteBuffer() -> java.nio.ByteBuffer"
 CQL_TYPES["timestamp"] = "Mod({}); ToDate() -> java.util.Date"
@@ -27,6 +29,7 @@ CQL_TYPES["date"] = "Mod({}); LongToLocalDateDays() -> com.datastax.driver.core.
 CQL_TYPES["time"] = "Mod({}); ToLong() -> long"
 CQL_TYPES["uuid"] = "Mod({}); ToHashedUUID() -> java.util.UUID"
 CQL_TYPES["timeuuid"] = "Mod({}); ToTimeUUIDMax() -> java.util.UUID"
+CQL_TYPES["inet"] = "Mod({}); ToInetAddress() -> java.net.InetAddress"
 
 log = logging.getLogger('adelphi')
 
