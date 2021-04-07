@@ -83,7 +83,6 @@ class NbExporter(BaseExporter):
 
         self.rampup_cycles = props["rampup-cycles"]
         self.main_cycles = props["main-cycles"]
-        self.scenario_name = props["scenario-name"]
         self.numeric_max = min((self.rampup_cycles + self.main_cycles) * 1000, MAX_NUMERIC_VAL)
 
         # Always disable anonymization when generating nosqlbench configs
@@ -167,7 +166,7 @@ class NbExporter(BaseExporter):
         """Really more of a config than a schema, but we'll allow it"""
         root = {}
 
-        root["scenarios"] = {self.scenario_name:[self.__get_rampup_scenario(), self.__get_main_scenario()]}
+        root["scenarios"] = {"TEMPLATE(scenarioname,default)":[self.__get_rampup_scenario(), self.__get_main_scenario()]}
         
         root["bindings"] = self.__build_bindings(self.table)
 
