@@ -14,7 +14,7 @@ spec:
         "--show-stacktraces",
         "--report-csv-to=/results",
         "--report-graphite-to=graphite-service:9109",
-        "/config/workload.yaml",
+        "/workspace/nosqlbench_source.yaml",
         "source",
         "scenarioname=source",
         "hosts={{ .Values.source.clusterName }}-{{ .Values.source.dc }}-service",
@@ -25,25 +25,46 @@ spec:
         options:
         - name: ndots
           value: "1"
+    initContainers:
+    # remove this container when https://github.com/datastax/adelphi/issues/107 is merged and available via pypi
+    - name: clone-adelphi-cli
+      image: alpine/git
+      command: ["sh", "-c", "-e"]
+      args:
+        - git clone https://github.com/datastax/adelphi.git /workspace/adelphi
+	  cd /workspace/adelphi
+	  git checkout origin/107-not-quite-all-the-types-but-lots-of-types
       volumeMounts:
+      - name: workspace
+        mountPath: /workspace
+    - name: extract-config
+      image: python:3.10.0a1-alpine3.12
+      command: ["sh", "-c", "-e"]
+      args:
+        - echo "Create nosqlbench config using adelphi tool";
+          #pip install adelphi;
+          pip install cassandra-driver;
+          cd /workspace/adelphi/python/adelphi;
+          pip install .;
+          adelphi --hosts="{{ .Values.source.clusterName }}-{{ .Values.source.dc }}-service" --username="{{ .Values.source.clusterName }}-superuser" --password="`cat /source-secret/password`" --keyspaces="{{ .Values.gemini_schema_keyspace }}" --no-anonymize export-nb > /workspace/nosqlbench_source.yaml;
+          echo "Done";
+      volumeMounts:
+      - name: workspace
+        mountPath: /workspace
       - name: secret-volume
         mountPath: /secret
         readOnly: true
-      - name: workload
-        mountPath: /config/workload.yaml
-        subPath: workload.yaml
       - name: results-pv
         mountPath: /results
     volumes:
+    - name: workspace
+      emptyDir: {}
     - name: secret-volume
       secret:
         secretName: {{ .Values.source.clusterName }}-superuser
         items:
         - key: password
           path: password
-    - name: workload
-      configMap:
-        name: nosqlbench-workload-configmap
     - name: results-pv
       persistentVolumeClaim:
         claimName: nosqlbench-source-pvc
@@ -54,7 +75,7 @@ spec:
         "--show-stacktraces",
         "--report-csv-to=/results",
         "--report-graphite-to=graphite-service:9109",
-        "/config/workload.yaml",
+        "/workspace/nosqlbench_target.yaml",
         "target",
         "scenarioname=target",
         "hosts={{ .Values.target.clusterName }}-{{ .Values.target.dc }}-service",
@@ -69,21 +90,48 @@ spec:
       - name: secret-volume
         mountPath: /secret
         readOnly: true
-      - name: workload
-        mountPath: /config/workload.yaml
-        subPath: workload.yaml
+      - name: results-pv
+        mountPath: /results
+    initContainers:
+    # remove this container when https://github.com/datastax/adelphi/issues/107 is merged and available via pypi
+    - name: clone-adelphi-cli
+      image: alpine/git
+      command: ["sh", "-c", "-e"]
+      args:
+        - git clone https://github.com/datastax/adelphi.git /workspace/adelphi
+	  cd /workspace/adelphi
+	  git checkout origin/107-not-quite-all-the-types-but-lots-of-types
+      volumeMounts:
+      - name: workspace
+        mountPath: /workspace
+    - name: extract-config
+      image: python:3.10.0a1-alpine3.12
+      command: ["sh", "-c", "-e"]
+      args:
+        - echo "Create nosqlbench config using adelphi tool";
+          #pip install adelphi;
+          pip install cassandra-driver;
+          cd /workspace/adelphi/python/adelphi;
+          pip install .;
+          adelphi --hosts="{{ .Values.target.clusterName }}-{{ .Values.target.dc }}-service" --username="{{ .Values.target.clusterName }}-superuser" --password="`cat /source-secret/password`" --keyspaces="{{ .Values.gemini_schema_keyspace }}" --no-anonymize export-nb > /workspace/nosqlbench_target.yaml;
+          echo "Done";
+      volumeMounts:
+      - name: workspace
+        mountPath: /workspace
+      - name: secret-volume
+        mountPath: /secret
+        readOnly: true
       - name: results-pv
         mountPath: /results
     volumes:
+    - name: workspace
+      emptyDir: {}
     - name: secret-volume
       secret:
         secretName: {{ .Values.target.clusterName }}-superuser
         items:
         - key: password
           path: password
-    - name: workload
-      configMap:
-        name: nosqlbench-workload-configmap
     - name: results-pv
       persistentVolumeClaim:
         claimName: nosqlbench-target-pvc
