@@ -26,14 +26,14 @@ spec:
         - name: ndots
           value: "1"
     initContainers:
-    # remove this container when https://github.com/datastax/adelphi/issues/107 is merged and available via pypi
+      # remove this container when https://github.com/datastax/adelphi/issues/107 is merged and available via pypi
     - name: clone-adelphi-cli
       image: alpine/git
       command: ["sh", "-c", "-e"]
       args:
-        - git clone https://github.com/datastax/adelphi.git /workspace/adelphi
-	  cd /workspace/adelphi
-	  git checkout origin/107-not-quite-all-the-types-but-lots-of-types
+        - git clone https://github.com/datastax/adelphi.git /workspace/adelphi;
+          cd /workspace/adelphi;
+          git checkout origin/107-not-quite-all-the-types-but-lots-of-types;
       volumeMounts:
       - name: workspace
         mountPath: /workspace
@@ -42,7 +42,6 @@ spec:
       command: ["sh", "-c", "-e"]
       args:
         - echo "Create nosqlbench config using adelphi tool";
-          #pip install adelphi;
           pip install cassandra-driver;
           cd /workspace/adelphi/python/adelphi;
           pip install .;
@@ -93,14 +92,14 @@ spec:
       - name: results-pv
         mountPath: /results
     initContainers:
-    # remove this container when https://github.com/datastax/adelphi/issues/107 is merged and available via pypi
+      # remove this container when https://github.com/datastax/adelphi/issues/107 is merged and available via pypi
     - name: clone-adelphi-cli
       image: alpine/git
       command: ["sh", "-c", "-e"]
       args:
-        - git clone https://github.com/datastax/adelphi.git /workspace/adelphi
-	  cd /workspace/adelphi
-	  git checkout origin/107-not-quite-all-the-types-but-lots-of-types
+        - git clone https://github.com/datastax/adelphi.git /workspace/adelphi;
+          cd /workspace/adelphi;
+          git checkout origin/107-not-quite-all-the-types-but-lots-of-types;
       volumeMounts:
       - name: workspace
         mountPath: /workspace
@@ -109,7 +108,6 @@ spec:
       command: ["sh", "-c", "-e"]
       args:
         - echo "Create nosqlbench config using adelphi tool";
-          #pip install adelphi;
           pip install cassandra-driver;
           cd /workspace/adelphi/python/adelphi;
           pip install .;
