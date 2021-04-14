@@ -3,8 +3,9 @@ envlist = py2,py3
 
 [testenv]
 deps = pytest
-       docker ~= 4.4.3
-       subprocess32 ~= 3.5.4
+       docker ~= 4.4
+       subprocess32 ~= 3.5
+       tenacity ~= 7.0
 setenv =
        KEEP_LOGS=1
        CASSANDRA_VERSIONS=4.0-beta3
