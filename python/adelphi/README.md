@@ -6,6 +6,7 @@ A tool for interacting with the DataStax [Adelphi](https://github.com/datastax/a
 * Extraction of schemas for one or more keyspaces from a running Apache Cassandra&trade; cluster
 * Optionally anonymizing these schemas
 * Formatting these schemas as CQL statements or as JSON documents
+* Automatic generation of a nosqlbench configuration for an input schema
 * Displaying these formatted schemas on standard out or writing them to the filesystem
 * Automate a workflow for contributing anonymized schemas to the public [Adelphi schema repository](https://github.com/datastax/adelphi-schemas)
 
@@ -33,7 +34,7 @@ If you wish to store the schemas in a directory "baz" you could use the followin
     adelphi --keyspaces=foo,bar --output-dir=baz export-cql
 
 ### export-gemini
-This command is similar to the "export-cql" command.  The difference is that retrieved schemas are displayed in a format suitable for use with Scylla's [Gemini](https://github.com/scylladb/gemini) tool.
+This command is similar to the "export-cql" command.  Schemas are extracted from a Cassandra instance and formatted for use with Scylla's [Gemini](https://github.com/scylladb/gemini) tool.
 
 To display Gemini-formatted schemas for the keyspaces "foo" and "bar" use the following:
 
@@ -42,6 +43,28 @@ To display Gemini-formatted schemas for the keyspaces "foo" and "bar" use the fo
 And to store these schemas in a directory "baz":
 
     adelphi --keyspaces=foo,bar --output-dir=baz export-gemini
+
+### export-nb
+This command is also similar to the "export-cql" command.  Schemas are extracted from a Cassandra instance and used to generate a [nosqlbench](https://github.com/nosqlbench/nosqlbench) configuration for the database.
+
+To generate a nosqlbench config for the keyspaces "foo" and "bar" use the following:
+
+    adelphi --keyspaces=foo,bar export-nb
+
+And to store these configs in a directory "baz":
+
+    adelphi --keyspaces=foo,bar --output-dir=baz export-nb
+
+The number of cycles for use in the rampup and main scenarios can be specified by command-specific flags:
+
+    adelphi --keyspaces=foo,bar export-nb --rampup-cycles=10000 --main-cycles=10000
+
+The command will use the current Cassandra database to generate sequences and/or distributions (as appropriate) in the nosqlbench configuration for a randomly-selected table within the specified keyspace.  Most single-valued CQL data types are supported, although we do not yet have support for any of the following data types:
+
+* Counters
+* Frozen types
+* Collection types (list, map, set)
+* UDTs
 
 ### contribute
 This command automates the workflow of contributing one or more schemas to the Adelphi project.  The [Adelphi schema repository](https://github.com/datastax/adelphi-schemas) is implemented as a Github repository and contributions to this repository take the form of pull requests.  The workflow implemented by this command includes the following steps:
@@ -98,6 +121,7 @@ The output of this command provides a brief summary of each argument:
       contribute     Contribute schemas to Adelphi
       export-cql     Export a schema as raw CQL statements
       export-gemini  Export a schema in a format suitable for use with the the...
+      export-nb      Export a schema in a format suitable for use with the the...
 
 Individual commands may have their own options and/or help text.  For example the help for the "contribute" command is as follows:
 
@@ -112,6 +136,8 @@ Individual commands may have their own options and/or help text.  For example th
 
 ### A quick note on keyspaces
 None of the commands above *require* you to specify keyspaces for export.  If you do not supply the "--keyspaces" argument then *all* keyspaces will be considered for export.  In either case the application will prune system keyspaces before performing the export.
+
+Both the "export-gemini" and "export-nb" commands can only operate against a single keyspace.  Therefore these commands must be run against a Cassandra instance containing a single keyspace or the user must leverage the "--keyspaces" flag to specify only a single keyspce.  If multiple keyspaces are selected the program will exit with an error message.
 
 ### A quick note on anonymization
 The anonymization process can be explicitly disabled using the "--no-anonymize" argument.
