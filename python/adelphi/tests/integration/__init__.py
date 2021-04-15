@@ -13,7 +13,7 @@ import docker
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 # Default C* versions to include in all integration tests
-CASSANDRA_VERSIONS = ["2.1.22", "2.2.19", "3.0.23", "3.11.9", "4.0-beta3"]
+CASSANDRA_VERSIONS = ["2.1.22", "2.2.19", "3.0.23", "3.11.9", "4.0-beta4"]
 
 logging.basicConfig(filename="adelphi.log", level=logging.INFO)
 log = logging.getLogger('adelphi')

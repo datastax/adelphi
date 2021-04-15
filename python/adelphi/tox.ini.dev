@@ -8,5 +8,5 @@ deps = pytest
        tenacity ~= 7.0
 setenv =
        KEEP_LOGS=1
-       CASSANDRA_VERSIONS=4.0-beta3
+       CASSANDRA_VERSIONS=4.0-beta4
 commands = pytest {posargs}
