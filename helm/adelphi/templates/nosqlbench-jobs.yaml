@@ -29,9 +29,11 @@ spec:
       # remove this container when https://github.com/datastax/adelphi/issues/107 is merged and available via pypi
     - name: clone-adelphi-cli
       image: alpine/git
-      command: ["sh", "-c", "-e"]
+      command:
+        - sh
+        - -c
       args:
-        - git clone https://github.com/datastax/adelphi.git /workspace/adelphi;
+        - git clone https://github.com/datastax/adelphi.git /workspace/adelphi
       volumeMounts:
       - name: workspace
         mountPath: /workspace
@@ -93,9 +95,11 @@ spec:
       # remove this container when https://github.com/datastax/adelphi/issues/107 is merged and available via pypi
     - name: clone-adelphi-cli
       image: alpine/git
-      command: ["sh", "-c", "-e"]
+      command:
+        - sh
+        - -c
       args:
-        - git clone https://github.com/datastax/adelphi.git /workspace/adelphi;
+        - git clone https://github.com/datastax/adelphi.git /workspace/adelphi
       volumeMounts:
       - name: workspace
         mountPath: /workspace
