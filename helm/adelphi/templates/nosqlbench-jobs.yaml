@@ -32,8 +32,6 @@ spec:
       command: ["sh", "-c", "-e"]
       args:
         - git clone https://github.com/datastax/adelphi.git /workspace/adelphi;
-          cd /workspace/adelphi;
-          git checkout origin/107-not-quite-all-the-types-but-lots-of-types;
       volumeMounts:
       - name: workspace
         mountPath: /workspace
@@ -98,8 +96,6 @@ spec:
       command: ["sh", "-c", "-e"]
       args:
         - git clone https://github.com/datastax/adelphi.git /workspace/adelphi;
-          cd /workspace/adelphi;
-          git checkout origin/107-not-quite-all-the-types-but-lots-of-types;
       volumeMounts:
       - name: workspace
         mountPath: /workspace
