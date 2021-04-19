@@ -45,7 +45,7 @@ spec:
           pip install cassandra-driver;
           cd /workspace/adelphi/python/adelphi;
           pip install .;
-          adelphi --hosts="{{ .Values.source.clusterName }}-{{ .Values.source.dc }}-service" --username="{{ .Values.source.clusterName }}-superuser" --password="`cat /source-secret/password`" --keyspaces="{{ .Values.gemini_schema_keyspace }}" --no-anonymize export-nb > /workspace/nosqlbench_source.yaml;
+          adelphi --hosts="{{ .Values.source.clusterName }}-{{ .Values.source.dc }}-service" --username="{{ .Values.source.clusterName }}-superuser" --password="`cat /secret/password`" --keyspaces="{{ .Values.gemini_schema_keyspace }}" --no-anonymize export-nb > /workspace/nosqlbench_source.yaml;
           echo "Done";
       volumeMounts:
       - name: workspace
@@ -111,7 +111,7 @@ spec:
           pip install cassandra-driver;
           cd /workspace/adelphi/python/adelphi;
           pip install .;
-          adelphi --hosts="{{ .Values.target.clusterName }}-{{ .Values.target.dc }}-service" --username="{{ .Values.target.clusterName }}-superuser" --password="`cat /source-secret/password`" --keyspaces="{{ .Values.gemini_schema_keyspace }}" --no-anonymize export-nb > /workspace/nosqlbench_target.yaml;
+          adelphi --hosts="{{ .Values.target.clusterName }}-{{ .Values.target.dc }}-service" --username="{{ .Values.target.clusterName }}-superuser" --password="`cat /secret/password`" --keyspaces="{{ .Values.gemini_schema_keyspace }}" --no-anonymize export-nb > /workspace/nosqlbench_target.yaml;
           echo "Done";
       volumeMounts:
       - name: workspace
