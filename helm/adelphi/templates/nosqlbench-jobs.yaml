@@ -9,7 +9,7 @@ spec:
   templates:
   - name: nosqlbench-source
     container:
-      image: nosqlbench/nosqlbench:latest
+      image: nosqlbench/nosqlbench:4.15.32
       args: [
         "--show-stacktraces",
         "--report-csv-to=/results",
@@ -49,7 +49,7 @@ spec:
         claimName: nosqlbench-source-pvc
   - name: nosqlbench-target
     container:
-      image: nosqlbench/nosqlbench:latest
+      image: nosqlbench/nosqlbench:4.15.32
       args: [
         "--show-stacktraces",
         "--report-csv-to=/results",
