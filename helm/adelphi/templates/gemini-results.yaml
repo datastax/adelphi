@@ -1,0 +1,35 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: gemini-results
+  namespace: {{ .Values.namespace }}
+  annotations:
+    "helm.sh/hook": pre-install
+spec:
+  templates:
+  - name: collect-results
+    container:
+      image: alpine
+      command: ["sh", "-c", "-e"]
+      args:
+        - apk add jq;
+          export TIMESTAMP=`date +%s`;
+          push()
+          {
+            METRIC=$1
+            shift;
+            cat /results/results.json |
+            jq -r ".result.$METRIC" |
+            xargs -i echo "gemini.$METRIC {} $TIMESTAMP";
+          };
+          push "write_ops";
+          push "write_errors";
+          push "read_ops";
+          push "read_errors";
+      volumeMounts:
+      - name: results-pv
+        mountPath: /results
+    volumes:
+    - name: results-pv
+      persistentVolumeClaim:
+        claimName: gemini-pvc
