@@ -20,7 +20,8 @@ spec:
             shift;
             cat /results/results.json |
             jq -r ".result.$METRIC" |
-            xargs -i echo "gemini.$METRIC {} $TIMESTAMP";
+            xargs -i echo "gemini.$METRIC {} $TIMESTAMP" |
+            nc graphite-service 9109;
           };
           push "write_ops";
           push "write_errors";

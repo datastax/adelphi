@@ -43,380 +43,13 @@
       }
     ]
   },
-  "description": "Basic Dashboard with Annotations for NoSQLBench 4",
+  "description": "",
   "editable": true,
   "gnetId": null,
   "graphTooltip": 1,
-  "id": null,
-  "iteration": 1607542677976,
+  "iteration": 1619465743196,
   "links": [],
   "panels": [
-    {
-      "collapsed": true,
-      "datasource": null,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 0
-      },
-      "id": 130,
-      "panels": [
-        {
-          "datasource": null,
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 4,
-            "w": 4,
-            "x": 0,
-            "y": 1
-          },
-          "id": 132,
-          "options": {
-            "content": "This selects the specific NoSQLBench alias, which includes workload, named scenario, and step components.\n",
-            "mode": "markdown"
-          },
-          "pluginVersion": "7.3.4",
-          "targets": [
-            {
-              "queryType": "randomWalk",
-              "refId": "A"
-            }
-          ],
-          "timeFrom": null,
-          "timeShift": null,
-          "title": "Alias",
-          "type": "text"
-        },
-        {
-          "datasource": null,
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 4,
-            "w": 4,
-            "x": 4,
-            "y": 1
-          },
-          "id": 133,
-          "options": {
-            "content": "This chooses an Annotation Layer to focus on. Each layer is a different shell of execution within NoSQLBench.   \n",
-            "mode": "markdown"
-          },
-          "pluginVersion": "7.3.4",
-          "targets": [
-            {
-              "queryType": "randomWalk",
-              "refId": "A"
-            }
-          ],
-          "timeFrom": null,
-          "timeShift": null,
-          "title": "AnLayer",
-          "type": "text"
-        },
-        {
-          "datasource": null,
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 4,
-            "w": 4,
-            "x": 8,
-            "y": 1
-          },
-          "id": 134,
-          "options": {
-            "content": "This chooses an Annotation Layer to focus on. An instant is a point in time. An Interval is defined by two instants representing start and end times.",
-            "mode": "markdown"
-          },
-          "pluginVersion": "7.3.4",
-          "targets": [
-            {
-              "queryType": "randomWalk",
-              "refId": "A"
-            }
-          ],
-          "timeFrom": null,
-          "timeShift": null,
-          "title": "AnSpan",
-          "type": "text"
-        }
-      ],
-      "title": "NoSQLBench Controls Guide",
-      "type": "row"
-    },
-    {
-      "collapsed": true,
-      "datasource": null,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 1
-      },
-      "id": 115,
-      "panels": [
-        {
-          "datasource": null,
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 2,
-            "w": 24,
-            "x": 0,
-            "y": 2
-          },
-          "id": 128,
-          "options": {
-            "content": "The descriptions below are in the same position as the metric they desscribe.\nYou can collapse this row when you no longer need the descriptions.\nSome of the descriptions have additional details if you scroll with\nyour mouse wheel.\n\n\n",
-            "mode": "markdown"
-          },
-          "pluginVersion": "7.3.4",
-          "timeFrom": null,
-          "timeShift": null,
-          "title": "",
-          "transparent": true,
-          "type": "text"
-        },
-        {
-          "datasource": null,
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 3,
-            "w": 6,
-            "x": 0,
-            "y": 4
-          },
-          "id": 117,
-          "options": {
-            "content": "These two metrics show the 1-minute averaged ops per second for all ops (successes and errors) and succesful ops (no errors during execution) separately.\n\nWhen there are no errors, these metrics should be the same. When there are errors, there will be a difference. In that case, you can look at the error metrics to learn more about what is happening.\n\nBy comparing these two metrics for any activity, you have a quick first-glance sanity check that your tests are configured properly and\nthat there are no serious configuration or resource issues. In addition, this is the primary throughput metric.\n\n\n\n\n\n",
-            "mode": "markdown"
-          },
-          "pluginVersion": "7.3.4",
-          "timeFrom": null,
-          "timeShift": null,
-          "title": "Ops and Successful Ops",
-          "transparent": true,
-          "type": "text"
-        },
-        {
-          "datasource": null,
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 3,
-            "w": 6,
-            "x": 6,
-            "y": 4
-          },
-          "id": 118,
-          "options": {
-            "content": "When an exception is caught and counted in a scenario, a specially named metric is emited which includes a simplified name of the error type.\nEach of these metrics is created as needed in the NoSQLBench runtime.\n\nThese metrics are formated with a name pattern of `errorcounts.NAME` where NAME is the simple name\nof the exception class which was caught during the operation. For example, For an activity\nnamed foo (with alias=foo), you would expect an exception named 'FooTimeoutException' to be shown\nwith a metric name of ...`foo.errorcounts.FooTimeoutException`\n\n\n\n\n",
-            "mode": "markdown"
-          },
-          "pluginVersion": "7.3.4",
-          "timeFrom": null,
-          "timeShift": null,
-          "title": "Error Counts",
-          "transparent": true,
-          "type": "text"
-        },
-        {
-          "datasource": null,
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 3,
-            "w": 6,
-            "x": 12,
-            "y": 4
-          },
-          "id": 119,
-          "options": {
-            "content": "The service time distribution is an HDR histogram that represents the time elapsed from when an operation is submitted for execution to when its result has been received.\n\nFrom the vantage point of the NoSQLBench runtime, this is a client-side metric. Thus, the service time captures the processing time that an application would see, including driver logic, wire time (transport), and server-side processing. \n\nThis metric does not include the waittime or the responsetime metrics. These metrics are only meaningful (and provided) when a `cyclerate=` is provided to an activity. When computing the responsetime metric, the servicetime is added to the waittime for a given operation.\n",
-            "mode": "markdown"
-          },
-          "pluginVersion": "7.3.4",
-          "timeFrom": null,
-          "timeShift": null,
-          "title": "Service Time Distribution",
-          "transparent": true,
-          "type": "text"
-        },
-        {
-          "datasource": null,
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 3,
-            "w": 6,
-            "x": 18,
-            "y": 4
-          },
-          "id": 120,
-          "options": {
-            "content": "The tries distribution is an HDR histogram which represents how many times an operation was submitted. In a well balanced system,\ntries should be 1 across the board.\n\nEvery operation which is executed within NoSQLBench should have a `tries` metric. For example, with CQL, the number of times an operation is submitted\nbefore it is succesful is ideally 1. If you are overloading your target system, thus forcing resource contention, you may see operations timeout.\n\nBy default, NoSQLBench will try up to 10 times to submit operations before giving up and throwing an error for an operation.\n\nThe tries metric can be used as a low-noise indicator of system saturation. For example, if you are running a system marginally\nbeyond its capacity, the tries for operations will go above 1 at the higher percentiles such as P99. If you increase the load even further, more retries\nwill be needed and less work will be completed, thus showing higher retries at even lower percentiles, like P95, for example.\n\nAs such, you can use the tries metric as an indicator of relative saturation.",
-            "mode": "markdown"
-          },
-          "pluginVersion": "7.3.4",
-          "timeFrom": null,
-          "timeShift": null,
-          "title": "Op Tries Distribution",
-          "transparent": true,
-          "type": "text"
-        },
-        {
-          "datasource": null,
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 3,
-            "w": 6,
-            "x": 0,
-            "y": 7
-          },
-          "id": 121,
-          "options": {
-            "content": "This panel shows the P75 service times for the internal stages of NoSQLBench processing. It provides a sanity check to ensure that the client processing time is low and predictable. \n\nIf there are spikes in this data, then you are likely trying to run your workloads on insufficient client hardware. In order to ensure high fidelity results in the other metrics, the client\nneeds to be capable of driving the workload without saturating or introducing signifcant local resource contention.\n\n- **read-input** - the time it takes for a worker thread to acquire a stride (range of cycles) for execution.\n- **bind** - the time it takes to convert a cycle value into a set of fields for us in an operation.\n- **execute** - the time it takes to submit work to a protocol-specific driver.",
-            "mode": "markdown"
-          },
-          "pluginVersion": "7.3.4",
-          "timeFrom": null,
-          "timeShift": null,
-          "title": "P75 NB Internals",
-          "transparent": true,
-          "type": "text"
-        },
-        {
-          "datasource": null,
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 3,
-            "w": 6,
-            "x": 6,
-            "y": 7
-          },
-          "id": 122,
-          "options": {
-            "content": "This panel shows the P99 service times for the internal stages of NoSQLBench processing. It provides a sanity check to ensure that the client processing time is low and predictable. \n\nIf there are spikes in this data, then you are likely trying to run your workloads on insufficient client hardware. In order to ensure high fidelity results in the other metrics, the client\nneeds to be capable of driving the workload without saturating or introducing signifcant local resource contention.\n\n- **read-input** - the time it takes for a worker thread to acquire a stride (range of cycles) for execution.\n- **bind** - the time it takes to convert a cycle value into a set of fields for us in an operation.\n- **execute** - the time it takes to submit work to a protocol-specific driver.",
-            "mode": "markdown"
-          },
-          "pluginVersion": "7.3.4",
-          "timeFrom": null,
-          "timeShift": null,
-          "title": "P99 NB Internals",
-          "transparent": true,
-          "type": "text"
-        },
-        {
-          "datasource": null,
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 3,
-            "w": 6,
-            "x": 12,
-            "y": 7
-          },
-          "id": 123,
-          "options": {
-            "content": "This panel simply breaks out the service time range in a simpler view. This is a good metric to look at when you want to know what the best and worse case value is for any given histogram interval.\n\nThese values come from a discrete HDR histogram reservoir. They are the actual best and worst service times, unaffected by time-decaying reservoir logic.\n",
-            "mode": "markdown"
-          },
-          "pluginVersion": "7.3.4",
-          "timeFrom": null,
-          "timeShift": null,
-          "title": "Service Time Range",
-          "transparent": true,
-          "type": "text"
-        },
-        {
-          "datasource": null,
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
-          "gridPos": {
-            "h": 3,
-            "w": 6,
-            "x": 18,
-            "y": 7
-          },
-          "id": 124,
-          "options": {
-            "content": "This is a simple visual reference for the cycle count within each activity. This makes it easy to see the relative progress of an activity over time.",
-            "mode": "markdown"
-          },
-          "pluginVersion": "7.3.4",
-          "timeFrom": null,
-          "timeShift": null,
-          "title": "Cycle Count",
-          "transparent": true,
-          "type": "text"
-        }
-      ],
-      "title": "NoSQLBench Metrics Guide",
-      "type": "row"
-    },
     {
       "collapsed": false,
       "datasource": null,
@@ -424,12 +57,158 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 2
+        "y": 0
       },
       "id": 91,
       "panels": [],
-      "title": "NoSQLBench Metrics",
+      "title": "Adelphi Metrics",
       "type": "row"
+    },
+    {
+      "datasource": "prometheus",
+      "description": "",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "links": [],
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 1
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Write Ops"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Read Ops"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "fixedColor": "green",
+                  "mode": "fixed"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 0,
+        "y": 1
+      },
+      "hideTimeOverride": true,
+      "id": 135,
+      "interval": null,
+      "links": [],
+      "options": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "vertical",
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": true
+        },
+        "text": {},
+        "textMode": "auto"
+      },
+      "pluginVersion": "7.5.4",
+      "targets": [
+        {
+          "exemplar": true,
+          "expr": "max(gemini_write_ops)",
+          "hide": false,
+          "instant": false,
+          "interval": "",
+          "legendFormat": "Write Ops",
+          "refId": "A"
+        },
+        {
+          "exemplar": true,
+          "expr": "max(gemini_write_errors)",
+          "format": "time_series",
+          "instant": false,
+          "interval": "",
+          "legendFormat": "Write Errors",
+          "refId": "C"
+        },
+        {
+          "exemplar": true,
+          "expr": "max(gemini_read_ops)",
+          "hide": false,
+          "instant": false,
+          "interval": "",
+          "legendFormat": "Read Ops",
+          "refId": "B"
+        },
+        {
+          "exemplar": true,
+          "expr": "max(gemini_read_errors)",
+          "format": "time_series",
+          "hide": false,
+          "instant": false,
+          "interval": "",
+          "legendFormat": "Read Errors",
+          "refId": "D"
+        }
+      ],
+      "timeFrom": "24h",
+      "timeShift": null,
+      "title": "Data Integrity",
+      "transformations": [
+        {
+          "id": "seriesToColumns",
+          "options": {
+            "byField": "Time"
+          }
+        },
+        {
+          "id": "reduce",
+          "options": {
+            "includeTimeField": true,
+            "mode": "reduceFields",
+            "reducers": [
+              "max"
+            ]
+          }
+        }
+      ],
+      "transparent": true,
+      "type": "stat"
     },
     {
       "aliasColors": {},
@@ -440,7 +219,6 @@
       "description": "",
       "fieldConfig": {
         "defaults": {
-          "custom": {},
           "links": []
         },
         "overrides": []
@@ -450,8 +228,8 @@
       "gridPos": {
         "h": 6,
         "w": 6,
-        "x": 0,
-        "y": 3
+        "x": 6,
+        "y": 1
       },
       "hiddenSeries": false,
       "id": 95,
@@ -472,7 +250,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.3.4",
+      "pluginVersion": "7.5.4",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -544,7 +322,6 @@
       "datasource": "prometheus",
       "fieldConfig": {
         "defaults": {
-          "custom": {},
           "links": []
         },
         "overrides": []
@@ -554,8 +331,8 @@
       "gridPos": {
         "h": 6,
         "w": 6,
-        "x": 6,
-        "y": 3
+        "x": 12,
+        "y": 1
       },
       "hiddenSeries": false,
       "id": 93,
@@ -576,7 +353,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.3.4",
+      "pluginVersion": "7.5.4",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -642,7 +419,303 @@
       "datasource": "prometheus",
       "fieldConfig": {
         "defaults": {
-          "custom": {},
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 18,
+        "y": 1
+      },
+      "hiddenSeries": false,
+      "id": 98,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": false,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.5.4",
+      "pointradius": 5,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "tries{type=\"pctile\",alias=~\"$alias\"}",
+          "interval": "",
+          "legendFormat": "{{alias}}-p{{pctile}}",
+          "refId": "A"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "op tries distribution",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "transparent": true,
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 0,
+        "y": 7
+      },
+      "hiddenSeries": false,
+      "id": 99,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": false,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.5.4",
+      "pointradius": 1,
+      "points": true,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "{__name__=~\"read_input|bind|execute\",type=\"pctile\",pctile=\"75\",alias=~\"$alias\"}",
+          "interval": "",
+          "legendFormat": "{{alias}}-{{__name__}}-p{{pctile}}",
+          "refId": "B"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "p75 client overhead",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "transparent": true,
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "decimals": null,
+          "format": "ns",
+          "label": null,
+          "logBase": 10,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "prometheus",
+      "fieldConfig": {
+        "defaults": {
+          "links": []
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 6,
+        "w": 6,
+        "x": 6,
+        "y": 7
+      },
+      "hiddenSeries": false,
+      "id": 111,
+      "legend": {
+        "avg": false,
+        "current": false,
+        "max": false,
+        "min": false,
+        "show": false,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "links": [],
+      "nullPointMode": "null",
+      "options": {
+        "alertThreshold": true
+      },
+      "percentage": false,
+      "pluginVersion": "7.5.4",
+      "pointradius": 1,
+      "points": true,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": false,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "{__name__=~\"read_input|bind|execute\",type=\"pctile\",pctile=\"99\",alias=~\"$alias\"}",
+          "format": "time_series",
+          "hide": false,
+          "instant": false,
+          "interval": "",
+          "intervalFactor": 1,
+          "legendFormat": "{{alias}}-{{__name__}}-p{{pctile}}",
+          "refId": "C"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "p99 client overhead",
+      "tooltip": {
+        "shared": true,
+        "sort": 2,
+        "value_type": "individual"
+      },
+      "transparent": true,
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "decimals": null,
+          "format": "ns",
+          "label": null,
+          "logBase": 10,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "format": "short",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": null,
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "prometheus",
+      "fieldConfig": {
+        "defaults": {
           "links": []
         },
         "overrides": []
@@ -653,7 +726,7 @@
         "h": 6,
         "w": 6,
         "x": 12,
-        "y": 3
+        "y": 7
       },
       "hiddenSeries": false,
       "id": 97,
@@ -675,7 +748,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.3.4",
+      "pluginVersion": "7.5.4",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -749,7 +822,6 @@
       "datasource": "prometheus",
       "fieldConfig": {
         "defaults": {
-          "custom": {},
           "links": []
         },
         "overrides": []
@@ -760,10 +832,10 @@
         "h": 6,
         "w": 6,
         "x": 18,
-        "y": 3
+        "y": 7
       },
       "hiddenSeries": false,
-      "id": 98,
+      "id": 113,
       "legend": {
         "avg": false,
         "current": false,
@@ -781,7 +853,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.3.4",
+      "pluginVersion": "7.5.4",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -791,210 +863,9 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "tries{type=\"pctile\",alias=~\"$alias\"}",
+          "expr": "cycles_servicetime{type=\"counter\",alias=~\"$alias\"}",
           "interval": "",
-          "legendFormat": "{{alias}}-p{{pctile}}",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "op tries distribution",
-      "tooltip": {
-        "shared": true,
-        "sort": 2,
-        "value_type": "individual"
-      },
-      "transparent": true,
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": "prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {},
-          "links": []
-        },
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 6,
-        "w": 6,
-        "x": 0,
-        "y": 9
-      },
-      "hiddenSeries": false,
-      "id": 99,
-      "legend": {
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "show": false,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 1,
-      "links": [],
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "7.3.4",
-      "pointradius": 1,
-      "points": true,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "{__name__=~\"read_input|bind|execute\",type=\"pctile\",pctile=\"75\",alias=~\"$alias\"}",
-          "interval": "",
-          "legendFormat": "{{alias}}-{{__name__}}-p{{pctile}}",
-          "refId": "B"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "p75 client overhead",
-      "tooltip": {
-        "shared": true,
-        "sort": 2,
-        "value_type": "individual"
-      },
-      "transparent": true,
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "decimals": null,
-          "format": "ns",
-          "label": null,
-          "logBase": 10,
-          "max": null,
-          "min": "0",
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": "prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {},
-          "links": []
-        },
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 6,
-        "w": 6,
-        "x": 6,
-        "y": 9
-      },
-      "hiddenSeries": false,
-      "id": 111,
-      "legend": {
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "show": false,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 1,
-      "links": [],
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "7.3.4",
-      "pointradius": 1,
-      "points": true,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "{__name__=~\"read_input|bind|execute\",type=\"pctile\",pctile=\"99\",alias=~\"$alias\"}",
-          "format": "time_series",
-          "hide": false,
-          "instant": false,
-          "interval": "",
-          "intervalFactor": 1,
-          "legendFormat": "{{alias}}-{{__name__}}-p{{pctile}}",
+          "legendFormat": "{{alias}}-count",
           "refId": "C"
         }
       ],
@@ -1002,10 +873,10 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "p99 client overhead",
+      "title": "Cycle Count",
       "tooltip": {
         "shared": true,
-        "sort": 2,
+        "sort": 0,
         "value_type": "individual"
       },
       "transparent": true,
@@ -1019,12 +890,11 @@
       },
       "yaxes": [
         {
-          "decimals": null,
-          "format": "ns",
+          "format": "short",
           "label": null,
-          "logBase": 10,
+          "logBase": 1,
           "max": null,
-          "min": "0",
+          "min": null,
           "show": true
         },
         {
@@ -1050,7 +920,6 @@
       "description": "",
       "fieldConfig": {
         "defaults": {
-          "custom": {},
           "links": []
         },
         "overrides": []
@@ -1060,8 +929,8 @@
       "gridPos": {
         "h": 6,
         "w": 6,
-        "x": 12,
-        "y": 9
+        "x": 0,
+        "y": 13
       },
       "hiddenSeries": false,
       "id": 109,
@@ -1082,7 +951,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "7.3.4",
+      "pluginVersion": "7.5.4",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -1145,112 +1014,12 @@
         "align": false,
         "alignLevel": null
       }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": "prometheus",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {},
-          "links": []
-        },
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 6,
-        "w": 6,
-        "x": 18,
-        "y": 9
-      },
-      "hiddenSeries": false,
-      "id": 113,
-      "legend": {
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "show": false,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 1,
-      "links": [],
-      "nullPointMode": "null",
-      "options": {
-        "alertThreshold": true
-      },
-      "percentage": false,
-      "pluginVersion": "7.3.4",
-      "pointradius": 5,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "cycles_servicetime{type=\"counter\",alias=~\"$alias\"}",
-          "interval": "",
-          "legendFormat": "{{alias}}-count",
-          "refId": "C"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Cycle Count",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "transparent": true,
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
     }
   ],
   "refresh": "1m",
-  "schemaVersion": 26,
+  "schemaVersion": 27,
   "style": "dark",
-  "tags": [
-    "NoSQLBench"
-  ],
+  "tags": [],
   "templating": {
     "list": [
       {
@@ -1266,6 +1035,7 @@
         },
         "datasource": "prometheus",
         "definition": "{appname=\"nosqlbench\"}",
+        "description": null,
         "error": null,
         "hide": 0,
         "includeAll": true,
@@ -1273,7 +1043,10 @@
         "multi": true,
         "name": "alias",
         "options": [],
-        "query": "{appname=\"nosqlbench\"}",
+        "query": {
+          "query": "{appname=\"nosqlbench\"}",
+          "refId": "prometheus-alias-Variable-Query"
+        },
         "refresh": 2,
         "regex": "/.*alias=\"([^\"]+)\".*/",
         "skipUrlSync": false,
@@ -1291,6 +1064,7 @@
           "text": "Activity",
           "value": "Activity"
         },
+        "description": null,
         "error": null,
         "hide": 0,
         "includeAll": true,
@@ -1337,10 +1111,11 @@
       {
         "allValue": null,
         "current": {
-          "selected": false,
+          "selected": true,
           "text": "interval",
           "value": "interval"
         },
+        "description": null,
         "error": null,
         "hide": 0,
         "includeAll": false,
@@ -1354,12 +1129,12 @@
             "value": "NONE"
           },
           {
-            "selected": false,
+            "selected": true,
             "text": "interval",
             "value": "interval"
           },
           {
-            "selected": true,
+            "selected": false,
             "text": "instant",
             "value": "instant"
           }
@@ -1400,6 +1175,7 @@
     ]
   },
   "timezone": "",
-  "title": "Adelphi NoSQLBench",
-  "version": 8
+  "title": "Adelphi",
+  "uid": "etlZMd9Gk",
+  "version": 1
 }
