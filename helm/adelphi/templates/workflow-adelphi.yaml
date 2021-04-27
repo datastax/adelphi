@@ -87,8 +87,13 @@ spec:
         templateRef:
           name: gemini-job
           template: gemini-oracle-sut
-      - name: start-results-server
+      - name: gemini-results
         depends: "gemini-oracle-sut"
+        templateRef:
+          name: gemini-results
+          template: collect-results
+      - name: start-results-server
+        depends: "gemini-results"
         templateRef:
           name: results
           template: results-server

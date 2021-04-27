@@ -14,28 +14,17 @@ spec:
     container:
       image: gcr.io/kaniko-project/executor:v1.0.0
       args:
-      - --dockerfile=/generated/Dockerfile
+      - --dockerfile=/configmap/Dockerfile
       - --context=dir:///build
       - {{`--destination={{inputs.parameters.registry_ip}}:30000/adelphi/management-api-for-apache-cassandra`}}
       - --insecure=true
+      - --build-arg=REGISTRY={{`{{inputs.parameters.registry_ip}}`}}
       volumeMounts:
         - name: build
           mountPath: /build
-        - name: generated
-          mountPath: /generated
+        - name: configmap
+          mountPath: /configmap
     initContainers:
-    - name: generate-dockerfile
-      image: alpine
-      command:
-        - sh
-        - -c
-      args:
-        - echo "FROM {{`{{inputs.parameters.registry_ip}}`}}:30000/adelphi/cassandra" | cat - /configmap/Dockerfile > /generated/Dockerfile
-      volumeMounts:
-      - name: generated
-        mountPath: /generated
-      - name: configmap
-        mountPath: /configmap
     - name: clone-cassandra-mgmt-api
       image: alpine/git
       workingDir: /build
@@ -44,24 +33,13 @@ spec:
         - -c
       args:
         - git clone https://github.com/datastax/management-api-for-apache-cassandra .;
-          git checkout v0.1.13;
-          cp /configmap/docker-entrypoint.sh /build;
+          git checkout v0.1.24;
+          cp /configmap/docker-entrypoint.sh scripts/docker-entrypoint.sh;
       volumeMounts:
       - name: build
         mountPath: /build
       - name: configmap
         mountPath: /configmap
-    - name: build-cassandra-mgmt-api
-      image: maven:3-openjdk-11
-      workingDir: /build
-      args:
-        - mvn
-        - clean
-        - package
-        - -DskipTests
-      volumeMounts:
-      - name: build
-        mountPath: /build
     volumes:
     - name: build
       emptyDir: {}
