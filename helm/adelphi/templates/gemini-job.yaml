@@ -43,11 +43,10 @@ spec:
         mountPath: /results
     initContainers:
     - name: extract-schema
-      image: python:3.10.0a1-alpine3.12
+      image: registry:5000/adelphi:0.2.0
       command: ["sh", "-c", "-e"]
       args:
         - echo "Extract Gemini schema using anonymizer script";
-          pip install adelphi;
           adelphi --hosts="{{ .Values.source.clusterName }}-{{ .Values.source.dc }}-service" --username="{{ .Values.source.clusterName }}-superuser" --password="`cat /source-secret/password`" --keyspaces="{{ .Values.gemini_schema_keyspace }}" --no-anonymize export-gemini > /workspace/gemini_schema.json;
           echo "Done";
       volumeMounts:
