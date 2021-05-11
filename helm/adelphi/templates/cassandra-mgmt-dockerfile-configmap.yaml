@@ -77,9 +77,7 @@ data:
     EXPOSE 9103
     EXPOSE 8080
 
-    # USER cassandra
+    USER cassandra
 
     ENTRYPOINT ["/tini", "-g", "--", "/docker-entrypoint.sh"]
     CMD ["mgmtapi"]
-  docker-entrypoint.sh: |
-{{ .Files.Get "config/mgmt-api/docker-entrypoint.sh" | indent 4 }}

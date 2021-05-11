@@ -34,12 +34,9 @@ spec:
       args:
         - git clone https://github.com/datastax/management-api-for-apache-cassandra .;
           git checkout v0.1.25;
-          cp /configmap/docker-entrypoint.sh scripts/docker-entrypoint.sh;
       volumeMounts:
       - name: build
         mountPath: /build
-      - name: configmap
-        mountPath: /configmap
     volumes:
     - name: build
       emptyDir: {}
