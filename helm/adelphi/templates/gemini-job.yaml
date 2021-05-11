@@ -43,7 +43,7 @@ spec:
         mountPath: /results
     initContainers:
     - name: extract-schema
-      image: python:3.10.0a7-alpine3.13
+      image: python:3.10.0b1-alpine3.13
       command: ["sh", "-c", "-e"]
       args:
         - echo "Extract Gemini schema using anonymizer script";
