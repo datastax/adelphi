@@ -10,10 +10,10 @@ from collections import namedtuple
 from cassandra.cluster import Cluster
 
 import docker
-
+from tenacity import retry, stop_after_attempt, wait_fixed
 
 # Default C* versions to include in all integration tests
-CASSANDRA_VERSIONS = ["2.1.22", "2.2.19", "3.0.23", "3.11.9", "4.0-beta3"]
+CASSANDRA_VERSIONS = ["2.1.22", "2.2.19", "3.0.23", "3.11.9", "4.0-beta4"]
 
 logging.basicConfig(filename="adelphi.log", level=logging.INFO)
 log = logging.getLogger('adelphi')
@@ -87,11 +87,16 @@ class SchemaTestMixin:
                     buff = ""
 
 
+    @retry(stop=stop_after_attempt(3), wait=wait_fixed(2))
+    def getContainer(self, client, version):
+        return client.containers.run(name="adelphi", remove=True, detach=True, ports={9042:9042}, image="cassandra:{}".format(version))
+
+
     def runTestForVersion(self, version=None):
         log.info("Testing Cassandra version {}".format(version))
 
         client = docker.from_env()
-        container = client.containers.run(name="adelphi", remove=True, detach=True, ports={9042:9042}, image="cassandra:{}".format(version))
+        container = self.getContainer(client, version)
 
         self.makeTempDirs()
 

@@ -5,10 +5,10 @@ from setuptools import setup
 PY3 = sys.version_info[0] == 3
 
 dependencies = [
-    'cassandra-driver ~= 3.24.0',
-    'click ~= 7.1.0',
+    'cassandra-driver ~= 3.24',
+    'click ~= 7.1',
     'PyGithub ~= 1.45',
-    'PyYAML ~= 5.3.1'
+    'PyYAML ~= 5.4'
     ]
 
 if not PY3:
@@ -24,7 +24,7 @@ setup(
     description='Tooling for Adelphi',
     long_description=long_description,
     long_description_content_type="text/markdown",
-    version='0.1.0',
+    version='0.2.0',
     project_urls={
         'Documentation': 'https://github.com/datastax/adelphi/blob/master/python/adelphi/README.md',
         'Source': 'https://github.com/datastax/adelphi',
