@@ -7,7 +7,7 @@ storageClassName: local-path
 source:
   dc: dc1
   clusterName: source
-  version: "3.11.6"
+  version: "3.11.7"
 
 target:
   dc: dc2

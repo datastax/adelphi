@@ -9,7 +9,7 @@ spec:
   templates:
   - name: nosqlbench-source
     container:
-      image: nosqlbench/nosqlbench:latest
+      image: nosqlbench/nosqlbench:4.15.45
       args: [
         "--show-stacktraces",
         "--report-csv-to=/results",
@@ -49,7 +49,7 @@ spec:
         claimName: nosqlbench-source-pvc
   - name: nosqlbench-target
     container:
-      image: nosqlbench/nosqlbench:latest
+      image: nosqlbench/nosqlbench:4.15.45
       args: [
         "--show-stacktraces",
         "--report-csv-to=/results",
@@ -59,7 +59,8 @@ spec:
         "scenarioname=target",
         "hosts={{ .Values.target.clusterName }}-{{ .Values.target.dc }}-service",
         "username={{ .Values.target.clusterName }}-superuser",
-        "passfile=/secret/password"
+        "passfile=/secret/password",
+        "driver=cqld3"
       ]
       dnsConfig:
         options:
