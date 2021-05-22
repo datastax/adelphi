@@ -24,7 +24,7 @@ setup(
     description='Tooling for Adelphi',
     long_description=long_description,
     long_description_content_type="text/markdown",
-    version='0.2.0',
+    version='0.2.1',
     project_urls={
         'Documentation': 'https://github.com/datastax/adelphi/blob/master/python/adelphi/README.md',
         'Source': 'https://github.com/datastax/adelphi',
