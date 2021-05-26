@@ -16,6 +16,7 @@ target:
   git_identifier:
 
 gemini_test_duration: 1m
+nosqlbench_cycles: 1000
 
 cassandra_diff_config:
   # This is how many parts we split the full token range in.
