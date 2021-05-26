@@ -25,6 +25,10 @@ Adelphi also provides a tool that will allow users to extract, anonymize, share,
 
 For more information on the schema extraction tooling, check out our [documentation](python/adelphi/README.md).
 
+## Workload Generation
+
+Adelphi leverages NoSQLBench and Gemini for workload generation. NoSQLBench requires a workload template YAML to be provided which has historically been manually crafted. We are working on automating the generation of such template. At the moment, it works with most CQL datatypes, but UDTs, Collections, Counters and Frozen Types aren't currently supported (columns of these types won't be populated by the generator yet).
+
 ## Getting Started
 
 To start using Adelphi, check out our [Getting Started](GETTING_STARTED.md) guide.
