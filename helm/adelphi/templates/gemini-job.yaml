@@ -25,7 +25,7 @@ spec:
           --test-password="`cat /target-secret/password`"
           --duration={{ .Values.gemini_test_duration }}
           --schema=/workspace/gemini_schema.json
-          --outfile=/results/results.txt
+          --outfile=/results/results.json
       dnsConfig:
         options:
         - name: ndots

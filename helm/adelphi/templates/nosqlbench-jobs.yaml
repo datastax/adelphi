@@ -14,7 +14,7 @@ spec:
         "--show-stacktraces",
         "--report-csv-to=/results",
         "--report-graphite-to=graphite-service:9109",
-        "/config/workload.yaml",
+        "/workspace/nosqlbench_source.yaml",
         "source",
         "scenarioname=source",
         "hosts={{ .Values.source.clusterName }}-{{ .Values.source.dc }}-service",
@@ -29,11 +29,24 @@ spec:
       - name: secret-volume
         mountPath: /secret
         readOnly: true
-      - name: workload
-        mountPath: /config/workload.yaml
-        subPath: workload.yaml
+      - name: workspace
+        mountPath: /workspace
       - name: results-pv
         mountPath: /results
+    initContainers:
+    - name: extract-schema
+      image: python:3.10.0b1-alpine3.13
+      command: ["sh", "-c", "-e"]
+      args:
+        - pip install adelphi;
+          adelphi --hosts="{{ .Values.source.clusterName }}-{{ .Values.source.dc }}-service" --username="{{ .Values.source.clusterName }}-superuser" --password="`cat /secret/password`" --keyspaces="{{ .Values.gemini_schema_keyspace }}" --no-anonymize export-nb --rampup-cycles="{{ .Values.nosqlbench_cycles }}" --main-cycles="{{ .Values.nosqlbench_cycles }}" > /workspace/nosqlbench_source.yaml;
+          cat /workspace/nosqlbench_source.yaml;
+      volumeMounts:
+      - name: workspace
+        mountPath: /workspace
+      - name: secret-volume
+        mountPath: /secret
+        readOnly: true
     volumes:
     - name: secret-volume
       secret:
@@ -41,9 +54,8 @@ spec:
         items:
         - key: password
           path: password
-    - name: workload
-      configMap:
-        name: nosqlbench-workload-configmap
+    - name: workspace
+      mountPath: /workspace
     - name: results-pv
       persistentVolumeClaim:
         claimName: nosqlbench-source-pvc
@@ -54,7 +66,7 @@ spec:
         "--show-stacktraces",
         "--report-csv-to=/results",
         "--report-graphite-to=graphite-service:9109",
-        "/config/workload.yaml",
+        "/workspace/nosqlbench_target.yaml",
         "target",
         "scenarioname=target",
         "hosts={{ .Values.target.clusterName }}-{{ .Values.target.dc }}-service",
@@ -70,11 +82,24 @@ spec:
       - name: secret-volume
         mountPath: /secret
         readOnly: true
-      - name: workload
-        mountPath: /config/workload.yaml
-        subPath: workload.yaml
+      - name: workspace
+        mountPath: /workspace
       - name: results-pv
         mountPath: /results
+    initContainers:
+    - name: extract-schema
+      image: python:3.10.0b1-alpine3.13
+      command: ["sh", "-c", "-e"]
+      args:
+        - pip install adelphi;
+          adelphi --hosts="{{ .Values.target.clusterName }}-{{ .Values.target.dc }}-service" --username="{{ .Values.target.clusterName }}-superuser" --password="`cat /secret/password`" --keyspaces="{{ .Values.gemini_schema_keyspace }}" --no-anonymize export-nb --rampup-cycles="{{ .Values.nosqlbench_cycles }}" --main-cycles="{{ .Values.nosqlbench_cycles }}" > /workspace/nosqlbench_target.yaml;
+          cat /workspace/nosqlbench_target.yaml;
+      volumeMounts:
+      - name: workspace
+        mountPath: /workspace
+      - name: secret-volume
+        mountPath: /secret
+        readOnly: true
     volumes:
     - name: secret-volume
       secret:
@@ -82,9 +107,8 @@ spec:
         items:
         - key: password
           path: password
-    - name: workload
-      configMap:
-        name: nosqlbench-workload-configmap
+    - name: workspace
+      emptyDir: {}
     - name: results-pv
       persistentVolumeClaim:
         claimName: nosqlbench-target-pvc

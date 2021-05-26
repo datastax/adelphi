@@ -8,7 +8,7 @@ metadata:
 spec:
   containers:
   - name: grafana
-    image: grafana/grafana
+    image: grafana/grafana:7.5.7
     env:
       - name: GF_PATHS_PROVISIONING
         value: /provisioning
