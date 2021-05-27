@@ -89,7 +89,12 @@ class NbExporter(BaseExporter):
 
         self.rampup_cycles = props["rampup-cycles"]
         self.main_cycles = props["main-cycles"]
-        self.numeric_max = min((self.rampup_cycles + self.main_cycles) * 1000, MAX_NUMERIC_VAL)
+        self.scenario_name = props["scenario-name"]
+        self.numeric_max = \
+            min((self.rampup_cycles + self.main_cycles) * 1000, MAX_NUMERIC_VAL) \
+            if self.rampup_cycles and self.main_cycles \
+            else MAX_NUMERIC_VAL
+
 
         # Always disable anonymization when generating nosqlbench configs
         real_props = props.copy()
@@ -107,8 +112,10 @@ class NbExporter(BaseExporter):
         self.table = next(iter(self.keyspace.tables.values()))
 
         log.info("Creating nosqlbench config for {}.{}".format(self.keyspace.name, self.table.name))
-        log.info("Number of cycles for rampup phase = {}".format(self.rampup_cycles))
-        log.info("Number of cycles for main phase = {}".format(self.main_cycles))
+        if self.rampup_cycles:
+            log.info("Number of cycles for rampup phase = {}".format(self.rampup_cycles))
+        if self.main_cycles:
+            log.info("Number of cycles for main phase = {}".format(self.main_cycles))
         log.info("Max numeric value = {}".format(self.numeric_max))
 
 
@@ -125,11 +132,11 @@ class NbExporter(BaseExporter):
 
 
     def __get_rampup_scenario(self):
-        return RAMPUP_SCENARIO.format(self.rampup_cycles)
+        return RAMPUP_SCENARIO.format(self.rampup_cycles or "TEMPLATE(rampup-cycles,1000)")
 
 
     def __get_main_scenario(self):
-        return MAIN_SCENARIO.format(self.main_cycles)
+        return MAIN_SCENARIO.format(self.main_cycles or "TEMPLATE(main-cycles,1000)")
 
 
     def __get_dist(self, typename):
@@ -172,7 +179,7 @@ class NbExporter(BaseExporter):
         """Really more of a config than a schema, but we'll allow it"""
         root = {}
 
-        root["scenarios"] = {"TEMPLATE(scenarioname,default)":[self.__get_rampup_scenario(), self.__get_main_scenario()]}
+        root["scenarios"] = {self.scenario_name or "TEMPLATE(scenarioname,default)":[self.__get_rampup_scenario(), self.__get_main_scenario()]}
         
         root["bindings"] = self.__build_bindings(self.table)
 
