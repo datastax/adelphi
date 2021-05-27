@@ -24,7 +24,7 @@ class TestNbExportStdout(unittest.TestCase, SchemaTestMixin, ExportNbMixin):
 
 
     def getBaseSchemaPath(self):
-        return "tests/integration/resources/nb-base-schema.cql"
+        return self.nbBaseSchema()
 
 
     def runAdelphi(self, version=None):
@@ -34,4 +34,4 @@ class TestNbExportStdout(unittest.TestCase, SchemaTestMixin, ExportNbMixin):
 
 
     def evalAdelphiOutput(self, version=None):
-        self.compareToReferenceYaml(self.stdoutPath(version), version)
+        self.compareToReferenceYaml(self.nbReferenceYaml(version), self.stdoutPath(version))

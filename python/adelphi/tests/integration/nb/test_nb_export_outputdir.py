@@ -26,7 +26,7 @@ class TestNbExportOutputDir(unittest.TestCase, SchemaTestMixin, ExportNbMixin):
 
 
     def getBaseSchemaPath(self):
-        return "tests/integration/resources/nb-base-schema.cql"
+        return self.nbBaseSchema()
 
 
     def runAdelphi(self, version=None):
@@ -40,4 +40,4 @@ class TestNbExportOutputDir(unittest.TestCase, SchemaTestMixin, ExportNbMixin):
         outputDirPath = self.outputDirPath(version)
         outputSchemas = glob.glob("{}/*/schema".format(outputDirPath))
         self.assertEqual(len(outputSchemas), 1, "Export of nosqlbench config only supports a single keyspace")
-        self.compareToReferenceYaml(outputSchemas[0], version)
+        self.compareToReferenceYaml(self.nbReferenceYaml(version), outputSchemas[0])

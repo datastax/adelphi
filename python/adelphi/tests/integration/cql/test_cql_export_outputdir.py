@@ -33,8 +33,6 @@ class TestCqlExportOutputDir(unittest.TestCase, SchemaTestMixin, ExportCqlMixin)
 
 
     def evalAdelphiOutput(self, version):
-        referencePath = "tests/integration/resources/cql-schemas/{}.cql".format(version)
-
         # Basic idea here is to find all schemas written to the output dir and aggregate them into a single schema
         # file.  We then compare this aggregated file to the reference schema.  Ordering is important here but
         # the current keyspace names hash to something that causes individual keyspaces to be discovered in the
@@ -50,4 +48,4 @@ class TestCqlExportOutputDir(unittest.TestCase, SchemaTestMixin, ExportCqlMixin)
                 with open(outputSchema) as outputSchemaFile:
                     shutil.copyfileobj(outputSchemaFile, allOutputFile)
                     allOutputFile.write("\n")
-        self.compareToReferenceCql(referencePath, allOutputPath)
+        self.compareToReferenceCql(self.cqlReferenceSchema(version), allOutputPath)
