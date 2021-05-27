@@ -33,7 +33,8 @@ class TestNbExportOutputDir(unittest.TestCase, SchemaTestMixin, ExportNbMixin):
         stderrPath = self.stderrPath(version)
         outputDirPath = self.outputDirPath(version)
         os.mkdir(outputDirPath)
-        subprocess.run("adelphi --output-dir={} export-nb 2>> {}".format(outputDirPath, stderrPath), shell=True)
+        cmdStr = "adelphi --output-dir={} export-nb --rampup-cycles=1000 --main-cycles=1000 --scenario-name=foobar 2>> {}"
+        subprocess.run(cmdStr.format(outputDirPath, stderrPath), shell=True)
 
 
     def evalAdelphiOutput(self, version=None):

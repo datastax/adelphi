@@ -30,7 +30,8 @@ class TestNbExportStdout(unittest.TestCase, SchemaTestMixin, ExportNbMixin):
     def runAdelphi(self, version=None):
         stdoutPath = self.stdoutPath(version)
         stderrPath = self.stderrPath(version)
-        subprocess.run("adelphi export-nb > {} 2>> {}".format(stdoutPath, stderrPath), shell=True)
+        cmdStr = "adelphi export-nb --rampup-cycles=1000 --main-cycles=1000 --scenario-name=foobar > {} 2>> {}"
+        subprocess.run(cmdStr.format(stdoutPath, stderrPath), shell=True)
 
 
     def evalAdelphiOutput(self, version=None):
