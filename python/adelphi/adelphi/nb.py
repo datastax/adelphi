@@ -10,6 +10,10 @@ MAX_NUMERIC_VAL = 1000 ** 3
 RAMPUP_SCENARIO = "run driver=cql tags=phase:rampup cycles={} threads=auto"
 MAIN_SCENARIO = "run driver=cql tags=phase:main cycles={} threads=auto"
 
+TEMPLATEVAR_RAMPUP_CYCLES = "TEMPLATE(rampup-cycles,1000)"
+TEMPLATEVAR_MAIN_CYCLES = "TEMPLATE(main-cycles,1000)"
+TEMPLATEVAR_SCENARIO_NAME = "TEMPLATE(scenarioname,default)"
+
 CQL_TYPES={}
 CQL_TYPES["text"] = "Mod({}); ToString() -> String"
 CQL_TYPES["ascii"] = "Mod({}); ToString() -> String"
@@ -132,11 +136,11 @@ class NbExporter(BaseExporter):
 
 
     def __get_rampup_scenario(self):
-        return RAMPUP_SCENARIO.format(self.rampup_cycles or "TEMPLATE(rampup-cycles,1000)")
+        return RAMPUP_SCENARIO.format(self.rampup_cycles or TEMPLATEVAR_RAMPUP_CYCLES)
 
 
     def __get_main_scenario(self):
-        return MAIN_SCENARIO.format(self.main_cycles or "TEMPLATE(main-cycles,1000)")
+        return MAIN_SCENARIO.format(self.main_cycles or TEMPLATEVAR_MAIN_CYCLES)
 
 
     def __get_dist(self, typename):
@@ -179,7 +183,7 @@ class NbExporter(BaseExporter):
         """Really more of a config than a schema, but we'll allow it"""
         root = {}
 
-        root["scenarios"] = {self.scenario_name or "TEMPLATE(scenarioname,default)":[self.__get_rampup_scenario(), self.__get_main_scenario()]}
+        root["scenarios"] = {self.scenario_name or TEMPLATEVAR_SCENARIO_NAME:[self.__get_rampup_scenario(), self.__get_main_scenario()]}
         
         root["bindings"] = self.__build_bindings(self.table)
 
