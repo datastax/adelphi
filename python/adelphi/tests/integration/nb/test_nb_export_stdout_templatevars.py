@@ -17,10 +17,10 @@ from tests.integration.nb import ExportNbMixin
 
 log = logging.getLogger('adelphi')
 
-class TestNbExportStdout(unittest.TestCase, SchemaTestMixin, ExportNbMixin):
+class TestNbExportStdoutTemplateVars(unittest.TestCase, SchemaTestMixin, ExportNbMixin):
 
     def setUp(self):
-        super(TestNbExportStdout, self).setUp()
+        super(TestNbExportStdoutTemplateVars, self).setUp()
 
 
     def getBaseSchemaPath(self):
