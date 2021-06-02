@@ -30,7 +30,4 @@ class TestCqlExportStdout(unittest.TestCase, SchemaTestMixin, ExportCqlMixin):
 
 
     def evalAdelphiOutput(self, version):
-        referencePath = "tests/integration/resources/cql-schemas/{}.cql".format(version)
-        self.compareToReferenceCql(referencePath, self.stdoutPath(version))
-
-
+        self.compareToReferenceCql(self.cqlReferenceSchema(version), self.stdoutPath(version))

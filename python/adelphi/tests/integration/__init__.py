@@ -22,6 +22,20 @@ TempDirs = namedtuple('TempDirs', 'basePath, outputDirPath')
 
 class SchemaTestMixin:
 
+    # Resource directory management logic
+    def cqlReferenceSchema(self, version):
+        return "tests/integration/resources/cql-schemas/{}.cql".format(version)
+
+
+    def nbReferenceYaml(self, version):
+        return "tests/integration/resources/nb-schemas/{}.yaml".format(version)
+
+
+    def nbBaseSchema(self):
+        return "tests/integration/resources/nb-base-schema.cql"
+
+
+    # Temp dir logic
     def basePath(self, name):
         return os.path.join(self.dirs.basePath, name)
 
@@ -45,6 +59,7 @@ class SchemaTestMixin:
         self.dirs = TempDirs(base, outputDir)
 
 
+    # Cassandra connection logic
     def connectToLocalCassandra(self):
         session = None
         while not session:

@@ -30,7 +30,4 @@ class TestCqlExportStdoutSomeKeyspaces(unittest.TestCase, SchemaTestMixin, Expor
 
 
     def evalAdelphiOutput(self, version):
-        referencePath = "tests/integration/resources/cql-schemas/{}-ks0.cql".format(version)
-        self.compareToReferenceCql(referencePath, self.stdoutPath(version))
-
-
+        self.compareToReferenceCql(self.cqlReferenceSchema("{}-ks0".format(version)), self.stdoutPath(version))

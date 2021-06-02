@@ -37,8 +37,7 @@ class TestCqlExportOutputDirSomeKeyspaces(unittest.TestCase, SchemaTestMixin, Ex
 
 
     def evalAdelphiOutput(self, version):
-        referencePath = "tests/integration/resources/cql-schemas/{}-ks0.cql".format(version)
         outputDirPath = self.outputDirPath(version)
         outputSchemas = glob.glob("{}/*/schema".format(outputDirPath))
         self.assertEqual(len(outputSchemas), 1)
-        self.compareToReferenceCql(referencePath, outputSchemas[0])
+        self.compareToReferenceCql(self.cqlReferenceSchema("{}-ks0".format(version)), outputSchemas[0])

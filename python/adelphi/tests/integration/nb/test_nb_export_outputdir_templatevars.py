@@ -18,10 +18,10 @@ from tests.integration.nb import ExportNbMixin
 
 log = logging.getLogger('adelphi')
 
-class TestNbExportOutputDir(unittest.TestCase, SchemaTestMixin, ExportNbMixin):
+class TestNbExportOutputDirTemplateVars(unittest.TestCase, SchemaTestMixin, ExportNbMixin):
 
     def setUp(self):
-        super(TestNbExportOutputDir, self).setUp()
+        super(TestNbExportOutputDirTemplateVars, self).setUp()
 
 
     def getBaseSchemaPath(self):
@@ -32,7 +32,7 @@ class TestNbExportOutputDir(unittest.TestCase, SchemaTestMixin, ExportNbMixin):
         stderrPath = self.stderrPath(version)
         outputDirPath = self.outputDirPath(version)
         os.mkdir(outputDirPath)
-        cmdStr = "adelphi --output-dir={} export-nb --rampup-cycles=1000 --main-cycles=1000 --scenario-name=foobar 2>> {}"
+        cmdStr = "adelphi --output-dir={} export-nb 2>> {}"
         subprocess.run(cmdStr.format(outputDirPath, stderrPath), shell=True)
 
 
@@ -40,4 +40,4 @@ class TestNbExportOutputDir(unittest.TestCase, SchemaTestMixin, ExportNbMixin):
         outputDirPath = self.outputDirPath(version)
         outputSchemas = glob.glob("{}/*/schema".format(outputDirPath))
         self.assertEqual(len(outputSchemas), 1, "Export of nosqlbench config only supports a single keyspace")
-        self.compareToReferenceYaml(self.nbReferenceYaml(version), outputSchemas[0])
+        self.compareToReferenceYaml(self.nbReferenceYaml("{}-templatevars".format(version)), outputSchemas[0])

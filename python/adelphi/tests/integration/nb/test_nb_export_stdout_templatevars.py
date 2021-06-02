@@ -17,10 +17,10 @@ from tests.integration.nb import ExportNbMixin
 
 log = logging.getLogger('adelphi')
 
-class TestNbExportStdout(unittest.TestCase, SchemaTestMixin, ExportNbMixin):
+class TestNbExportStdoutTemplateVars(unittest.TestCase, SchemaTestMixin, ExportNbMixin):
 
     def setUp(self):
-        super(TestNbExportStdout, self).setUp()
+        super(TestNbExportStdoutTemplateVars, self).setUp()
 
 
     def getBaseSchemaPath(self):
@@ -30,9 +30,10 @@ class TestNbExportStdout(unittest.TestCase, SchemaTestMixin, ExportNbMixin):
     def runAdelphi(self, version=None):
         stdoutPath = self.stdoutPath(version)
         stderrPath = self.stderrPath(version)
-        cmdStr = "adelphi export-nb --rampup-cycles=1000 --main-cycles=1000 --scenario-name=foobar > {} 2>> {}"
+        cmdStr = "adelphi export-nb > {} 2>> {}"
         subprocess.run(cmdStr.format(stdoutPath, stderrPath), shell=True)
 
 
     def evalAdelphiOutput(self, version=None):
-        self.compareToReferenceYaml(self.nbReferenceYaml(version), self.stdoutPath(version))
+        self.maxDiff = None
+        self.compareToReferenceYaml(self.nbReferenceYaml("{}-templatevars".format(version)), self.stdoutPath(version))

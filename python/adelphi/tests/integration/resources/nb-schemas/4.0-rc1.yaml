@@ -38,6 +38,6 @@ blocks:
     phase: main
     type: write
 scenarios:
-  TEMPLATE(scenarioname,default):
+  foobar:
   - run driver=cql tags=phase:rampup cycles=1000 threads=auto
   - run driver=cql tags=phase:main cycles=1000 threads=auto
