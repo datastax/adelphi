@@ -22,9 +22,6 @@ TOX_DEPENDENCIES = """pytest
     subprocess32 ~= 3.5"""
 TOX_CONFIG = "tox.ini"
 
-logging.basicConfig(filename="adelphi-tests.log", level=logging.INFO)
-log = logging.getLogger('adelphi')
-
 
 @retry(stop=stop_after_attempt(3), wait=wait_fixed(2))
 def getContainer(client, version):
@@ -44,7 +41,8 @@ def writeToxIni(version):
     envs = {"CASSANDRA_VERSION": version}
     config["testenv"] = {"deps": TOX_DEPENDENCIES, \
         "commands": "pytest {posargs}", \
-        "setenv": "CASSANDRA_VERSION = {}".format(version)}
+        "setenv": """CASSANDRA_VERSION = {}
+        KEEP_LOGS=1""".format(version)}
     with open(TOX_CONFIG, 'w') as configfile:
         config.write(configfile)
 
@@ -53,18 +51,23 @@ if __name__ == '__main__':
     client = docker.from_env()
     for version in getCassandraVersions():
 
-        log.info("Running test suite for Cassandra version {}".format(version))
+        print("Running test suite for Cassandra version {}".format(version))
         container = getContainer(client, version)
 
         try:
             if os.path.exists(TOX_CONFIG):
                 os.remove(TOX_CONFIG)
             writeToxIni(version)
-            tox.cmdline()
+            # cmdline() will raise SystemExit when it's done so trap that here to avoid
+            # exiting all the things
+            try:
+                tox.cmdline()
+            except SystemExit:
+                pass
         except Exception as exc:
-            log.error("Exception running tests for Cassandra version {}".format(version), exc_info=exc)
+            print("Exception running tests for Cassandra version {}".format(version), exc)
         finally:
             if "KEEP_CONTAINER" in os.environ:
-                log.info("KEEP_CONTAINER env var set, preserving Cassandra container 'adelphi'")
+                print("KEEP_CONTAINER env var set, preserving Cassandra container 'adelphi'")
             else:
                 container.stop()
