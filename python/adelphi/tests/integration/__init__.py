@@ -10,13 +10,24 @@ except ImportError:
 
 from collections import namedtuple
 
-from tests.util.cassandra_util import connectToLocalCassandra,createSchema
+from tests.util.cassandra_util import connectToLocalCassandra, createSchema
 
 log = logging.getLogger('adelphi')
 
 TempDirs = namedtuple('TempDirs', 'basePath, outputDirPath')
 
-class SchemaTestMixin(unittest.TestCase):
+
+def setupSchema(schemaPath):
+    (_,session) = connectToLocalCassandra()
+    createSchema(session, schemaPath)
+
+
+def dropKeyspace(keyspace):
+    (_,session) = connectToLocalCassandra()
+    session.execute("drop keyspace {}".format(keyspace))
+
+
+class SchemaTestCase(unittest.TestCase):
 
     def basePath(self, name):
         return os.path.join(self.dirs.basePath, name)
@@ -41,20 +52,19 @@ class SchemaTestMixin(unittest.TestCase):
         self.dirs = TempDirs(base, outputDir)
 
 
-    def baseTestSetup(self):
+    def setUp(self):
+        super(SchemaTestCase, self).setUp()
+
         # This should be set in the tox config
         self.version = os.environ["CASSANDRA_VERSION"]
         log.info("Testing Cassandra version {}".format(self.version))
         self.makeTempDirs()
 
 
-    def baseTestTeardown(self):
+    def tearDown(self):
+        super(SchemaTestCase, self).tearDown()
+
         if "KEEP_LOGS" in os.environ:
             log.info("KEEP_LOGS env var set, preserving logs/output at {}".format(self.dirs.basePath))
         else:
             shutil.rmtree(self.dirs.basePath)
-
-
-    def setupSchema(self, schemaPath):
-        (_,session) = connectToLocalCassandra()
-        createSchema(session, schemaPath)

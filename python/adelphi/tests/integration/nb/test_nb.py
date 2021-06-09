@@ -9,25 +9,25 @@ if os.name == 'posix' and sys.version_info[0] < 3:
 else:
     import subprocess
 
-from tests.integration import SchemaTestMixin
+from tests.integration import SchemaTestCase, setupSchema, dropKeyspace
 
 log = logging.getLogger('adelphi')
 
 NB_SCHEMA_PATH = "tests/integration/resources/nb-base-schema.cql"
 NB_REFERENCE_SCHEMA_PATH = "tests/integration/resources/nb-schemas/{}.yaml"
 
-class TestNb(SchemaTestMixin):
+class TestNb(SchemaTestCase):
 
     # ========================== Unittest infrastructure ==========================
     def setUp(self):
         super(TestNb, self).setUp()
-        self.baseTestSetup()
-        self.setupSchema(NB_SCHEMA_PATH)
+        setupSchema(NB_SCHEMA_PATH)
 
 
     def tearDown(self):
         super(TestNb, self).tearDown()
-        self.baseTestTeardown()
+        log.warning("Dropping keyspace testkeyspace")
+        dropKeyspace("testkeyspace")
 
 
     # ========================== Helper functions ==========================

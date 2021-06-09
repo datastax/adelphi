@@ -9,7 +9,7 @@ if os.name == 'posix' and sys.version_info[0] < 3:
 else:
     import subprocess
 
-from tests.integration import SchemaTestMixin
+from tests.integration import SchemaTestCase, setupSchema, dropKeyspace
 from tests.util.schemadiff import cqlDigestGenerator
 from tests.util.schema_util import get_schema
 
@@ -31,18 +31,21 @@ def logCqlDigest(schemaFile, digestSet):
             log.info("Digest: {}, CQL: {}".format(digest,cql))
 
 
-class TestCql(SchemaTestMixin):
+class TestCql(SchemaTestCase):
 
     # ========================== Unittest infrastructure ==========================
     def setUp(self):
         super(TestCql, self).setUp()
-        self.baseTestSetup()
-        self.setupSchema(self.buildSchema())
+        log.warning("Creating schema")
+        setupSchema(self.buildSchema())
 
 
     def tearDown(self):
         super(TestCql, self).tearDown()
-        self.baseTestTeardown()
+        log.warning("Dropping keyspace testkeyspace my_ks_0")
+        dropKeyspace("my_ks_0")
+        log.warning("Dropping keyspace testkeyspace my_ks_1")
+        dropKeyspace("my_ks_1")
 
 
     # ========================== Helper functions ==========================
