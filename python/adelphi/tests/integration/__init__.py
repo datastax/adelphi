@@ -3,6 +3,11 @@ import os
 import shutil
 import tempfile
 
+try:
+    import unittest2 as unittest
+except ImportError:
+    import unittest
+
 from collections import namedtuple
 
 from tests.util.cassandra_util import connectToLocalCassandra,createSchema
@@ -11,7 +16,7 @@ log = logging.getLogger('adelphi')
 
 TempDirs = namedtuple('TempDirs', 'basePath, outputDirPath')
 
-class SchemaTestMixin:
+class SchemaTestMixin(unittest.TestCase):
 
     def basePath(self, name):
         return os.path.join(self.dirs.basePath, name)
@@ -36,25 +41,20 @@ class SchemaTestMixin:
         self.dirs = TempDirs(base, outputDir)
 
 
-    def testAdelphi(self):
+    def baseTestSetup(self):
         # This should be set in the tox config
-        version = os.environ["CASSANDRA_VERSION"]
-        log.info("Testing Cassandra version {}".format(version))
-
+        self.version = os.environ["CASSANDRA_VERSION"]
+        log.info("Testing Cassandra version {}".format(self.version))
         self.makeTempDirs()
-        try:
-            (_,session) = connectToLocalCassandra()
-            createSchema(session, self.getBaseSchemaPath)
-            log.info("Running Adelphi")
-            self.runAdelphi(version)
-            log.info("Adelphi run completed, evaluating Adelphi output(s)")
-            self.evalAdelphiOutput(version)
-        finally:
-            self.cleanUpTempDirs(version)
 
 
-    def cleanUpTempDirs(self, version):
+    def baseTestTeardown(self):
         if "KEEP_LOGS" in os.environ:
             log.info("KEEP_LOGS env var set, preserving logs/output at {}".format(self.dirs.basePath))
         else:
             shutil.rmtree(self.dirs.basePath)
+
+
+    def setupSchema(self, schemaPath):
+        (_,session) = connectToLocalCassandra()
+        createSchema(session, schemaPath)

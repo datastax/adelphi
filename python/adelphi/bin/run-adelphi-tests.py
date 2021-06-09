@@ -16,7 +16,7 @@ import docker
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 # Default C* versions to include in all integration tests
-CASSANDRA_VERSIONS = ["2.1.22", "2.2.19", "3.0.23", "3.11.9", "4.0-beta4"]
+CASSANDRA_VERSIONS = ["2.1.22", "2.2.19", "3.0.23", "3.11.9", "4.0-rc1"]
 
 TOX_DEPENDENCIES = """pytest
     subprocess32 ~= 3.5"""
@@ -57,7 +57,8 @@ if __name__ == '__main__':
         container = getContainer(client, version)
 
         try:
-            os.remove(TOX_CONFIG)
+            if os.path.exists(TOX_CONFIG):
+                os.remove(TOX_CONFIG)
             writeToxIni(version)
             tox.cmdline()
         except Exception as exc:

@@ -21,11 +21,10 @@ def connectToLocalCassandra():
             return (cluster, session)
         except:
             log.info("Couldn't quite connect yet, will retry")
-            time.sleep(1)
+            time.sleep(3)
 
 
-def createSchema(session, schemaPathProvider):
-    schemaPath = schemaPathProvider()
+def createSchema(session, schemaPath):
     log.info("Creating schema on Cassandra cluster from file {}".format(schemaPath))
     with open(schemaPath) as schema:
         buff = ""
@@ -34,16 +33,16 @@ def createSchema(session, schemaPathProvider):
             if len(realLine) == 0:
                 log.debug("Skipping empty statement")
                 continue
-            # TODO: this fails completely for CQL statements which span lines
-            if realLine.startswith("//"):
+            if realLine.startswith("//") or realLine.startswith("--"):
                 log.debug("Skipping commented statement")
                 continue
             buff += (" " if len(buff) > 0 else "")
             buff += realLine
-            if realLine.endswith(';'):
+            if buff.endswith(';'):
                 log.debug("Executing statement {}".format(buff))
                 try:
                     session.execute(buff)
                 except Exception as exc:
                     log.error("Exception executing statement: {}".format(buff), exc_info=exc)
+                finally:
                     buff = ""
