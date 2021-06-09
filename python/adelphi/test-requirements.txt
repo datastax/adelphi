@@ -1,0 +1,2 @@
+docker ~= 4.4
+tenacity ~= 7.0

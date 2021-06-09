@@ -1,6 +1,5 @@
 import base64
 import hashlib
-import logging
 
 # Imports required by the __main__ case below
 import sys
