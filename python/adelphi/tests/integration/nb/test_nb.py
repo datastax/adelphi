@@ -18,6 +18,7 @@ NB_REFERENCE_SCHEMA_PATH = "tests/integration/resources/nb-schemas/{}.yaml"
 
 class TestNb(SchemaTestMixin):
 
+    # ========================== Unittest infrastructure ==========================
     def setUp(self):
         super(TestNb, self).setUp()
         self.baseTestSetup()
@@ -29,6 +30,7 @@ class TestNb(SchemaTestMixin):
         self.baseTestTeardown()
 
 
+    # ========================== Helper functions ==========================
     def compareToReferenceYaml(self, comparePath, version=None):
         referencePath = NB_REFERENCE_SCHEMA_PATH.format(version)
         # Loader specification here to avoid a deprecation warning... see https://msg.pyyaml.org/load
@@ -37,6 +39,7 @@ class TestNb(SchemaTestMixin):
         self.assertEqual(referenceYaml, compareYaml)
 
 
+    # ========================== Test functions ==========================
     def test_stdout(self):
         stdoutPath = self.stdoutPath(self.version)
         stderrPath = self.stderrPath(self.version)
