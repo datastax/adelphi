@@ -6,6 +6,7 @@
 # manage the fixture iteration manually in this script.  This also has the
 # nice side effect of moving a lot of C* checking/session code out of the test
 # suite, which in turn should allow us to write simpler tests.
+import configparser
 import logging
 import os
 
@@ -16,6 +17,10 @@ from tenacity import retry, stop_after_attempt, wait_fixed
 
 # Default C* versions to include in all integration tests
 CASSANDRA_VERSIONS = ["2.1.22", "2.2.19", "3.0.23", "3.11.9", "4.0-beta4"]
+
+TOX_DEPENDENCIES = """pytest
+    subprocess32 ~= 3.5"""
+TOX_CONFIG = "tox.ini"
 
 logging.basicConfig(filename="adelphi-tests.log", level=logging.INFO)
 log = logging.getLogger('adelphi')
@@ -33,6 +38,17 @@ def getCassandraVersions():
         return CASSANDRA_VERSIONS 
 
 
+def writeToxIni(version):
+    config = configparser.ConfigParser()
+    config["tox"] = { "envlist": "py2, py3" }
+    envs = {"CASSANDRA_VERSION": version}
+    config["testenv"] = {"deps": TOX_DEPENDENCIES, \
+        "commands": "pytest {posargs}", \
+        "setenv": "CASSANDRA_VERSION = {}".format(version)}
+    with open(TOX_CONFIG, 'w') as configfile:
+        config.write(configfile)
+
+
 if __name__ == '__main__':
     client = docker.from_env()
     for version in getCassandraVersions():
@@ -41,6 +57,8 @@ if __name__ == '__main__':
         container = getContainer(client, version)
 
         try:
+            os.remove(TOX_CONFIG)
+            writeToxIni(version)
             tox.cmdline()
         except Exception as exc:
             log.error("Exception running tests for Cassandra version {}".format(version), exc_info=exc)

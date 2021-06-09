@@ -36,7 +36,9 @@ class SchemaTestMixin:
         self.dirs = TempDirs(base, outputDir)
 
 
-    def testAdelphi(self, version=None):
+    def testAdelphi(self):
+        # This should be set in the tox config
+        version = os.environ["CASSANDRA_VERSION"]
         log.info("Testing Cassandra version {}".format(version))
 
         self.makeTempDirs()
