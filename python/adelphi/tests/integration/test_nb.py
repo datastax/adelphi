@@ -24,13 +24,12 @@ NB_REFERENCE_SCHEMA_PATH = "tests/integration/resources/nb-schemas/{}.yaml"
 class TestNb(SchemaTestCase):
 
     # ========================== Unittest infrastructure ==========================
-    def setUp(self):
-        super(TestNb, self).setUp()
+    @classmethod
+    def setUpClass(cls):
         setupSchema(NB_SCHEMA_PATH)
 
-
-    def tearDown(self):
-        super(TestNb, self).tearDown()
+    @classmethod
+    def tearDownClass(cls):
         log.warning("Dropping keyspace testkeyspace")
         dropKeyspace("testkeyspace")
 
