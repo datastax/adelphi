@@ -4,6 +4,11 @@ import os
 import shutil
 import sys
 
+try:
+    import unittest2 as unittest
+except ImportError:
+    import unittest
+
 if os.name == 'posix' and sys.version_info[0] < 3:
     import subprocess32 as subprocess
 else:
@@ -135,3 +140,7 @@ class TestCql(SchemaTestCase):
         self.compareToReferenceCql(
             CQL_REFERENCE_KS0_SCHEMA_PATH.format(self.version), 
             outputSchemas[0])
+
+
+if __name__ == '__main__':
+    unittest.main()

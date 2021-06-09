@@ -4,6 +4,11 @@ import os
 import sys
 import yaml
 
+try:
+    import unittest2 as unittest
+except ImportError:
+    import unittest
+
 if os.name == 'posix' and sys.version_info[0] < 3:
     import subprocess32 as subprocess
 else:
@@ -57,3 +62,7 @@ class TestNb(SchemaTestCase):
         outputSchemas = glob.glob("{}/*/schema".format(outputDirPath))
         self.assertEqual(len(outputSchemas), 1, "Export of nosqlbench config only supports a single keyspace")
         self.compareToReferenceYaml(outputSchemas[0], self.version)
+
+
+if __name__ == '__main__':
+    unittest.main()
