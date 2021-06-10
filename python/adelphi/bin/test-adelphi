@@ -1,3 +1,5 @@
+#!python
+
 # Run test suite for some set of Cassandra versions.
 #
 # We implement this as a front-end script because the tox/pytest/unittest chain
