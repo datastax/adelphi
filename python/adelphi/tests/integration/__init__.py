@@ -10,21 +10,33 @@ except ImportError:
 
 from collections import namedtuple
 
-from tests.util.cassandra_util import connectToLocalCassandra, createSchema
+from tests.util.cassandra_util import callWithCassandra, createSchema
 
 log = logging.getLogger('adelphi')
 
 TempDirs = namedtuple('TempDirs', 'basePath, outputDirPath')
 
 
+def __keyspacesForCluster(cluster):
+    return set(cluster.metadata.keyspaces.keys())
+
+
 def setupSchema(schemaPath):
-    (_,session) = connectToLocalCassandra()
-    createSchema(session, schemaPath)
+    return callWithCassandra(lambda _,s: createSchema(s, schemaPath))
 
 
-def dropKeyspace(keyspace):
-    (_,session) = connectToLocalCassandra()
-    session.execute("drop keyspace {}".format(keyspace))
+def getAllKeyspaces():
+    return callWithCassandra(lambda c,s: __keyspacesForCluster(c))
+
+
+def dropNewKeyspaces(origKeyspaces):
+    def dropFn(cluster, session):
+        currentKeyspaces = __keyspacesForCluster(cluster)
+        droppingKeyspaces = currentKeyspaces - origKeyspaces
+        log.info("Dropping the following keyspaes created by this test: {}".format(",".join(droppingKeyspaces)))
+        for keyspace in droppingKeyspaces:
+            session.execute("drop keyspace {}".format(keyspace))
+    return callWithCassandra(dropFn)
 
 
 class SchemaTestCase(unittest.TestCase):
@@ -53,17 +65,22 @@ class SchemaTestCase(unittest.TestCase):
 
 
     def setUp(self):
+        # Invoking for completeness; for unittest base setUp/tearDown impls are no-ops
         super(SchemaTestCase, self).setUp()
 
         # This should be set in the tox config
         self.version = os.environ["CASSANDRA_VERSION"]
         log.info("Testing Cassandra version {}".format(self.version))
+
         self.makeTempDirs()
 
 
     def tearDown(self):
         super(SchemaTestCase, self).tearDown()
 
+        # TODO: Note that there's no easy way to access this from test-adelphi unless we modify the
+        # ini generation code... and I'm not completely sure that's worth it.  Might want to think
+        # about just deleting this outright... or making it a CLI option that can be easily accessed.
         if "KEEP_LOGS" in os.environ:
             log.info("KEEP_LOGS env var set, preserving logs/output at {}".format(self.dirs.basePath))
         else:

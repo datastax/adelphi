@@ -4,26 +4,19 @@ import time
 
 from cassandra.cluster import Cluster
 
+from tenacity import retry, wait_fixed
+
 log = logging.getLogger('adelphi')
 
+@retry(wait=wait_fixed(3))
 def connectToLocalCassandra():
-    session = None
-    while not session:
-        try:
-            cluster = Cluster(["127.0.0.1"], port=9042)
-            session = cluster.connect()
+    cluster = Cluster(["127.0.0.1"], port=9042)
+    session = cluster.connect()
 
-            # Confirm that the session is actually functioning before calling things good
-            #
-            # TODO: Might be worth seeing if we can move some part of this validation step
-            # to tenacity rather than implementing it manually.
-            rs = session.execute("select * from system.local")
-            log.info("Connected to Cassandra cluster, first row of system.local: {}".format(rs.one()))
-            log.info("Cassandra cluster ready")
-            return (cluster, session)
-        except:
-            log.info("Couldn't quite connect yet, will retry")
-            time.sleep(3)
+    # Confirm that the session is actually functioning before calling things good
+    rs = session.execute("select * from system.local")
+    log.info("Connected to Cassandra cluster, first row of system.local: {}".format(rs.one()))
+    return (cluster, session)
 
 
 def createSchema(session, schemaPath):
@@ -48,3 +41,12 @@ def createSchema(session, schemaPath):
                     log.error("Exception executing statement: {}".format(buff), exc_info=exc)
                 finally:
                     buff = ""
+
+
+def callWithCassandra(someFn):
+    cluster = None
+    try:
+        (cluster,session) = connectToLocalCassandra()
+        return someFn(cluster, session)
+    finally:
+        cluster.shutdown()

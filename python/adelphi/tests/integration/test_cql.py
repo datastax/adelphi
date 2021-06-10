@@ -14,7 +14,7 @@ if os.name == 'posix' and sys.version_info[0] < 3:
 else:
     import subprocess
 
-from tests.integration import SchemaTestCase, setupSchema, dropKeyspace
+from tests.integration import SchemaTestCase, setupSchema, getAllKeyspaces, dropNewKeyspaces
 from tests.util.schemadiff import cqlDigestGenerator
 from tests.util.schema_util import get_schema
 
@@ -41,16 +41,14 @@ class TestCql(SchemaTestCase):
     # ========================== Unittest infrastructure ==========================
     def setUp(self):
         super(TestCql, self).setUp()
-        log.warning("Creating schema")
+        self.origKeyspaces = getAllKeyspaces()
+        log.info("Creating schema")
         setupSchema(self.buildSchema())
 
 
     def tearDown(self):
         super(TestCql, self).tearDown()
-        log.warning("Dropping keyspace testkeyspace my_ks_0")
-        dropKeyspace("my_ks_0")
-        log.warning("Dropping keyspace testkeyspace my_ks_1")
-        dropKeyspace("my_ks_1")
+        dropNewKeyspaces(self.origKeyspaces)
 
 
     # ========================== Helper functions ==========================

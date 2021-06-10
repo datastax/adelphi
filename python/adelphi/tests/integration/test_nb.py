@@ -14,7 +14,7 @@ if os.name == 'posix' and sys.version_info[0] < 3:
 else:
     import subprocess
 
-from tests.integration import SchemaTestCase, setupSchema, dropKeyspace
+from tests.integration import SchemaTestCase, setupSchema, getAllKeyspaces, dropNewKeyspaces
 
 log = logging.getLogger('adelphi')
 
@@ -23,15 +23,19 @@ NB_REFERENCE_SCHEMA_PATH = "tests/integration/resources/nb-schemas/{}.yaml"
 
 class TestNb(SchemaTestCase):
 
+    origKeyspaces = None
+
     # ========================== Unittest infrastructure ==========================
     @classmethod
     def setUpClass(cls):
+        TestNb.origKeyspaces = getAllKeyspaces()
+        log.info("Creating schema")
         setupSchema(NB_SCHEMA_PATH)
+
 
     @classmethod
     def tearDownClass(cls):
-        log.warning("Dropping keyspace testkeyspace")
-        dropKeyspace("testkeyspace")
+        dropNewKeyspaces(TestNb.origKeyspaces)
 
 
     # ========================== Helper functions ==========================
@@ -45,6 +49,7 @@ class TestNb(SchemaTestCase):
 
     # ========================== Test functions ==========================
     def test_stdout(self):
+        print("All keyspaces: {}".format(getAllKeyspaces()))
         stdoutPath = self.stdoutPath(self.version)
         stderrPath = self.stderrPath(self.version)
         subprocess.run("adelphi export-nb > {} 2>> {}".format(stdoutPath, stderrPath), shell=True)

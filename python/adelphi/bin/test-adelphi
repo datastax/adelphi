@@ -11,22 +11,25 @@
 import configparser
 import os
 
-import click
-import tox
+from tests.util.cassandra_util import connectToLocalCassandra
 
+import click
 import docker
 from tenacity import retry, stop_after_attempt, wait_fixed
+import tox
+
 
 # Default C* versions to include in all integration tests
 DEFAULT_CASSANDRA_VERSIONS = ["2.1.22", "2.2.19", "3.0.23", "3.11.9", "4.0-rc1"]
 
 TOX_DEPENDENCIES = """pytest
-    subprocess32 ~= 3.5"""
+    subprocess32 ~= 3.5
+    tenacity ~= 7.0"""
 TOX_CONFIG = "tox.ini"
 
 
 @retry(stop=stop_after_attempt(3), wait=wait_fixed(2))
-def getContainer(client, version):
+def runCassandraContainer(client, version):
     return client.containers.run(name="adelphi", remove=True, detach=True, ports={9042: 9042}, image="cassandra:{}".format(version))
 
 
@@ -57,12 +60,16 @@ def runtests(cassandra, python, pytest):
     for version in cassandra_versions:
 
         print("Running test suite for Cassandra version {}".format(version))
-        container = getContainer(client, version)
+        container = runCassandraContainer(client, version)
+
+        print("Validating connection to local Cassandra")
+        connectToLocalCassandra()
 
         try:
             if os.path.exists(TOX_CONFIG):
                 os.remove(TOX_CONFIG)
             writeToxIni(version)
+
             # cmdline() will raise SystemExit when it's done so trap that here to avoid
             # exiting all the things
             try:
