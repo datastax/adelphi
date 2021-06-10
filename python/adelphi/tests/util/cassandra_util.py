@@ -1,5 +1,4 @@
-# Using "c8" rather than "cassandra" to avoid any conflicts with "cassandra" package in
-# cassandra-driver
+# A few utility methods for interacting with Cassandra from within tests
 import logging
 import time
 
@@ -15,6 +14,9 @@ def connectToLocalCassandra():
             session = cluster.connect()
 
             # Confirm that the session is actually functioning before calling things good
+            #
+            # TODO: Might be worth seeing if we can move some part of this validation step
+            # to tenacity rather than implementing it manually.
             rs = session.execute("select * from system.local")
             log.info("Connected to Cassandra cluster, first row of system.local: {}".format(rs.one()))
             log.info("Cassandra cluster ready")
