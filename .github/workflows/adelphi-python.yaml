@@ -2,9 +2,9 @@ name: adelphi Python
 
 on:
   push:
-    branches: [ $default-branch ]
+    branches: [ 115-breadth-first-testing ]
   pull_request:
-    branches: [ $default-branch ]
+    branches: [ 115-breadth-first-testing ]
 
 jobs:
   build:
