@@ -15,26 +15,13 @@ else:
     import subprocess
 
 from tests.integration import SchemaTestCase, setupSchema, getAllKeyspaces, dropNewKeyspaces
-from tests.util.schemadiff import cqlDigestGenerator
+from tests.util.schema_diff import cqlDigestGenerator
 from tests.util.schema_util import get_schema
 
 log = logging.getLogger('adelphi')
 
 CQL_REFERENCE_SCHEMA_PATH = "tests/integration/resources/cql-schemas/{}.cql"
 CQL_REFERENCE_KS0_SCHEMA_PATH = "tests/integration/resources/cql-schemas/{}-ks0.cql"
-
-def digestSet(schemaFile):
-    rv = set()
-    for (_, digest) in cqlDigestGenerator(schemaFile):
-        rv.add(digest)
-    return rv
-
-
-def logCqlDigest(schemaFile, digestSet):
-    for (cql, digest) in cqlDigestGenerator(schemaFile):
-        if digest in digestSet:
-            log.info("Digest: {}, CQL: {}".format(digest,cql))
-
 
 class TestCql(SchemaTestCase):
 
@@ -64,19 +51,23 @@ class TestCql(SchemaTestCase):
 
 
     def compareToReferenceCql(self, referencePath, comparePath):
-        referenceSet = digestSet(referencePath)
-        compareSet = digestSet(comparePath)
+        referenceDict = dict(cqlDigestGenerator(referencePath))
+        compareDict = dict(cqlDigestGenerator(comparePath))
+        referenceDigests = set(referenceDict.keys())
+        compareDigests =set(compareDict.keys())
 
-        refOnlySet = referenceSet - compareSet
-        if len(refOnlySet) > 0:
+        referenceOnlySet = referenceDigests - compareDigests
+        if len(referenceOnlySet) > 0:
             log.info("Statements in reference file {} but not in compare file {}:".format(referencePath, comparePath))
-            logCqlDigest(referencePath, refOnlySet)
-        compareOnlySet = compareSet - referenceSet
+            for digest in referenceOnlySet:
+                log.info(referenceDict[digest])
+        compareOnlySet = compareDigests - referenceDigests
         if len(compareOnlySet) > 0:
             log.info("Statements in compare file {} but not in reference file {}:".format(comparePath, referencePath))
-            logCqlDigest(comparePath, compareOnlySet)
+            for digest in compareOnlySet:
+                log.info(compareDict[digest])
 
-        self.assertEqual(referenceSet, compareSet)
+        self.assertEqual(set(referenceDict.values()), set(compareDict.values()))
 
 
     # ========================== Test functions ==========================
