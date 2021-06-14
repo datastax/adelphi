@@ -10,7 +10,7 @@ except ImportError:
 
 from collections import namedtuple
 
-from tests.util.cassandra_util import callWithCassandra, createSchema
+from adelphi.store import with_local_cluster, create_schema
 
 log = logging.getLogger('adelphi')
 
@@ -22,21 +22,24 @@ def __keyspacesForCluster(cluster):
 
 
 def setupSchema(schemaPath):
-    return callWithCassandra(lambda _,s: createSchema(s, schemaPath))
+    def schemaFn(cluster):
+        return create_schema(cluster.connect(), schemaPath)
+    return with_local_cluster(schemaFn)
 
 
 def getAllKeyspaces():
-    return callWithCassandra(lambda c,s: __keyspacesForCluster(c))
+    return with_local_cluster(__keyspacesForCluster)
 
 
 def dropNewKeyspaces(origKeyspaces):
-    def dropFn(cluster, session):
+    def dropFn(cluster):
         currentKeyspaces = __keyspacesForCluster(cluster)
         droppingKeyspaces = currentKeyspaces - origKeyspaces
         log.info("Dropping the following keyspaes created by this test: {}".format(",".join(droppingKeyspaces)))
+        session = cluster.connect()
         for keyspace in droppingKeyspaces:
             session.execute("drop keyspace {}".format(keyspace))
-    return callWithCassandra(dropFn)
+    return with_local_cluster(dropFn)
 
 
 class SchemaTestCase(unittest.TestCase):

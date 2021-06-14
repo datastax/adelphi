@@ -27,7 +27,8 @@ except ImportError:
 from cassandra.cluster import Cluster, ExecutionProfile, EXEC_PROFILE_DEFAULT, default_lbp_factory
 from cassandra.auth import PlainTextAuthProvider
 
-logging.basicConfig(level=logging.INFO)
+from tenacity import retry
+
 log = logging.getLogger('adelphi')
 
 system_keyspaces = set(["system",
@@ -39,20 +40,26 @@ system_keyspaces = set(["system",
                     "system_views"])
 
 def build_auth_provider(username = None,password = None):
-    # instantiate auth provider if credentials have been provided
-    auth_provider = None
-    if username is not None and password is not None:
-        auth_provider = PlainTextAuthProvider(username=username, password=password)
-    return auth_provider
+    """Instantiate auth provider if credentials have been provided"""
+    if username is None or password is None:
+        return None
+    return PlainTextAuthProvider(username=username, password=password)
 
 
+@retry
 def with_cluster(cluster_fn, hosts, port, username = None, password = None):
     ep = ExecutionProfile(load_balancing_policy=default_lbp_factory())
     cluster = Cluster(hosts, port=port, auth_provider=build_auth_provider(username,password), execution_profiles={EXEC_PROFILE_DEFAULT: ep})
-    cluster.connect()
-    rv = cluster_fn(cluster)
-    cluster.shutdown()
-    return rv
+    try:
+        cluster.connect()
+        return cluster_fn(cluster)
+    finally:
+        cluster.shutdown()
+
+
+@retry
+def with_local_cluster(cluster_fn):
+    return with_cluster(cluster_fn, ["127.0.0.1"], port=9042)
 
 
 def build_keyspace_objects(keyspaces, metadata):
@@ -71,9 +78,7 @@ def build_keyspace_objects(keyspaces, metadata):
 
 
 def get_standard_columns_from_table_metadata(table_metadata):
-    """
-    Return the standard columns and ensure to exclude pk and ck ones.
-    """
+    """Return the standard columns and ensure to exclude pk and ck ones"""
     partition_column_names = [c.name for c in table_metadata.partition_key]
     clustering_column_names = [c.name for c in table_metadata.clustering_key]
     standard_columns = []
@@ -96,3 +101,28 @@ def set_replication_factor(selected_keyspaces, factor):
             log.debug("Replication for keyspace " + ks.name+ ": " + str(ks.replication_strategy))
             strategy = ks.replication_strategy
             strategy.replication_factor_info = factor
+
+
+def create_schema(session, schemaPath):
+    """Read schema CQL document and apply CQL commands to cluster"""
+    log.info("Creating schema on Cassandra cluster from file {}".format(schemaPath))
+    with open(schemaPath) as schema:
+        buff = ""
+        for line in schema:
+            realLine = line.strip()
+            if len(realLine) == 0:
+                log.debug("Skipping empty statement")
+                continue
+            if realLine.startswith("//") or realLine.startswith("--"):
+                log.debug("Skipping commented statement")
+                continue
+            buff += (" " if len(buff) > 0 else "")
+            buff += realLine
+            if buff.endswith(';'):
+                log.debug("Executing statement {}".format(buff))
+                try:
+                    session.execute(buff)
+                except Exception as exc:
+                    log.error("Exception executing statement: {}".format(buff), exc_info=exc)
+                finally:
+                    buff = ""
