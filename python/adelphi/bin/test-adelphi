@@ -11,7 +11,7 @@
 import configparser
 import os
 
-from tests.util.cassandra_util import connectToLocalCassandra
+from adelphi.store import with_local_cluster
 
 import click
 import docker
@@ -36,7 +36,6 @@ def runCassandraContainer(client, version):
 def writeToxIni(version):
     config = configparser.ConfigParser()
     config["tox"] = { "envlist": "py2, py3" }
-    envs = {"CASSANDRA_VERSION": version}
     config["testenv"] = {"deps": TOX_DEPENDENCIES, \
         "commands": "pytest {posargs}", \
         "setenv": "CASSANDRA_VERSION = {}".format(version)}
@@ -63,7 +62,12 @@ def runtests(cassandra, python, pytest):
         container = runCassandraContainer(client, version)
 
         print("Validating connection to local Cassandra")
-        connectToLocalCassandra()
+        def validationFn(cluster):
+            session = cluster.connect()
+            rs = session.execute("select * from system.local")
+            print("Connected to Cassandra cluster, first row of system.local: {}".format(rs.one()))
+            return (cluster, session)
+        with_local_cluster.retry_with(stop=stop_after_attempt(5), wait=wait_fixed(3))(validationFn)
 
         try:
             if os.path.exists(TOX_CONFIG):
