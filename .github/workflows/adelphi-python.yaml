@@ -19,6 +19,6 @@ jobs:
         python-version: '3.x'
     - name: Install dependencies
       run: |
-        cd python/adelphi
-        pip install -r test-requirements.txt
-        python bin/test-adelphi -c 2.1.22 -p py2
+        cd python
+        pip install ./adelphi
+        test-adelphi -c 2.1.22 -p py2
