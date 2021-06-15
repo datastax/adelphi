@@ -25,4 +25,5 @@ jobs:
         pip install -r ./test-requirements.txt
     - name: Execute tests
       run: |
+        cd python/adelphi
         test-adelphi
