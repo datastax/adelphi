@@ -23,4 +23,6 @@ jobs:
         pip install ./adelphi
         cd adelphi
         pip install -r ./test-requirements.txt
-        test-adelphi -c 2.1.22 -p py2
+    - name: Execute tests
+      run: |
+        test-adelphi
