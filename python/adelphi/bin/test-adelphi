@@ -108,8 +108,7 @@ def runtests(cassandra, python, pytest):
             # cmdline() will raise SystemExit when it's done so trap that here to avoid
             # exiting all the things
             try:
-                status = tox.cmdline(tox_args)
-                print("tox status: {}".format(status))
+                tox.cmdline(tox_args)
             except SystemExit as exc:
                 exitCodes.append(exc.code)
         except Exception as exc:
