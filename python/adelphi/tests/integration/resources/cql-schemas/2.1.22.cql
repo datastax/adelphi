@@ -2,7 +2,7 @@ CREATE KEYSPACE IF NOT EXISTS ks_0 WITH replication = {'class': 'SimpleStrategy'
 
 CREATE TYPE IF NOT EXISTS ks_0.udt_0 (
     fld_0 text,
-    fld_2 int
+    fld_1 int
 );
 
 CREATE TYPE IF NOT EXISTS ks_0.udt_1 (
