@@ -11,6 +11,7 @@
 import configparser
 import os
 import re
+import sys
 
 from adelphi.store import with_local_cluster
 
@@ -85,6 +86,7 @@ def runtests(cassandra, python, pytest):
 
     cassandra_versions = resolveCassandraVersions(cassandra)
     print("Cassandra versions to test: {}".format(','.join(cassandra_versions)))
+    exitCodes = []
     for version in resolveCassandraVersions(cassandra_versions):
 
         print("Running test suite for Cassandra version {}".format(version))
@@ -108,13 +110,13 @@ def runtests(cassandra, python, pytest):
             try:
                 status = tox.cmdline(tox_args)
                 print("tox status: {}".format(status))
-            except SystemExit:
-                pass
+            except SystemExit as exc:
+                exitCodes.append(exc.code)
         except Exception as exc:
             print("Exception running tests for Cassandra version {}".format(version), exc)
         finally:
             container.stop()
-
+    sys.exit(sum(1 for x in exitCodes if x != 0))
 
 if __name__ == '__main__':
     runtests(obj={})
