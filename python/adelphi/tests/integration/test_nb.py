@@ -49,7 +49,6 @@ class TestNb(SchemaTestCase):
 
     # ========================== Test functions ==========================
     def test_stdout(self):
-        print("All keyspaces: {}".format(getAllKeyspaces()))
         stdoutPath = self.stdoutPath(self.version)
         stderrPath = self.stderrPath(self.version)
         subprocess.run("adelphi export-nb > {} 2>> {}".format(stdoutPath, stderrPath), shell=True)
