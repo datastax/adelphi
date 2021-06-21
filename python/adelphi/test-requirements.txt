@@ -1,0 +1,5 @@
+click ~= 7.1
+cassandra-driver ~= 3.24
+docker ~= 4.4
+tenacity ~= 7.0
+tox ~= 3.22
