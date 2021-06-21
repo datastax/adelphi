@@ -20,7 +20,7 @@ import tox
 
 
 # Default C* versions to include in all integration tests
-DEFAULT_CASSANDRA_VERSIONS = ["2.1.22", "2.2.19", "3.0.23", "3.11.9", "4.0-rc1"]
+DEFAULT_CASSANDRA_VERSIONS = ["2.1.22", "2.2.19", "3.0.23", "3.11.10", "4.0-rc1"]
 
 TOX_DEPENDENCIES = """pytest
     subprocess32 ~= 3.5
