@@ -1,0 +1,13 @@
+############################ 
+# Config overrides for KIND
+# Used in integration tests
+# Runs against C* trunk 
+############################
+
+storageClassName: standard
+
+target:
+  dc: dc2
+  clusterName: target
+  version: "4.0.0"
+  git_identifier: trunk
