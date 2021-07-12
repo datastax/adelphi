@@ -3,8 +3,8 @@ kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 containerdConfigPatches:
   - |-
-  [plugins."io.containerd.grpc.v1.cri".registry.mirrors."{{ . }}"]
-    endpoint = ["http://{{ . }}"]
+  [plugin."io.containerd.grpc.v1.cri".registry.configs."docker-registry".tls]
+    insecure_skip_verify = true
 nodes:
 - role: control-plane
 - role: worker
