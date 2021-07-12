@@ -3,7 +3,7 @@ kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 containerdConfigPatches:
 - |-
-  [plugin."io.containerd.grpc.v1.cri".registry.configs."docker-registry".tls]
+  [plugin."io.containerd.grpc.v1.cri".registry.configs."*".tls]
     insecure_skip_verify = true
 nodes:
 - role: control-plane
