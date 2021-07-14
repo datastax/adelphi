@@ -18,10 +18,7 @@ jobs:
           gunzip argo-linux-amd64.gz
           # Make binary executable
           chmod +x argo-linux-amd64
-          # Move binary to path
-          mv ./argo-linux-amd64 /usr/local/bin/argo
-          # Test installation
-          argo version
+          ./argo-linux-amd64 version
       - name: Create Kind Cluster
         uses: helm/kind-action@v1.1.0
         with: 
@@ -38,4 +35,4 @@ jobs:
       - name: Install Chart and Run Workflow (2nd attempt in case of timeout)
         run: helm install adelphi helm/adelphi -n cass-operator -f helm/adelphi/tests/kind-values-trunk.yaml --debug --wait || true
       - name: Argo Watch
-        run: argo watch -n cass-operator @latest
+        run: ./argo-linux-amd64 watch -n cass-operator @latest
