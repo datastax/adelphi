@@ -22,8 +22,8 @@ jobs:
       - name: Create Kind Cluster
         uses: helm/kind-action@v1.1.0
         with: 
-          version: v0.10.0
-          node_image: kindest/node:v1.20.7
+          version: v0.11.1
+          node_image: kindest/node:v1.21.1
           cluster_name: adelphi-integration-tests
           config: helm/adelphi/tests/kind-config-3-workers.yaml
       - name: Install Chart and Run Workflow
