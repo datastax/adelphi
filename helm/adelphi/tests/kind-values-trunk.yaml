@@ -6,6 +6,8 @@
 
 storageClassName: standard
 
+clusterSize: 3
+
 target:
   dc: dc2
   clusterName: target
