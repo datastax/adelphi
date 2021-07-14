@@ -28,11 +28,11 @@ jobs:
           config: helm/adelphi/tests/kind-config-3-workers.yaml
       - name: Install Chart and Run Workflow
         run: helm install adelphi helm/adelphi -n cass-operator -f helm/adelphi/tests/kind-values-trunk.yaml --debug --wait || true
+      - name: Install Chart and Run Workflow (2nd attempt in case of timeout)
+        run: helm install adelphi helm/adelphi -n cass-operator -f helm/adelphi/tests/kind-values-trunk.yaml --debug || true
       - name: Wait for Workflow Server
         run: |
-          sleep 10
-          kubectl wait pod --for=condition=Ready -l app=argo-server -n cass-operator --timeout=10m
-      - name: Install Chart and Run Workflow (2nd attempt in case of timeout)
-        run: helm install adelphi helm/adelphi -n cass-operator -f helm/adelphi/tests/kind-values-trunk.yaml --debug --wait || true
+          sleep 30
+          kubectl wait pod --for=condition=Ready -l app=argo-server -n cass-operator --timeout=10m      
       - name: Argo Watch
         run: ./argo-linux-amd64 watch -n cass-operator @latest
