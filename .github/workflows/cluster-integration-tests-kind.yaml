@@ -1,0 +1,41 @@
+name: Cluster-based Integration Tests (KIND)
+on: [push, pull_request]
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          token: ${{ github.token }}
+      - name: Install Helm
+        uses: azure/setup-helm@v1
+      - name: Install Argo
+        run: |
+          # Download the binary
+          curl -sLO https://github.com/argoproj/argo-workflows/releases/download/v3.1.1/argo-linux-amd64.gz
+          # Unzip
+          gunzip argo-linux-amd64.gz
+          # Make binary executable
+          chmod +x argo-linux-amd64
+          # Move binary to path
+          mv ./argo-linux-amd64 /usr/local/bin/argo
+          # Test installation
+          argo version
+      - name: Create Kind Cluster
+        uses: helm/kind-action@v1.1.0
+        with: 
+          version: v0.10.0
+          node_image: kindest/node:v1.20.2
+          cluster_name: adelphi-integration-tests
+          config: helm/adelphi/tests/kind-config-3-workers.yaml
+      - name: Install Chart and Run Workflow
+        run: helm install adelphi helm/adelphi -n cass-operator -f helm/adelphi/tests/kind-values-trunk.yaml --debug --wait || true
+      - name: Wait for Workflow Server
+        run: |
+          sleep 10
+          kubectl wait pod --for=condition=Ready -l app=argo-server -n cass-operator --timeout=10m
+      - name: Install Chart and Run Workflow (2nd attempt in case of timeout)
+        run: helm install adelphi helm/adelphi -n cass-operator -f helm/adelphi/tests/kind-values-trunk.yaml --debug --wait || true
+      - name: Argo Watch
+        run: argo watch -n cass-operator @latest
