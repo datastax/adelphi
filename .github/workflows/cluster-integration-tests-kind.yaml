@@ -35,6 +35,5 @@ jobs:
           sleep 30
           kubectl get pods -n cass-operator
           ./argo-linux-amd64 get -n cass-operator @latest
-          kubectl wait pod --for=condition=Ready -l app=argo-server -n cass-operator --timeout=10m      
       - name: Argo Watch
         run: ./argo-linux-amd64 watch -n cass-operator @latest
