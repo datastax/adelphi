@@ -33,7 +33,7 @@ jobs:
       - name: Wait for Workflow Server
         run: |
           sleep 30
-          kubectl get pods -n cass-operator
+          kubectl get all -A
           ./argo-linux-amd64 get -n cass-operator @latest
       - name: Argo Watch
         run: ./argo-linux-amd64 watch -n cass-operator @latest
