@@ -1,3 +1,4 @@
+import difflib
 import glob
 import logging
 import os
@@ -15,13 +16,19 @@ else:
     import subprocess
 
 from tests.integration import SchemaTestCase, setupSchema, getAllKeyspaces, dropNewKeyspaces
-from tests.util.schema_diff import cqlDigestGenerator
 from tests.util.schema_util import get_schema
 
 log = logging.getLogger('adelphi')
 
 CQL_REFERENCE_SCHEMA_PATH = "tests/integration/resources/cql-schemas/{}.cql"
 CQL_REFERENCE_KS0_SCHEMA_PATH = "tests/integration/resources/cql-schemas/{}-ks0.cql"
+
+def linesWithNewline(f):
+    rv = f.readlines()
+    lastLine = rv[-1]
+    if not lastLine.endswith("\n"):
+        rv[-1] = lastLine + "\n"
+    return rv
 
 class TestCql(SchemaTestCase):
 
@@ -51,24 +58,20 @@ class TestCql(SchemaTestCase):
 
 
     def compareToReferenceCql(self, referencePath, comparePath):
-        referenceDict = dict(cqlDigestGenerator(referencePath))
-        compareDict = dict(cqlDigestGenerator(comparePath))
-        referenceDigests = set(referenceDict.keys())
-        compareDigests =set(compareDict.keys())
+        with open(referencePath) as referenceFile, open(comparePath) as compareFile:
+            diffGen = difflib.unified_diff( \
+                linesWithNewline(compareFile), \
+                linesWithNewline(referenceFile), \
+                fromfile=os.path.basename(comparePath), \
+                tofile=os.path.basename(referencePath))
 
-        referenceOnlySet = referenceDigests - compareDigests
-        if len(referenceOnlySet) > 0:
-            log.info("Statements in reference file {} but not in compare file {}:".format(referencePath, comparePath))
-            for digest in referenceOnlySet:
-                log.info(referenceDict[digest])
-        compareOnlySet = compareDigests - referenceDigests
-        if len(compareOnlySet) > 0:
-            log.info("Statements in compare file {} but not in reference file {}:".format(comparePath, referencePath))
-            for digest in compareOnlySet:
-                log.info(compareDict[digest])
+            log.info("Diff of generated file against reference file")
+            diffEmpty = True
+            for line in diffGen:
+                diffEmpty = False
+                log.info(line)
 
-        self.assertEqual(set(referenceDict.values()), set(compareDict.values()))
-
+            self.assertTrue(diffEmpty)
 
     # ========================== Test functions ==========================
     def test_stdout(self):
