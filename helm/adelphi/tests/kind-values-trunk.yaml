@@ -6,7 +6,7 @@
 
 storageClassName: standard
 
-clusterSize: 3
+clusterSize: 1
 
 target:
   dc: dc2
