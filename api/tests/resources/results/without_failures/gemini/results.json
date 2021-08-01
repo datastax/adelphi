@@ -1,0 +1,41 @@
+{
+     "gemini_version": "1.7.3",
+     "result": {
+         "write_ops": 22239,
+         "write_errors": 0,
+         "read_ops": 35,
+         "read_errors": 0
+     },
+     "schema": {
+         "keyspace": {
+             "name": "testkeyspace",
+             "replication": {
+                 "class": "SimpleStrategy",
+                 "replication_factor": "1"
+             },
+             "oracle_replication": {
+                 "class": "SimpleStrategy",
+                 "replication_factor": "1"
+             }
+         },
+         "tables": [
+             {
+                 "name": "testtable",
+                 "partition_keys": [
+                     {
+                         "name": "key",
+                         "type": "text"
+                     }
+                 ],
+                 "clustering_keys": [],
+                 "columns": [
+                     {
+                         "name": "value",
+                         "type": "text"
+                     }
+                 ],
+                 "known_issues": null
+             }
+         ]
+     }
+ }

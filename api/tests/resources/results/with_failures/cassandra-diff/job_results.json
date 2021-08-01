@@ -1,0 +1,1 @@
+{"job_id": "b5ecbd93-bd8c-4782-af33-64f9700c0d20", "qualified_table_name": "testkeyspace.testtable", "matched_partitions": 1000, "matched_rows": 1000, "matched_values": 2000, "mismatched_partitions": 1000, "mismatched_values": 1000, "partitions_only_in_source": 0, "partitions_only_in_target": 0, "skipped_partitions": 0}
