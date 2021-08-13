@@ -19,7 +19,7 @@ data:
     COPY management-api-server/pom.xml ./management-api-server/pom.xml
     # this duplicates work done in the next steps, but this should provide
     # a solid cache layer that only gets reset on pom.xml changes
-    RUN mvn -q -ff -T 1C install && rm -rf target
+    RUN mvn -q -ff -T 1C install -DskipTests && rm -rf target
 
     COPY management-api-agent-common ./management-api-agent-common
     COPY management-api-agent-3.x ./management-api-agent-3.x
@@ -34,7 +34,7 @@ data:
         if test ! -e datastax-mcac-agent-${METRICS_COLLECTOR_VERSION}.tar.gz; then curl -L -O "https://github.com/datastax/metric-collector-for-apache-cassandra/releases/download/v${METRICS_COLLECTOR_VERSION}/datastax-mcac-agent-${METRICS_COLLECTOR_VERSION}.tar.gz"; fi && \
         tar --directory ${MCAC_PATH} --strip-components 1 --gzip --extract --file datastax-mcac-agent-${METRICS_COLLECTOR_VERSION}.tar.gz
 
-    FROM ${REGISTRY}:30000/adelphi/cassandra
+    FROM localhost:30000/adelphi/cassandra
 
     ENV CASSANDRA_PATH /opt/cassandra
     ENV MAAC_PATH /opt/management-api
