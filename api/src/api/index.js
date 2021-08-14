@@ -44,8 +44,10 @@ function checkErrors(results) {
   generated results files.
 */
 export function resultsSummary(req, res) {
+  console.log("GET /api/results/summary");
   /* Base path for the results file */
   const DATA_PATH = process.env.DATA_PATH;
+  console.log("Data path: " + DATA_PATH);
 
   const result = {
     gemini: geminiSummary(readDataFile(DATA_PATH + "/gemini/results.json")),
