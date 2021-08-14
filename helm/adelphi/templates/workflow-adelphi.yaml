@@ -18,8 +18,6 @@ spec:
         when: "{{ not (empty .Values.target.git_identifier) }}"
         arguments:
           parameters:
-          - name: registry_ip
-            value: "{{`{{tasks.start-registry.ip}}`}}"
           - name: git_identifier
             value: "{{ .Values.target.git_identifier }}"
         templateRef:
@@ -28,10 +26,6 @@ spec:
       - name: build-cassandra-mgmt-api
         depends: "build-cassandra"
         when: "{{ not (empty .Values.target.git_identifier) }}"
-        arguments:
-          parameters:
-          - name: registry_ip
-            value: "{{`{{tasks.start-registry.ip}}`}}"
         templateRef:
           name: cassandra-mgmt-image
           template: cassandra-mgmt-image-template
@@ -41,10 +35,6 @@ spec:
           template: start-source-cluster
       - name: cassandra-target
         depends: "build-cassandra-mgmt-api"
-        arguments:
-          parameters:
-          - name: registry_ip
-            value: "{{`{{tasks.start-registry.ip}}`}}"
         templateRef:
           name: cassandra-clusters
           template: start-target-cluster
@@ -70,10 +60,6 @@ spec:
           template: nosqlbench-target
       - name: run-diff
         depends: "nosqlbench-source && nosqlbench-target"
-        arguments:
-          parameters:
-          - name: registry_ip
-            value: "{{`{{tasks.start-registry.ip}}`}}"
         templateRef:
           name: spark-job
           template: spark-job-template
