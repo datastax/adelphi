@@ -65,13 +65,15 @@ class TestCql(SchemaTestCase):
             diffGen = difflib.unified_diff( \
                 compareLines, \
                 referenceLines, \
-                fromfile=os.path.basename(comparePath), \
-                tofile=os.path.basename(referencePath))
+                fromfile=os.path.abspath(comparePath), \
+                tofile=os.path.abspath(referencePath))
 
             diffEmpty = True
             for line in diffGen:
                 if diffEmpty:
-                    print("Diff of generated file ({}) against reference file ({})".format(comparePath, referencePath))
+                    print("Diff of generated file ({}) against reference file ({})".format( \
+                        os.path.basename(comparePath), \
+                        os.path.basename(referencePath)))
                 diffEmpty = False
                 print(line.strip())
 
