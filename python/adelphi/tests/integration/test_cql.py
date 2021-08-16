@@ -59,19 +59,24 @@ class TestCql(SchemaTestCase):
 
     def compareToReferenceCql(self, referencePath, comparePath):
         with open(referencePath) as referenceFile, open(comparePath) as compareFile:
+            compareLines = linesWithNewline(compareFile)
+            referenceLines = linesWithNewline(referenceFile)
+
             diffGen = difflib.unified_diff( \
-                linesWithNewline(compareFile), \
-                linesWithNewline(referenceFile), \
+                compareLines, \
+                referenceLines, \
                 fromfile=os.path.basename(comparePath), \
                 tofile=os.path.basename(referencePath))
 
-            log.info("Diff of generated file against reference file")
             diffEmpty = True
             for line in diffGen:
+                if diffEmpty:
+                    print("Diff of generated file ({}) against reference file ({})".format(comparePath, referencePath))
                 diffEmpty = False
-                log.info(line)
+                print(line.strip())
 
-            self.assertTrue(diffEmpty)
+            if not diffEmpty:
+                self.fail()
 
     # ========================== Test functions ==========================
     def test_stdout(self):
