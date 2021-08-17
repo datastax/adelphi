@@ -1,9 +1,10 @@
+from functools import partial
+
 from cassandra.metadata import Metadata,\
 	KeyspaceMetadata,\
 	TableMetadata,\
 	ColumnMetadata,\
 	IndexMetadata,\
-	SimpleStrategy, \
 	UserType
 
 # types compatible with C* 2.1+
@@ -93,12 +94,13 @@ def get_keyspace(name, durable_writes, strategy_class, strategy_options, sasi=Tr
 
 def get_schema(sasi=True):
 	schema = Metadata()
-	schema.keyspaces = [get_keyspace(
-		"my_ks_%s" % k,
-		True,
-		"SimpleStrategy",
-		{"replication_factor": 1},
-		sasi=sasi) for k in range(2)]
+	buildKs = partial(
+		get_keyspace,
+		durable_writes=True,
+		strategy_class="SimpleStrategy",
+		strategy_options={"replication_factor": 1},
+		sasi=sasi)
+	schema.keyspaces = [buildKs("my_ks_%s" % k) for k in range(2)]
 	return schema
 
 if __name__ == "__main__":
