@@ -61,6 +61,6 @@ export function resultsSummary(req, res) {
 
 var app = express();
 
-app.get('/results/summary', resultsSummary);
+app.get('/api/results/summary', resultsSummary);
 
 export default app;

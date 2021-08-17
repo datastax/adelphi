@@ -44,6 +44,9 @@ spec:
               value: "/results"
             - name: PORT
               value: "8181"
+            ports:
+            - name: http
+              containerPort: 8181
             volumeMounts:
             - name: gemini
               mountPath: /results/gemini
