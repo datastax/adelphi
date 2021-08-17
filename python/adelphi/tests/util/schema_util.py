@@ -92,14 +92,13 @@ def get_keyspace(name, durable_writes, strategy_class, strategy_options, sasi=Tr
 	return keyspace
 
 def get_schema(sasi=True):
-	# build a couple of keyspaces
-	keyspaces = []
-	for k in range(2):
-		keyspace = get_keyspace("my_ks_%s" % k, True, "SimpleStrategy", {"replication_factor": 1}, sasi=sasi)
-		keyspaces.append(keyspace)
-
 	schema = Metadata()
-	schema.keyspaces = keyspaces
+	schema.keyspaces = [get_keyspace(
+		"my_ks_%s" % k,
+		True,
+		"SimpleStrategy",
+		{"replication_factor": 1},
+		sasi=sasi) for k in range(2)]
 	return schema
 
 if __name__ == "__main__":

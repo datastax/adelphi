@@ -30,6 +30,7 @@ def linesWithNewline(f):
         rv[-1] = lastLine + "\n"
     return rv
 
+
 class TestCql(SchemaTestCase):
 
     # ========================== Unittest infrastructure ==========================
@@ -62,23 +63,39 @@ class TestCql(SchemaTestCase):
             compareLines = linesWithNewline(compareFile)
             referenceLines = linesWithNewline(referenceFile)
 
-            diffGen = difflib.unified_diff( \
-                compareLines, \
-                referenceLines, \
-                fromfile=os.path.abspath(comparePath), \
+            diffGen = difflib.unified_diff(
+                compareLines,
+                referenceLines,
+                fromfile=os.path.abspath(comparePath),
                 tofile=os.path.abspath(referencePath))
 
             diffEmpty = True
             for line in diffGen:
                 if diffEmpty:
-                    print("Diff of generated file ({}) against reference file ({})".format( \
-                        os.path.basename(comparePath), \
+                    print("Diff of generated file ({}) against reference file ({})".format(
+                        os.path.basename(comparePath),
                         os.path.basename(referencePath)))
                 diffEmpty = False
                 print(line.strip())
 
             if not diffEmpty:
                 self.fail()
+
+
+    def combineSchemas(self):
+        outputDirPath = self.outputDirPath(self.version)
+        allOutputFileName = "{}-all".format(self.version)
+        allOutputPath = self.outputDirPath(allOutputFileName)
+
+        outputSchemas = glob.glob("{}/*/schema".format(outputDirPath))
+        self.assertGreater(len(outputSchemas), 0)
+        with open(allOutputPath, "w+") as allOutputFile:
+            for outputSchema in outputSchemas:
+                with open(outputSchema) as outputSchemaFile:
+                    shutil.copyfileobj(outputSchemaFile, allOutputFile)
+                    allOutputFile.write("\n")
+
+        return allOutputPath
 
     # ========================== Test functions ==========================
     def test_stdout(self):
@@ -97,24 +114,9 @@ class TestCql(SchemaTestCase):
         os.mkdir(outputDirPath)
         subprocess.run("adelphi --output-dir={} export-cql --no-metadata 2>> {}".format(outputDirPath, stderrPath), shell=True)
 
-        # Basic idea here is to find all schemas written to the output dir and aggregate them into a single schema
-        # file.  We then compare this aggregated file to the reference schema.  Ordering is important here but
-        # the current keyspace names hash to something that causes individual keyspaces to be discovered in the
-        # correct order.
-        outputDirPath = self.outputDirPath(self.version)
-        allOutputFileName = "{}-all".format(self.version)
-        allOutputPath = self.outputDirPath(allOutputFileName)
-
-        outputSchemas = glob.glob("{}/*/schema".format(outputDirPath))
-        self.assertGreater(len(outputSchemas), 0)
-        with open(allOutputPath, "w+") as allOutputFile:
-            for outputSchema in outputSchemas:
-                with open(outputSchema) as outputSchemaFile:
-                    shutil.copyfileobj(outputSchemaFile, allOutputFile)
-                    allOutputFile.write("\n")
         self.compareToReferenceCql(
             CQL_REFERENCE_SCHEMA_PATH.format(self.version), 
-            allOutputPath)
+            self.combineSchemas())
 
 
     def test_some_keyspaces_stdout(self):
