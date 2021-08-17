@@ -104,10 +104,6 @@ def get_schema(sasi=True):
 	return schema
 
 if __name__ == "__main__":
-	"""
-	Use this to print the test schema.
-	The output can be used in the integration tests too.
-	"""
-        # As discussed elsewhere SASI support is disabled until https://github.com/datastax/adelphi/issues/105
-        # is completed
-	print("\n\n".join(ks.export_as_string() for ks in get_schema(sasi=False).keyspaces))
+    # As discussed elsewhere SASI support is disabled until https://github.com/datastax/adelphi/issues/105
+    # is completed
+    print("\n\n".join(ks.export_as_string() for ks in get_schema(sasi=False).keyspaces))
