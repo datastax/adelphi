@@ -33,13 +33,17 @@ def runCassandraContainer(client, version):
     return client.containers.run(name="adelphi", remove=True, detach=True, ports={9042: 9042}, image="cassandra:{}".format(version))
 
 
-def writeToxIni(version):
+def writeToxIni(version, keep_tmpdirs = False):
     config = configparser.ConfigParser()
     config["tox"] = { "envlist": "py2, py3" }
     envs = {"CASSANDRA_VERSION": version}
+    if keep_tmpdirs:
+        print("Preserving temporary directories")
+        envs["KEEP_LOGS"] = True
+    envStr = "\n    ".join(["{} = {}".format(k,v) for (k,v) in envs.items()])
     config["testenv"] = {"deps": TOX_DEPENDENCIES, \
         "commands": "pytest {posargs}", \
-        "setenv": "CASSANDRA_VERSION = {}".format(version)}
+        "setenv": envStr}
     with open(TOX_CONFIG, 'w') as configfile:
         config.write(configfile)
 
@@ -47,7 +51,8 @@ def writeToxIni(version):
 @click.option('--cassandra', '-c', multiple=True, type=str)
 @click.option('--python', '-p', multiple=True, type=click.Choice(["py2","py3"], case_sensitive = False))
 @click.option("--pytest", "-t", type=str, help="Arguments to be passed to pytest")
-def runtests(cassandra, python, pytest):
+@click.option('--keep-tmpdirs', help="Preserve temporary directories", is_flag=True)
+def runtests(cassandra, python, pytest, keep_tmpdirs):
     client = docker.from_env()
     tox_args = ["-e {}".format(py) for py in python] if python else []
     if pytest:
@@ -68,7 +73,7 @@ def runtests(cassandra, python, pytest):
         try:
             if os.path.exists(TOX_CONFIG):
                 os.remove(TOX_CONFIG)
-            writeToxIni(version)
+            writeToxIni(version, keep_tmpdirs)
 
             # cmdline() will raise SystemExit when it's done so trap that here to avoid
             # exiting all the things

@@ -23,12 +23,18 @@ log = logging.getLogger('adelphi')
 CQL_REFERENCE_SCHEMA_PATH = "tests/integration/resources/cql-schemas/{}.cql"
 CQL_REFERENCE_KS0_SCHEMA_PATH = "tests/integration/resources/cql-schemas/{}-ks0.cql"
 
-def linesWithNewline(f):
-    rv = f.readlines()
-    lastLine = rv[-1]
-    if not lastLine.endswith("\n"):
-        rv[-1] = lastLine + "\n"
-    return rv
+def linesWithNewline(fpath):
+    if not os.path.exists(fpath):
+        print("File {} does not exist")
+    if os.path.getsize(fpath) <= 0:
+        print("File {} is empty")
+    print("Reading lines for file {}".format(fpath))
+    with open(fpath) as f:
+        rv = f.readlines()
+        lastLine = rv[-1]
+        if not lastLine.endswith("\n"):
+            rv[-1] = lastLine + "\n"
+        return rv
 
 
 class TestCql(SchemaTestCase):
@@ -39,11 +45,7 @@ class TestCql(SchemaTestCase):
         self.origKeyspaces = getAllKeyspaces()
         log.info("Creating schema")
         setupSchema(self.buildSchema())
-
-
-    def tearDown(self):
-        super(TestCql, self).tearDown()
-        dropNewKeyspaces(self.origKeyspaces)
+        self.addCleanup(dropNewKeyspaces, self.origKeyspaces)
 
 
     # ========================== Helper functions ==========================
@@ -59,27 +61,26 @@ class TestCql(SchemaTestCase):
 
 
     def compareToReferenceCql(self, referencePath, comparePath):
-        with open(referencePath) as referenceFile, open(comparePath) as compareFile:
-            compareLines = linesWithNewline(compareFile)
-            referenceLines = linesWithNewline(referenceFile)
+        compareLines = linesWithNewline(comparePath)
+        referenceLines = linesWithNewline(referencePath)
 
-            diffGen = difflib.unified_diff(
-                compareLines,
-                referenceLines,
-                fromfile=os.path.abspath(comparePath),
-                tofile=os.path.abspath(referencePath))
+        diffGen = difflib.unified_diff(
+            compareLines,
+            referenceLines,
+            fromfile=os.path.abspath(comparePath),
+            tofile=os.path.abspath(referencePath))
 
-            diffEmpty = True
-            for line in diffGen:
-                if diffEmpty:
-                    print("Diff of generated file ({}) against reference file ({})".format(
-                        os.path.basename(comparePath),
-                        os.path.basename(referencePath)))
-                diffEmpty = False
-                print(line.strip())
+        diffEmpty = True
+        for line in diffGen:
+            if diffEmpty:
+                print("Diff of generated file ({}) against reference file ({})".format(
+                    os.path.basename(comparePath),
+                    os.path.basename(referencePath)))
+            diffEmpty = False
+            print(line.strip())
 
-            if not diffEmpty:
-                self.fail()
+        if not diffEmpty:
+            self.fail()
 
 
     def combineSchemas(self):
@@ -97,6 +98,7 @@ class TestCql(SchemaTestCase):
 
         return allOutputPath
 
+
     # ========================== Test functions ==========================
     def test_stdout(self):
         stdoutPath = self.stdoutPath(self.version)
@@ -105,7 +107,7 @@ class TestCql(SchemaTestCase):
 
         self.compareToReferenceCql(
             CQL_REFERENCE_SCHEMA_PATH.format(self.version), 
-            self.stdoutPath(self.version))
+            stdoutPath)
 
 
     def test_outputdir(self):
@@ -126,7 +128,7 @@ class TestCql(SchemaTestCase):
 
         self.compareToReferenceCql(
             CQL_REFERENCE_KS0_SCHEMA_PATH.format(self.version), 
-            self.stdoutPath(self.version))
+            stdoutPath)
 
 
     def test_some_keyspaces_outputdir(self):
