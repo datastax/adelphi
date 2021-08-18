@@ -39,3 +39,12 @@ jobs:
       - name: Argo Wait for Completion
         run: |
           ./argo-linux-amd64 watch -n cass-operator @latest
+      - name: Report results
+        run: |
+          kubectl -n cass-operator port-forward results-server 8080:8080 &
+          # Wait for connection to be established
+          sleep 10
+          # Print results
+          curl --silent http://localhost:3000/api/results/summary | python -m json.tool
+          # Report status code
+          curl --fail http://localhost:3000/api/results/summary
