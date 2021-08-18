@@ -20,8 +20,6 @@ spec:
           parameters:
           - name: registry_ip
             value: "{{`{{tasks.start-registry.ip}}`}}"
-          - name: git_identifier
-            value: "{{ .Values.target.git_identifier }}"
         templateRef:
           name: cassandra-image
           template: cassandra-image-template

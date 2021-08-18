@@ -11,7 +11,6 @@ spec:
     inputs:
       parameters:
       - name: registry_ip
-      - name: git_identifier
     container:
       image: gcr.io/kaniko-project/executor:v1.0.0
       args:
@@ -32,9 +31,9 @@ spec:
         - sh
         - -c
       args:
-        - git clone https://github.com/apache/cassandra.git cassandra;
+        - git clone {{ default "https://github.com/apache/cassandra.git" .Values.target.git_url }} cassandra;
           cd cassandra;
-          git checkout {{`{{inputs.parameters.git_identifier}}`}};
+          git checkout {{ .Values.target.git_identifier }};
       volumeMounts:
       - name: download
         mountPath: /download
