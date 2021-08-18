@@ -41,6 +41,9 @@ jobs:
           ./argo-linux-amd64 watch -n cass-operator @latest
       - name: Report results
         run: |
+          # Wait for Results Server to be ready
+          kubectl wait pod --for=condition=Ready -l app=results-server -n cass-operator --timeout=10m
+          # Enable port forwarding on 8080
           kubectl -n cass-operator port-forward results-server 8080:8080 &
           # Wait for connection to be established
           sleep 10
