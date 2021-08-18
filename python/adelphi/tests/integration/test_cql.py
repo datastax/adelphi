@@ -2,6 +2,7 @@ import difflib
 import glob
 import logging
 import os
+import re
 import shutil
 import sys
 
@@ -23,11 +24,13 @@ log = logging.getLogger('adelphi')
 CQL_REFERENCE_SCHEMA_PATH = "tests/integration/resources/cql-schemas/{}.cql"
 CQL_REFERENCE_KS0_SCHEMA_PATH = "tests/integration/resources/cql-schemas/{}-ks0.cql"
 
+KEYSPACE_LINE_REGEX = re.compile(r'\s*CREATE KEYSPACE IF NOT EXISTS (\w+) ')
+
 def linesWithNewline(fpath):
     if not os.path.exists(fpath):
-        print("File {} does not exist")
+        print("File {} does not exist".format(fpath))
     if os.path.getsize(fpath) <= 0:
-        print("File {} is empty")
+        print("File {} is empty".format(fpath))
     print("Reading lines for file {}".format(fpath))
     with open(fpath) as f:
         rv = f.readlines()
@@ -35,6 +38,15 @@ def linesWithNewline(fpath):
         if not lastLine.endswith("\n"):
             rv[-1] = lastLine + "\n"
         return rv
+
+
+def extractKeyspaceName(schemaPath):
+    with open(schemaPath) as schemaFile:
+        for line in schemaFile:
+            matcher = KEYSPACE_LINE_REGEX.match(line)
+            if matcher:
+                return matcher.group(1)
+    return None
 
 
 class TestCql(SchemaTestCase):
@@ -88,13 +100,14 @@ class TestCql(SchemaTestCase):
         allOutputFileName = "{}-all".format(self.version)
         allOutputPath = self.outputDirPath(allOutputFileName)
 
-        outputSchemas = glob.glob("{}/*/schema".format(outputDirPath))
-        self.assertGreater(len(outputSchemas), 0)
+        schemaPaths = glob.glob("{}/*/schema".format(outputDirPath))
+        self.assertGreater(len(schemaPaths), 0)
+        schemas = { extractKeyspaceName(p) : p for p in schemaPaths}
+        sortedKeyspaces = sorted(schemas.keys())
+
         with open(allOutputPath, "w+") as allOutputFile:
-            for outputSchema in outputSchemas:
-                with open(outputSchema) as outputSchemaFile:
-                    shutil.copyfileobj(outputSchemaFile, allOutputFile)
-                    allOutputFile.write("\n")
+            cqlStr = "\n\n".join(open(schemas[ks]).read() for ks in sortedKeyspaces)
+            allOutputFile.write(cqlStr)
 
         return allOutputPath
 
