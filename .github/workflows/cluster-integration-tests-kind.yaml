@@ -47,8 +47,7 @@ jobs:
           kubectl -n cass-operator port-forward results-server 8080:8080 &
           # Wait for connection to be established
           sleep 30
-          curl --silent http://localhost:8080/api/results/summary
           # Pretty-print results
           curl --silent http://localhost:8080/api/results/summary | python -m json.tool
           # Report status code
-          curl --fail http://localhost:8080/api/results/summary
+          curl --silent --fail http://localhost:8080/api/results/summary
