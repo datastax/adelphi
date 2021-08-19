@@ -39,5 +39,5 @@ blocks:
     type: write
 scenarios:
   TEMPLATE(scenarioname,default):
-  - run driver=cql tags=phase:rampup cycles=1000 threads=auto
-  - run driver=cql tags=phase:main cycles=1000 threads=auto
+  - run driver=cql tags=phase:rampup cycles=TEMPLATE(rampup-cycles,1000) threads=auto
+  - run driver=cql tags=phase:main cycles=TEMPLATE(main-cycles,1000) threads=auto
