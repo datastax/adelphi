@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: schema-source-configmap
+  namespace: {{ .Values.namespace }}
+data:
+  schema.cql: |-
+{{ default .Values.cql_schema .Values.source.cql_schema | indent 4}}
