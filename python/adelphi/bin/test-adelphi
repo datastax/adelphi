@@ -52,8 +52,7 @@ def writeToxIni(version, keep_tmpdirs = False):
 @click.option('--python', '-p', multiple=True, type=click.Choice(["py2","py3"], case_sensitive = False))
 @click.option("--pytest", "-t", type=str, help="Arguments to be passed to pytest")
 @click.option('--keep-tmpdirs', help="Preserve temporary directories", is_flag=True)
-@click.option('--no-gen-tox', help="Do not generate a tox.ini file", is_flag=True)
-def runtests(cassandra, python, pytest, keep_tmpdirs, no_gen_tox):
+def runtests(cassandra, python, pytest, keep_tmpdirs):
     client = docker.from_env()
     tox_args = ["-e {}".format(py) for py in python] if python else []
     if pytest:
@@ -72,11 +71,9 @@ def runtests(cassandra, python, pytest, keep_tmpdirs, no_gen_tox):
         connectToLocalCassandra()
 
         try:
-            if not no_gen_tox:
-                print("Generating tox.ini file")
-                if os.path.exists(TOX_CONFIG):
-                    os.remove(TOX_CONFIG)
-                writeToxIni(version, keep_tmpdirs)
+            if os.path.exists(TOX_CONFIG):
+                os.remove(TOX_CONFIG)
+            writeToxIni(version, keep_tmpdirs)
 
             # cmdline() will raise SystemExit when it's done so trap that here to avoid
             # exiting all the things
