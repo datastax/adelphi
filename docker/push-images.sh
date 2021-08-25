@@ -12,5 +12,5 @@ docker tag gemini:1.7.3 $REPO/gemini:1.7.3
 docker push $REPO/gemini:1.7.3
 
 # Push harry image
-docker tag harry:252dc6 $REPO/harry:252dc6
-docker push $REPO/harry:252dc6
+docker tag harry:f569b9 $REPO/harry:f569b9
+docker push $REPO/harry:f569b9
