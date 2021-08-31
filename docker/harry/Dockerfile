@@ -13,6 +13,9 @@ RUN mvn -pl '!harry-integration' clean install -DskipTests
 
 FROM adoptopenjdk/openjdk11
 
+RUN apt-get update
+RUN apt-get install -y gettext-base
+
 WORKDIR /cassandra-harry
 
 COPY --from=builder /cassandra-harry/harry-integration-external/target/harry-integration-external-0.0.1-SNAPSHOT.jar .

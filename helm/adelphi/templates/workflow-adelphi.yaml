@@ -58,13 +58,23 @@ spec:
         templateRef:
           name: schema-job
           template: configure-schema
-      - name: nosqlbench-source
+      - name: harry-source
         depends: "configure-schema"
+        templateRef:
+          name: harry-job
+          template: harry-source
+      - name: harry-target
+        depends: "configure-schema"
+        templateRef:
+          name: harry-job
+          template: harry-target
+      - name: nosqlbench-source
+        depends: "harry-source && harry-target"
         templateRef:
           name: nosqlbench-job
           template: nosqlbench-source
       - name: nosqlbench-target
-        depends: "configure-schema"
+        depends: "harry-source && harry-target"
         templateRef:
           name: nosqlbench-job
           template: nosqlbench-target

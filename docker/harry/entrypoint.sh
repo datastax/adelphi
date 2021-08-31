@@ -19,6 +19,10 @@ cat $CONFIG_FILE
 OUTPUT_DIR=$2
 CLUSTER_STATE_DIR=/cassandra-harry/cluster-state
 
+# Replace env vars into a new config file
+envsubst < $CONFIG_FILE > /cassandra-harry/config.yaml
+CONFIG_FILE=/cassandra-harry/config.yaml
+
 java -ea \
      -Xms4g \
      -Xmx4g \
