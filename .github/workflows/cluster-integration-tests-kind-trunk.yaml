@@ -1,4 +1,4 @@
-name: Cluster-based Integration Tests (KIND)
+name: Integration Tests (trunk)
 on: [push, pull_request]
 jobs:
   integration-tests:
