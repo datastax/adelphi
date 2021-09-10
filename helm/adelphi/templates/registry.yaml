@@ -13,7 +13,7 @@ spec:
         app: docker-registry
     daemon: true
     container:
-      image: registry:2.6.2
+      image: registry:2.7.1
       env:
         - name: REGISTRY_HTTP_ADDR
           value: ":30000"
