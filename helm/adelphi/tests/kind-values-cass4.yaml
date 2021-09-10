@@ -1,0 +1,15 @@
+############################ 
+# Config overrides for KIND
+# Used in integration tests
+# Runs against C* 4.0 
+############################
+
+storageClassName: standard
+
+clusterSize: 1
+
+target:
+  dc: dc2
+  clusterName: target
+  version: "4.0.0"
+  git_identifier:
