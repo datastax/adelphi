@@ -1,0 +1,79 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: harry-job
+  namespace: {{ .Values.namespace }}
+  annotations:
+    "helm.sh/hook": pre-install
+spec:
+  templates:
+  - name: harry-source
+    container:
+      image: adelphitools/harry:f569b9
+      env:
+      - name: hostname
+        value: {{ .Values.source.clusterName }}-{{ .Values.source.dc }}-service
+      - name: port
+        value: "9042"
+      - name: username
+        value: {{ .Values.source.clusterName }}-superuser
+      - name: password
+        valueFrom:
+          secretKeyRef:
+            name: {{ .Values.source.clusterName }}-superuser
+            key: password
+      args: [
+        "/config/harry.yaml",
+        "/results"
+      ]
+      dnsConfig:
+        options:
+        - name: ndots
+          value: "1"
+      volumeMounts:
+      - name: results-pv
+        mountPath: /results
+      - name: config
+        mountPath: /config
+    volumes:
+    - name: results-pv
+      persistentVolumeClaim:
+        claimName: harry-source-pvc
+    - name: config
+      configMap:
+        name: harry-configmap
+  - name: harry-target
+    container:
+      image: adelphitools/harry:f569b9
+      env:
+      - name: hostname
+        value: {{ .Values.target.clusterName }}-{{ .Values.target.dc }}-service
+      - name: port
+        value: "9042"
+      - name: username
+        value: {{ .Values.target.clusterName }}-superuser
+      - name: password
+        valueFrom:
+          secretKeyRef:
+            name: {{ .Values.target.clusterName }}-superuser
+            key: password
+      args: [
+        "/config/harry.yaml",
+        "/results"
+      ]
+      dnsConfig:
+        options:
+        - name: ndots
+          value: "1"
+      volumeMounts:
+      - name: results-pv
+        mountPath: /results
+      - name: config
+        mountPath: /config
+    volumes:
+    - name: results-pv
+      persistentVolumeClaim:
+        claimName: harry-target-pvc
+    - name: config
+      configMap:
+        name: harry-configmap

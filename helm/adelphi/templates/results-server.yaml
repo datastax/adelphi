@@ -31,6 +31,10 @@ spec:
               mountPath: /etc/nginx/conf.d
             - name: gemini
               mountPath: /results/gemini
+            - name: harry-source
+              mountPath: /results/harry-source
+            - name: harry-target
+              mountPath: /results/harry-target
             - name: nosqlbench-source
               mountPath: /results/nosqlbench-source
             - name: nosqlbench-target
@@ -44,6 +48,12 @@ spec:
           - name: gemini
             persistentVolumeClaim:
               claimName: gemini-pvc
+          - name: harry-source
+            persistentVolumeClaim:
+              claimName: harry-source-pvc
+          - name: harry-target
+            persistentVolumeClaim:
+              claimName: harry-target-pvc
           - name: nosqlbench-source
             persistentVolumeClaim:
               claimName: nosqlbench-source-pvc

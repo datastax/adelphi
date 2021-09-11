@@ -17,3 +17,4 @@ fi
 docker build --tag spark:3.0.0 -f $SPARK_DOCKERFILE spark
 docker build --tag cassandra-diff:4c9bc4 cassandra-diff
 docker build --tag gemini:1.7.3 gemini
+docker build --tag harry:f569b9 harry
