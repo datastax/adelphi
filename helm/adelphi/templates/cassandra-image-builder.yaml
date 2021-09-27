@@ -52,9 +52,9 @@ spec:
         - sh
         - -c
       args:
-        - git clone https://github.com/apache/cassandra.git cassandra;
+        - git clone {{ default "https://github.com/apache/cassandra.git" .Values.target.git_url }} cassandra;
           cd cassandra;
-          git checkout {{`{{inputs.parameters.git_identifier}}`}};
+          git checkout {{ .Values.target.git_identifier }};
       volumeMounts:
       - name: download
         mountPath: /download

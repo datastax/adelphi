@@ -8,6 +8,8 @@ metadata:
 spec:
   templates:
   - name: configure-schema
+    retryStrategy:
+      limit: 10
     container:
       image: alpine
       command: ["sh", "-c", "-e"]

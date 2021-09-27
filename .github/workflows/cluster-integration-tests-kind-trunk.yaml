@@ -42,9 +42,13 @@ jobs:
       - name: Report results
         run: |
           sleep 30
+          kubectl describe pvc gemini-pvc -n cass-operator
+          kubectl describe pvc nosqlbench-source-pvc -n cass-operator
+          kubectl describe pvc nosqlbench-target-pvc -n cass-operator
+          kubectl describe pvc cassandra-diff-pvc -n cass-operator
           kubectl describe pod results-server -n cass-operator
           # Wait for Results Server to be ready
-          kubectl wait pod --for=condition=Ready -l app=results-server -n cass-operator --timeout=10m
+          kubectl wait pod --for=condition=Ready -l app=results-server -n cass-operator --timeout=1m
           # Enable port forwarding on 8080
           kubectl -n cass-operator port-forward results-server 8080:8080 &
           # Wait for connection to be established
