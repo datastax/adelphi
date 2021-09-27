@@ -1,0 +1,20 @@
+name: API tests
+on: [push, pull_request]
+jobs:
+  npm-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          token: ${{ github.token }}
+      - name: Use Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: '16.x'
+      - run: npm ci
+      - run: npm run build --if-present
+      - run: npm test

@@ -10,19 +10,40 @@ spec:
   - name: cassandra-image-template
     inputs:
       parameters:
-      - name: registry_ip
+      - name: git_identifier
     container:
-      image: gcr.io/kaniko-project/executor:v1.0.0
+      image: gcr.io/kaniko-project/executor:v1.6.0-debug
+      command:
+        - sh
+        - -c
       args:
-      - --dockerfile=/dockerfile/Dockerfile
-      - --context=dir:///workspace
-      - {{`--destination={{inputs.parameters.registry_ip}}:30000/adelphi/cassandra`}}
-      - --insecure=true
+        - until `wget --spider http://localhost:30000`; do echo sleep && sleep 1; done;
+          /kaniko/executor --dockerfile=/dockerfile/Dockerfile
+          --context=dir:///workspace
+          --destination=localhost:30000/adelphi/cassandra
+          --insecure=true;
       volumeMounts:
         - name: workspace
           mountPath: /workspace
         - name: dockerfile
           mountPath: /dockerfile
+    sidecars:
+    - name : nginx
+      image: nginx
+      ports:
+        - containerPort: 30000
+          hostPort: 30000
+          protocol: TCP
+      resources:
+        limits:
+          memory: 200Mi
+          cpu: 1
+        requests:
+          memory: 100Mi
+          cpu: 100m
+      volumeMounts:
+      - name: proxy-config
+        mountPath: /etc/nginx/conf.d
     initContainers:
     - name: clone-cassandra
       image: alpine/git
@@ -43,9 +64,9 @@ spec:
         - sh
         - -c
       args:
-        - wget -O - https://downloads.apache.org/ant/binaries/apache-ant-1.9.15-bin.tar.gz | tar -zxvf -;
-          chmod +x /apache-ant-1.9.15/bin/ant;
-          ln -s /apache-ant-1.9.15/bin/ant /usr/bin/ant;
+        - wget -O - https://downloads.apache.org/ant/binaries/apache-ant-1.10.11-bin.tar.gz | tar -zxvf -;
+          chmod +x /apache-ant-1.10.11/bin/ant;
+          ln -s /apache-ant-1.10.11/bin/ant /usr/bin/ant;
           cd /download/cassandra;
           ant artifacts -Duse.jdk11=true -Dant.gen-doc.skip=true -Dno-javadoc=true;
           mkdir /workspace/cassandra;
@@ -66,3 +87,6 @@ spec:
     - name: dockerfile
       configMap:
         name: cassandra-dockerfile-configmap
+    - name: proxy-config
+      configMap:
+        name: registry-proxy-configmap

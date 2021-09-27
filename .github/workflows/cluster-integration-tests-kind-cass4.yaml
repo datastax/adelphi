@@ -1,0 +1,55 @@
+name: Integration Tests (4.0)
+on: [push, pull_request]
+jobs:
+  integration-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          token: ${{ github.token }}
+      - name: Install Helm
+        uses: azure/setup-helm@v1
+      - name: Install Argo
+        run: |
+          # Download the binary
+          curl -sLO https://github.com/argoproj/argo-workflows/releases/download/v3.1.1/argo-linux-amd64.gz
+          # Unzip
+          gunzip argo-linux-amd64.gz
+          # Make binary executable
+          chmod +x argo-linux-amd64
+          ./argo-linux-amd64 version
+      - name: Create Kind Cluster
+        uses: helm/kind-action@v1.1.0
+        with: 
+          version: v0.11.1
+          node_image: kindest/node:v1.21.1
+          cluster_name: adelphi-integration-tests
+          config: helm/adelphi/tests/kind-config-3-workers.yaml
+      - name: Install Chart and Run Workflow
+        run: helm install adelphi helm/adelphi -n cass-operator -f helm/adelphi/tests/kind-values-cass4.yaml --debug --wait || true
+      - name: Install Chart and Run Workflow (2nd attempt in case of timeout)
+        run: helm install adelphi helm/adelphi -n cass-operator -f helm/adelphi/tests/kind-values-cass4.yaml --debug || true
+      - name: Wait for Workflow Server ready status
+        run: |
+          sleep 30
+          kubectl get all -A
+          ./argo-linux-amd64 get -n cass-operator @latest
+          kubectl wait pod --for=condition=Ready -l app=argo-server -n cass-operator --timeout=10m
+      - name: Argo Wait for Completion
+        run: |
+          ./argo-linux-amd64 watch -n cass-operator @latest
+      - name: Report results
+        run: |
+          sleep 30
+          kubectl describe pod results-server -n cass-operator
+          # Wait for Results Server to be ready
+          kubectl wait pod --for=condition=Ready -l app=results-server -n cass-operator --timeout=10m
+          # Enable port forwarding on 8080
+          kubectl -n cass-operator port-forward results-server 8080:8080 &
+          # Wait for connection to be established
+          sleep 30
+          # Pretty-print results
+          curl --silent http://localhost:8080/api/results/summary | python -m json.tool
+          # Report status code
+          curl --silent --fail http://localhost:8080/api/results/summary

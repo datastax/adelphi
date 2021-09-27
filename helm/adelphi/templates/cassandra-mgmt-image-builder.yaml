@@ -8,22 +8,39 @@ metadata:
 spec:
   templates:
   - name: cassandra-mgmt-image-template
-    inputs:
-      parameters:
-      - name: registry_ip
     container:
-      image: gcr.io/kaniko-project/executor:v1.0.0
+      image: gcr.io/kaniko-project/executor:v1.6.0-debug
+      command:
+        - sh
+        - -c
       args:
-      - --dockerfile=/configmap/Dockerfile
-      - --context=dir:///build
-      - {{`--destination={{inputs.parameters.registry_ip}}:30000/adelphi/management-api-for-apache-cassandra`}}
-      - --insecure=true
-      - --build-arg=REGISTRY={{`{{inputs.parameters.registry_ip}}`}}
+      - until `wget --spider http://localhost:30000`; do echo sleep && sleep 1; done;
+        /kaniko/executor --dockerfile=/configmap/Dockerfile
+        --context=dir:///build
+        --destination=localhost:30000/adelphi/management-api-for-apache-cassandra
+        --insecure=true;
+      resources:
+        limits:
+          memory: 200Mi
+          cpu: 1
+        requests:
+          memory: 100Mi
+          cpu: 100m
       volumeMounts:
         - name: build
           mountPath: /build
         - name: configmap
           mountPath: /configmap
+    sidecars:
+    - name : nginx
+      image: nginx
+      ports:
+        - containerPort: 30000
+          hostPort: 30000
+          protocol: TCP
+      volumeMounts:
+      - name: proxy-config
+        mountPath: /etc/nginx/conf.d
     initContainers:
     - name: clone-cassandra-mgmt-api
       image: alpine/git
@@ -33,7 +50,7 @@ spec:
         - -c
       args:
         - git clone https://github.com/datastax/management-api-for-apache-cassandra .;
-          git checkout v0.1.25;
+          git checkout v0.1.27;
       volumeMounts:
       - name: build
         mountPath: /build
@@ -45,3 +62,6 @@ spec:
     - name: configmap
       configMap:
         name: cassandra-mgmt-dockerfile-configmap
+    - name: proxy-config
+      configMap:
+        name: registry-proxy-configmap
