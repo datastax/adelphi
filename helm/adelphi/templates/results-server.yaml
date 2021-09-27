@@ -17,7 +17,7 @@ spec:
           name: results-server
           namespace: {{ .Values.namespace }}
           labels:
-            app: results-server
+            app: results
           ownerReferences:
           - apiVersion: argoproj.io/v1alpha1
             blockOwnerDeletion: true
