@@ -1,0 +1,5 @@
+############################ 
+# Config overrides for KIND 
+############################
+
+storageClassName: standard

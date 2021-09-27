@@ -8,9 +8,6 @@ metadata:
 spec:
   templates:
   - name: spark-job-template
-    inputs:
-      parameters:
-      - name: registry_ip
     serviceAccountName: spark
     metadata:
       labels:

@@ -1,0 +1,33 @@
+{
+  "name": "adelphi-api",
+  "version": "0.0.1",
+  "description": "NodeJS REST API for interfacing with Adelphi",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "nodemon --exec babel-node src/server.js",
+    "test": "jest"
+  },
+  "author": "DataStax",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@babel/runtime": "^7.14.8",
+    "express": "4.17.1",
+    "jest": "27.0.6",
+    "lodash": "4.17.21"
+  },
+  "devDependencies": {
+    "@babel/core": "7.14.8",
+    "@babel/node": "7.14.7",
+    "@babel/plugin-transform-runtime": "7.14.5",
+    "@babel/preset-env": "7.14.8",
+    "nodemon": "2.0.12",
+    "supertest": "6.1.4"
+  },
+  "jest": {
+    "collectCoverageFrom": [
+      "src/**/*.{js,jsx,tsx,ts}",
+      "!<rootDir>/node_modules/"
+    ],
+    "verbose": false
+  }
+}

@@ -39,6 +39,25 @@ spec:
               mountPath: /results/nosqlbench-target
             - name: cassandra-diff
               mountPath: /results/cassandra-diff
+          - name : node
+            image: adelphitools/adelphi-api:0.0.1
+            env:
+            - name: DATA_PATH
+              value: "/results"
+            - name: PORT
+              value: "8181"
+            ports:
+            - name: http
+              containerPort: 8181
+            volumeMounts:
+            - name: gemini
+              mountPath: /results/gemini
+            - name: nosqlbench-source
+              mountPath: /results/nosqlbench-source
+            - name: nosqlbench-target
+              mountPath: /results/nosqlbench-target
+            - name: cassandra-diff
+              mountPath: /results/cassandra-diff
           volumes:
           - name: config
             configMap:

@@ -8,6 +8,8 @@ metadata:
 spec:
   templates:
   - name: configure-schema
+    retryStrategy:
+      limit: 10
     container:
       image: alpine
       command: ["sh", "-c", "-e"]
@@ -16,13 +18,18 @@ spec:
           wget -q -O /usr/sbin/kubectl https://storage.googleapis.com/kubernetes-release/release/$VERSION/bin/linux/amd64/kubectl;
           chmod +x /usr/sbin/kubectl;
           echo "Configuring schema on the source cluster...";
-          cat /schema/schema.cql | kubectl exec -n {{ .Values.namespace }} -i -t -c cassandra {{ .Values.source.clusterName }}-{{ .Values.source.dc }}-default-sts-0 -- /opt/cassandra/bin/cqlsh -u {{ .Values.source.clusterName }}-superuser -p $(cat /secret-source/password);
+          cat /schema-source/schema.cql;
+          cat /schema-source/schema.cql | kubectl exec -n {{ .Values.namespace }} -i -t -c cassandra {{ .Values.source.clusterName }}-{{ .Values.source.dc }}-default-sts-0 -- /opt/cassandra/bin/cqlsh -u {{ .Values.source.clusterName }}-superuser -p $(cat /secret-source/password);
           echo "Configuring schema on the target cluster...";
-          cat /schema/schema.cql | kubectl exec -n {{ .Values.namespace }} -i -t -c cassandra {{ .Values.target.clusterName }}-{{ .Values.target.dc }}-default-sts-0 -- /opt/cassandra/bin/cqlsh -u {{ .Values.target.clusterName }}-superuser -p $(cat /secret-target/password);
+          cat /schema-target/schema.cql;
+          cat /schema-target/schema.cql | kubectl exec -n {{ .Values.namespace }} -i -t -c cassandra {{ .Values.target.clusterName }}-{{ .Values.target.dc }}-default-sts-0 -- /opt/cassandra/bin/cqlsh -u {{ .Values.target.clusterName }}-superuser -p $(cat /secret-target/password);
           echo "Done";
       volumeMounts:
-        - name: schema
-          mountPath: /schema
+        - name: schema-source
+          mountPath: /schema-source
+          readOnly: true
+        - name: schema-target
+          mountPath: /schema-target
           readOnly: true
         - name: target-secret-volume
           mountPath: /secret-target
@@ -31,9 +38,12 @@ spec:
           mountPath: /secret-source
           readOnly: true
     volumes:
-    - name: schema
+    - name: schema-source
       configMap:
-        name: schema-configmap
+        name: schema-source-configmap
+    - name: schema-target
+      configMap:
+        name: schema-target-configmap
     - name: source-secret-volume
       secret:
         secretName: {{ .Values.source.clusterName }}-superuser
