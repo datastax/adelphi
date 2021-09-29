@@ -1,6 +1,8 @@
+import difflib
 import glob
 import logging
 import os
+import re
 import shutil
 import sys
 
@@ -15,7 +17,6 @@ else:
     import subprocess
 
 from tests.integration import SchemaTestCase, setupSchema, getAllKeyspaces, dropNewKeyspaces
-from tests.util.schemadiff import cqlDigestGenerator
 from tests.util.schema_util import get_schema
 
 log = logging.getLogger('adelphi')
@@ -23,17 +24,29 @@ log = logging.getLogger('adelphi')
 CQL_REFERENCE_SCHEMA_PATH = "tests/integration/resources/cql-schemas/{}.cql"
 CQL_REFERENCE_KS0_SCHEMA_PATH = "tests/integration/resources/cql-schemas/{}-ks0.cql"
 
-def digestSet(schemaFile):
-    rv = set()
-    for (_, digest) in cqlDigestGenerator(schemaFile):
-        rv.add(digest)
-    return rv
+KEYSPACE_LINE_REGEX = re.compile(r'\s*CREATE KEYSPACE IF NOT EXISTS (\w+) ')
+
+def linesWithNewline(fpath):
+    if not os.path.exists(fpath):
+        print("File {} does not exist".format(fpath))
+    if os.path.getsize(fpath) <= 0:
+        print("File {} is empty".format(fpath))
+    print("Reading lines for file {}".format(fpath))
+    with open(fpath) as f:
+        rv = f.readlines()
+        lastLine = rv[-1]
+        if not lastLine.endswith("\n"):
+            rv[-1] = lastLine + "\n"
+        return rv
 
 
-def logCqlDigest(schemaFile, digestSet):
-    for (cql, digest) in cqlDigestGenerator(schemaFile):
-        if digest in digestSet:
-            log.info("Digest: {}, CQL: {}".format(digest,cql))
+def extractKeyspaceName(schemaPath):
+    with open(schemaPath) as schemaFile:
+        for line in schemaFile:
+            matcher = KEYSPACE_LINE_REGEX.match(line)
+            if matcher:
+                return matcher.group(1)
+    return None
 
 
 class TestCql(SchemaTestCase):
@@ -44,11 +57,7 @@ class TestCql(SchemaTestCase):
         self.origKeyspaces = getAllKeyspaces()
         log.info("Creating schema")
         setupSchema(self.buildSchema())
-
-
-    def tearDown(self):
-        super(TestCql, self).tearDown()
-        dropNewKeyspaces(self.origKeyspaces)
+        self.addCleanup(dropNewKeyspaces, self.origKeyspaces)
 
 
     # ========================== Helper functions ==========================
@@ -64,19 +73,43 @@ class TestCql(SchemaTestCase):
 
 
     def compareToReferenceCql(self, referencePath, comparePath):
-        referenceSet = digestSet(referencePath)
-        compareSet = digestSet(comparePath)
+        compareLines = linesWithNewline(comparePath)
+        referenceLines = linesWithNewline(referencePath)
 
-        refOnlySet = referenceSet - compareSet
-        if len(refOnlySet) > 0:
-            log.info("Statements in reference file {} but not in compare file {}:".format(referencePath, comparePath))
-            logCqlDigest(referencePath, refOnlySet)
-        compareOnlySet = compareSet - referenceSet
-        if len(compareOnlySet) > 0:
-            log.info("Statements in compare file {} but not in reference file {}:".format(comparePath, referencePath))
-            logCqlDigest(comparePath, compareOnlySet)
+        diffGen = difflib.unified_diff(
+            compareLines,
+            referenceLines,
+            fromfile=os.path.abspath(comparePath),
+            tofile=os.path.abspath(referencePath))
 
-        self.assertEqual(referenceSet, compareSet)
+        diffEmpty = True
+        for line in diffGen:
+            if diffEmpty:
+                print("Diff of generated file ({}) against reference file ({})".format(
+                    os.path.basename(comparePath),
+                    os.path.basename(referencePath)))
+            diffEmpty = False
+            print(line.strip())
+
+        if not diffEmpty:
+            self.fail()
+
+
+    def combineSchemas(self):
+        outputDirPath = self.outputDirPath(self.version)
+        allOutputFileName = "{}-all".format(self.version)
+        allOutputPath = self.outputDirPath(allOutputFileName)
+
+        schemaPaths = glob.glob("{}/*/schema".format(outputDirPath))
+        self.assertGreater(len(schemaPaths), 0)
+        schemas = { extractKeyspaceName(p) : p for p in schemaPaths}
+        sortedKeyspaces = sorted(schemas.keys())
+
+        with open(allOutputPath, "w+") as allOutputFile:
+            cqlStr = "\n\n".join(open(schemas[ks]).read() for ks in sortedKeyspaces)
+            allOutputFile.write(cqlStr)
+
+        return allOutputPath
 
 
     # ========================== Test functions ==========================
@@ -87,7 +120,7 @@ class TestCql(SchemaTestCase):
 
         self.compareToReferenceCql(
             CQL_REFERENCE_SCHEMA_PATH.format(self.version), 
-            self.stdoutPath(self.version))
+            stdoutPath)
 
 
     def test_outputdir(self):
@@ -96,24 +129,9 @@ class TestCql(SchemaTestCase):
         os.mkdir(outputDirPath)
         subprocess.run("adelphi --output-dir={} export-cql --no-metadata 2>> {}".format(outputDirPath, stderrPath), shell=True)
 
-        # Basic idea here is to find all schemas written to the output dir and aggregate them into a single schema
-        # file.  We then compare this aggregated file to the reference schema.  Ordering is important here but
-        # the current keyspace names hash to something that causes individual keyspaces to be discovered in the
-        # correct order.
-        outputDirPath = self.outputDirPath(self.version)
-        allOutputFileName = "{}-all".format(self.version)
-        allOutputPath = self.outputDirPath(allOutputFileName)
-
-        outputSchemas = glob.glob("{}/*/schema".format(outputDirPath))
-        self.assertGreater(len(outputSchemas), 0)
-        with open(allOutputPath, "w+") as allOutputFile:
-            for outputSchema in outputSchemas:
-                with open(outputSchema) as outputSchemaFile:
-                    shutil.copyfileobj(outputSchemaFile, allOutputFile)
-                    allOutputFile.write("\n")
         self.compareToReferenceCql(
             CQL_REFERENCE_SCHEMA_PATH.format(self.version), 
-            allOutputPath)
+            self.combineSchemas())
 
 
     def test_some_keyspaces_stdout(self):
@@ -123,7 +141,7 @@ class TestCql(SchemaTestCase):
 
         self.compareToReferenceCql(
             CQL_REFERENCE_KS0_SCHEMA_PATH.format(self.version), 
-            self.stdoutPath(self.version))
+            stdoutPath)
 
 
     def test_some_keyspaces_outputdir(self):

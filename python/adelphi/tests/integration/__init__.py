@@ -62,6 +62,17 @@ class SchemaTestCase(unittest.TestCase):
         outputDir = os.path.join(base, "outputDir")
         os.mkdir(outputDir)
         self.dirs = TempDirs(base, outputDir)
+        self.addCleanup(self.cleanUpTempDirs)
+
+
+    def cleanUpTempDirs(self):
+        # TODO: Note that there's no easy way to access this from test-adelphi unless we modify the
+        # ini generation code... and I'm not completely sure that's worth it.  Might want to think
+        # about just deleting this outright... or making it a CLI option that can be easily accessed.
+        if "KEEP_LOGS" in os.environ:
+            log.info("KEEP_LOGS env var set, preserving logs/output at {}".format(self.dirs.basePath))
+        else:
+            shutil.rmtree(self.dirs.basePath)
 
 
     def setUp(self):
@@ -73,15 +84,3 @@ class SchemaTestCase(unittest.TestCase):
         log.info("Testing Cassandra version {}".format(self.version))
 
         self.makeTempDirs()
-
-
-    def tearDown(self):
-        super(SchemaTestCase, self).tearDown()
-
-        # TODO: Note that there's no easy way to access this from test-adelphi unless we modify the
-        # ini generation code... and I'm not completely sure that's worth it.  Might want to think
-        # about just deleting this outright... or making it a CLI option that can be easily accessed.
-        if "KEEP_LOGS" in os.environ:
-            log.info("KEEP_LOGS env var set, preserving logs/output at {}".format(self.dirs.basePath))
-        else:
-            shutil.rmtree(self.dirs.basePath)

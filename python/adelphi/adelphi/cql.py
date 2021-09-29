@@ -49,5 +49,5 @@ class CqlExporter(BaseExporter):
 
 
     def each_keyspace(self, ks_fn):
-        for (ks_name, ks_tuple) in self.keyspaces.items():
+        for (_, ks_tuple) in self.keyspaces.items():
             ks_fn(ks_tuple.ks_obj, ks_tuple.ks_id)

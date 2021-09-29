@@ -1,9 +1,10 @@
+from functools import partial
+
 from cassandra.metadata import Metadata,\
 	KeyspaceMetadata,\
 	TableMetadata,\
 	ColumnMetadata,\
 	IndexMetadata,\
-	SimpleStrategy, \
 	UserType
 
 # types compatible with C* 2.1+
@@ -92,21 +93,17 @@ def get_keyspace(name, durable_writes, strategy_class, strategy_options, sasi=Tr
 	return keyspace
 
 def get_schema(sasi=True):
-	# build a couple of keyspaces
-	keyspaces = []
-	for k in range(2):
-		keyspace = get_keyspace("my_ks_%s" % k, True, "SimpleStrategy", {"replication_factor": 1}, sasi=sasi)
-		keyspaces.append(keyspace)
-
 	schema = Metadata()
-	schema.keyspaces = keyspaces
+	buildKs = partial(
+		get_keyspace,
+		durable_writes=True,
+		strategy_class="SimpleStrategy",
+		strategy_options={"replication_factor": 1},
+		sasi=sasi)
+	schema.keyspaces = [buildKs("my_ks_%s" % k) for k in range(2)]
 	return schema
 
 if __name__ == "__main__":
-	"""
-	Use this to print the test schema.
-	The output can be used in the integration tests too.
-	"""
-        # As discussed elsewhere SASI support is disabled until https://github.com/datastax/adelphi/issues/105
-        # is completed
-	print("\n\n".join(ks.export_as_string() for ks in get_schema(sasi=False).keyspaces))
+    # As discussed elsewhere SASI support is disabled until https://github.com/datastax/adelphi/issues/105
+    # is completed
+    print("\n\n".join(ks.export_as_string() for ks in get_schema(sasi=False).keyspaces))

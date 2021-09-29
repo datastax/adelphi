@@ -16,6 +16,7 @@
 # Functions to facilitate interactions with the underlying data store
 
 import logging
+from collections import OrderedDict
 from itertools import tee
 
 # Account for name change in itertools as of py3k
@@ -58,6 +59,10 @@ def with_cluster(cluster_fn, hosts, port, username = None, password = None):
 def build_keyspace_objects(keyspaces, metadata):
     """Build a list of cassandra.metadata.KeyspaceMetadata objects from a list of strings and a c.m.Metadata instance.  System keyspaces will be excluded."""
     all_keyspace_objs = [metadata.keyspaces[ks] for ks in keyspaces] if keyspaces is not None else metadata.keyspaces.values()
+
+    # Make sure tables are ordered (by table name)
+    for ks_obj in all_keyspace_objs:
+        ks_obj.tables = OrderedDict(sorted(ks_obj.tables.items(), key=lambda item: item[0]))
 
     # Borrowed from itertools
     def partition(pred, iterable):

@@ -15,7 +15,7 @@
 import hashlib
 import logging
 from base64 import urlsafe_b64encode
-from collections import namedtuple
+from collections import namedtuple, OrderedDict
 from datetime import datetime, tzinfo, timedelta
 
 try:
@@ -95,7 +95,8 @@ class BaseExporter:
             if props['anonymize']:
                 anonymize_keyspace(ks)
             return KsTuple(ids[orig_name], ks)
-        return {t.ks_obj.name : t for t in [make_tuple(ks) for ks in keyspaces]}
+        tuples = sorted([make_tuple(ks) for ks in keyspaces], key=lambda ks: ks.ks_obj.name)
+        return OrderedDict([(t.ks_obj.name,t) for t in tuples])
 
 
     def get_cluster_metadata(self, cluster):
