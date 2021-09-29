@@ -17,6 +17,8 @@ spec:
         "/workspace/nosqlbench_source.yaml",
         "source",
         "scenarioname=source",
+        "rampup-cycles={{ .Values.nosqlbench_cycles }}",
+        "main-cycles={{ .Values.nosqlbench_cycles }}",
         "hosts={{ .Values.source.clusterName }}-{{ .Values.source.dc }}-service",
         "username={{ .Values.source.clusterName }}-superuser",
         "passfile=/secret/password"
@@ -39,7 +41,7 @@ spec:
       command: ["sh", "-c", "-e"]
       args:
         - pip install adelphi;
-          adelphi --hosts="{{ .Values.source.clusterName }}-{{ .Values.source.dc }}-service" --username="{{ .Values.source.clusterName }}-superuser" --password="`cat /secret/password`" --keyspaces="{{ .Values.gemini_schema_keyspace }}" --no-anonymize export-nb --rampup-cycles="{{ .Values.nosqlbench_cycles }}" --main-cycles="{{ .Values.nosqlbench_cycles }}" > /workspace/nosqlbench_source.yaml;
+          adelphi --hosts="{{ .Values.source.clusterName }}-{{ .Values.source.dc }}-service" --username="{{ .Values.source.clusterName }}-superuser" --password="`cat /secret/password`" --keyspaces="{{ .Values.gemini_schema_keyspace }}" --no-anonymize export-nb > /workspace/nosqlbench_source.yaml;
           cat /workspace/nosqlbench_source.yaml;
       volumeMounts:
       - name: workspace
@@ -69,6 +71,8 @@ spec:
         "/workspace/nosqlbench_target.yaml",
         "target",
         "scenarioname=target",
+        "rampup-cycles={{ .Values.nosqlbench_cycles }}",
+        "main-cycles={{ .Values.nosqlbench_cycles }}",
         "hosts={{ .Values.target.clusterName }}-{{ .Values.target.dc }}-service",
         "username={{ .Values.target.clusterName }}-superuser",
         "passfile=/secret/password",
@@ -92,7 +96,7 @@ spec:
       command: ["sh", "-c", "-e"]
       args:
         - pip install adelphi;
-          adelphi --hosts="{{ .Values.target.clusterName }}-{{ .Values.target.dc }}-service" --username="{{ .Values.target.clusterName }}-superuser" --password="`cat /secret/password`" --keyspaces="{{ .Values.gemini_schema_keyspace }}" --no-anonymize export-nb --rampup-cycles="{{ .Values.nosqlbench_cycles }}" --main-cycles="{{ .Values.nosqlbench_cycles }}" > /workspace/nosqlbench_target.yaml;
+          adelphi --hosts="{{ .Values.target.clusterName }}-{{ .Values.target.dc }}-service" --username="{{ .Values.target.clusterName }}-superuser" --password="`cat /secret/password`" --keyspaces="{{ .Values.gemini_schema_keyspace }}" --no-anonymize export-nb > /workspace/nosqlbench_target.yaml;
           cat /workspace/nosqlbench_target.yaml;
       volumeMounts:
       - name: workspace

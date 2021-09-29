@@ -7,8 +7,8 @@ from adelphi.exceptions import KeyspaceSelectionException, TableSelectionExcepti
 from adelphi.export import BaseExporter
 
 MAX_NUMERIC_VAL = 1000 ** 3
-RAMPUP_SCENARIO = "run driver=cql tags=phase:rampup cycles={} threads=auto"
-MAIN_SCENARIO = "run driver=cql tags=phase:main cycles={} threads=auto"
+RAMPUP_SCENARIO = "run driver=cql tags=phase:rampup cycles=TEMPLATE(rampup-cycles,{}) threads=auto"
+MAIN_SCENARIO = "run driver=cql tags=phase:main cycles=TEMPLATE(main-cycles,{}) threads=auto"
 
 CQL_TYPES={}
 CQL_TYPES["text"] = "Mod({}); ToString() -> String"
