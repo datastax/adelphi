@@ -10,8 +10,10 @@
 # suite, which in turn should allow us to write simpler tests.
 import configparser
 import os
+import re
+import sys
 
-from tests.util.cassandra_util import connectToLocalCassandra
+from adelphi.store import with_local_cluster
 
 import click
 import docker
@@ -36,12 +38,39 @@ def runCassandraContainer(client, version):
 def writeToxIni(version):
     config = configparser.ConfigParser()
     config["tox"] = { "envlist": "py2, py3" }
-    envs = {"CASSANDRA_VERSION": version}
     config["testenv"] = {"deps": TOX_DEPENDENCIES, \
         "commands": "pytest {posargs}", \
         "setenv": "CASSANDRA_VERSION = {}".format(version)}
     with open(TOX_CONFIG, 'w') as configfile:
         config.write(configfile)
+
+
+def buildVersionMap():
+    assert sorted(DEFAULT_CASSANDRA_VERSIONS)
+    rv = {v:v for v in DEFAULT_CASSANDRA_VERSIONS}
+    majorMinorPattern = re.compile(r"(\d\.\d).*")
+    for v in DEFAULT_CASSANDRA_VERSIONS:
+        majorMinorMatch = majorMinorPattern.match(v)
+        if majorMinorMatch:
+            majorMinor = majorMinorMatch.group(1)
+            rv[majorMinor] = v
+            # The reason we needed to asset that our input was sorted; we want the last
+            # major version entry we discover in the list to map to the major version.
+            # So "2" => "2.2.whatever" rather than "2.1.whatever"
+            rv[majorMinor.split('.')[0]] = v
+    return rv
+
+
+def resolveCassandraVersions(cassandra_versions):
+    if not cassandra_versions:
+        return DEFAULT_CASSANDRA_VERSIONS
+    versionMap = buildVersionMap()
+    computedVersions = [x for x in [versionMap.get(v) for v in cassandra_versions] if x is not None]
+    if not computedVersions:
+        print("Could not compute valid Cassandra versions based on args, using defaults")
+        return DEFAULT_CASSANDRA_VERSIONS
+    return computedVersions
+
 
 @click.command()
 @click.option('--cassandra', '-c', multiple=True, type=str)
@@ -55,15 +84,21 @@ def runtests(cassandra, python, pytest):
         tox_args.append(pytest)
     print("Full tox args: {}".format(tox_args))
 
-    cassandra_versions = cassandra or DEFAULT_CASSANDRA_VERSIONS
+    cassandra_versions = resolveCassandraVersions(cassandra)
     print("Cassandra versions to test: {}".format(','.join(cassandra_versions)))
-    for version in cassandra_versions:
+    exitCodes = []
+    for version in resolveCassandraVersions(cassandra_versions):
 
         print("Running test suite for Cassandra version {}".format(version))
         container = runCassandraContainer(client, version)
 
         print("Validating connection to local Cassandra")
-        connectToLocalCassandra()
+        def validationFn(cluster):
+            session = cluster.connect()
+            rs = session.execute("select * from system.local")
+            print("Connected to Cassandra cluster, first row of system.local: {}".format(rs.one()))
+            return (cluster, session)
+        with_local_cluster.retry_with(stop=stop_after_attempt(5), wait=wait_fixed(3))(validationFn)
 
         try:
             if os.path.exists(TOX_CONFIG):
@@ -74,13 +109,13 @@ def runtests(cassandra, python, pytest):
             # exiting all the things
             try:
                 tox.cmdline(tox_args)
-            except SystemExit:
-                pass
+            except SystemExit as exc:
+                exitCodes.append(exc.code)
         except Exception as exc:
             print("Exception running tests for Cassandra version {}".format(version), exc)
         finally:
             container.stop()
-
+    sys.exit(sum(1 for x in exitCodes if x != 0))
 
 if __name__ == '__main__':
     runtests(obj={})

@@ -8,7 +8,8 @@ dependencies = [
     'cassandra-driver ~= 3.24',
     'click ~= 7.1',
     'PyGithub ~= 1.45',
-    'PyYAML ~= 5.4'
+    'PyYAML ~= 5.4',
+    'tenacity ~= 7.0'
     ]
 
 if not PY3:
@@ -48,6 +49,6 @@ setup(
         'Topic :: Software Development :: Libraries :: Python Modules'
    ],
    packages=['adelphi'],
-   scripts=['bin/adelphi'],
+   scripts=['bin/adelphi','bin/test-adelphi'],
    install_requires=dependencies,
 )

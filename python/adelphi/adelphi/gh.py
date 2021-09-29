@@ -22,7 +22,6 @@ import uuid
 
 from github import Github
 
-logging.basicConfig(level=logging.INFO)
 log = logging.getLogger('adelphi')
 
 # We're assuming any storage repo will be created after the conversion to "main"

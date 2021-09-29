@@ -1,0 +1,29 @@
+name: adelphi Python
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python 3.x
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+    - name: Install dependencies
+      run: |
+        cd python
+        pip install ./adelphi
+        cd adelphi
+        pip install -r ./test-requirements.txt
+    - name: Execute tests
+      run: |
+        cd python/adelphi
+        test-adelphi
