@@ -4,6 +4,8 @@
 # Runs against C* 4.0 
 ############################
 
+allowMultipleNodesPerWorker: true
+
 storageClassName: standard
 
 clusterSize: 1
