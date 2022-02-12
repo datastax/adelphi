@@ -10,12 +10,14 @@ source:
   dc: dc1
   clusterName: source
   version: "3.11.10"
+  type: cassandra
   cql_schema:
 
 target:
   dc: dc2
   clusterName: target
   version: "4.0.0"
+  type: cassandra
   git_url:
   git_identifier:
   cql_schema:

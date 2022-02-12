@@ -25,8 +25,10 @@ spec:
         spec:
           allowMultipleNodesPerWorker: {{ .Values.allowMultipleNodesPerWorker }}
           clusterName: {{ .Values.source.clusterName }}
-          serverType: cassandra
+          serverType: {{ .Values.source.type }}
           serverVersion: {{ .Values.source.version }}
+          dseWorkloads:
+            graphEnabled: {{ .Values.source.graphEnabled }}
           managementApiAuth:
             insecure: {}
           # Limit each pod to a fixed 1 CPU cores and 2 GB of RAM.
@@ -51,7 +53,11 @@ spec:
               authenticator: org.apache.cassandra.auth.PasswordAuthenticator
               authorizer: org.apache.cassandra.auth.CassandraAuthorizer
               role_manager: org.apache.cassandra.auth.CassandraRoleManager
+            {{- if or (eq .Values.target.type "dse") (semverCompare "4.0.0" .Values.target.version) }}
+            jvm-server-options:
+            {{- else }}
             jvm-options:
+            {{- end }}
               initial_heap_size: "800M"
               max_heap_size: "800M"
   - name: start-target-cluster
@@ -72,11 +78,13 @@ spec:
         spec:
           allowMultipleNodesPerWorker: {{ .Values.allowMultipleNodesPerWorker }}
           clusterName: {{ .Values.target.clusterName }}
-          serverType: cassandra
+          serverType: {{ .Values.target.type }}
           serverVersion: {{ .Values.target.version }}
           {{- if .Values.target.git_identifier }}
           serverImage: localhost:30000/adelphi/management-api-for-apache-cassandra
           {{- end }}
+          dseWorkloads:
+            graphEnabled: {{ .Values.target.graphEnabled }}
           managementApiAuth:
             insecure: {}
           # Limit each pod to a fixed 1 CPU cores and 2 GB of RAM.
@@ -101,7 +109,7 @@ spec:
               authenticator: org.apache.cassandra.auth.PasswordAuthenticator
               authorizer: org.apache.cassandra.auth.CassandraAuthorizer
               role_manager: org.apache.cassandra.auth.CassandraRoleManager
-            {{- if semverCompare "4.0.0" .Values.target.version  }}
+            {{- if or (eq .Values.target.type "dse") (semverCompare "4.0.0" .Values.target.version) }}
             jvm-server-options:
             {{- else }}
             jvm-options:
