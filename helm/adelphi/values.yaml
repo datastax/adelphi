@@ -1,3 +1,5 @@
+workflow: cassandra
+
 namespace: cass-operator
 clusterSize: 1 # number of nodes per cluster
 allowMultipleNodesPerWorker: false
@@ -7,7 +9,7 @@ storageClassName: local-path
 source:
   dc: dc1
   clusterName: source
-  version: "3.11.7"
+  version: "3.11.10"
   cql_schema:
 
 target:

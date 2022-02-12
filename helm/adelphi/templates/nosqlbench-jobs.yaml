@@ -112,3 +112,62 @@ spec:
     - name: results-pv
       persistentVolumeClaim:
         claimName: nosqlbench-target-pvc
+  - name: nosqlbench
+    inputs:
+      parameters:
+      - name: job
+      - name: username
+      - name: secret
+      - name: hostname
+    container:
+      image: nosqlbench/nosqlbench:4.15.45
+      args: [
+        "--show-stacktraces",
+        "--report-csv-to=/results_{{`{{inputs.parameters.job}}`}}",
+        "--report-graphite-to=graphite-service:9109",
+        "/workspace/nosqlbench_{{`{{inputs.parameters.job}}`}}.yaml",
+        "{{`{{inputs.parameters.job}}`}}",
+        "scenarioname={{`{{inputs.parameters.job}}`}}",
+        "hosts={{`{{inputs.parameters.hostname}}`}}",
+        "username={{`{{inputs.parameters.username}}`}}",
+        "passfile=/secret/password",
+        "driver=cqld3"
+      ]
+      dnsConfig:
+        options:
+        - name: ndots
+          value: "1"
+      volumeMounts:
+      - name: secret-volume
+        mountPath: /secret
+        readOnly: true
+      - name: workspace
+        mountPath: /workspace
+      - name: results-pv
+        mountPath: /results
+    initContainers:
+    - name: extract-schema
+      image: python:3.10.0b1-alpine3.13
+      command: ["sh", "-c", "-e"]
+      args:
+        - pip install adelphi;
+          adelphi --hosts="{{`{{inputs.parameters.hostname}}`}}" --username="{{`{{inputs.parameters.username}}`}}" --password="`cat /secret/password`" --keyspaces="{{ .Values.gemini_schema_keyspace }}" --no-anonymize export-nb --rampup-cycles="{{ .Values.nosqlbench_cycles }}" --main-cycles="{{ .Values.nosqlbench_cycles }}" > /workspace/nosqlbench_{{`{{inputs.parameters.job}}`}}.yaml;
+          cat /workspace/nosqlbench_{{`{{inputs.parameters.job}}`}}.yaml;
+      volumeMounts:
+      - name: workspace
+        mountPath: /workspace
+      - name: secret-volume
+        mountPath: /secret
+        readOnly: true
+    volumes:
+    - name: secret-volume
+      secret:
+        secretName: "{{`{{inputs.parameters.secret}}`}}"
+        items:
+        - key: password
+          path: password
+    - name: workspace
+      emptyDir: {}
+    - name: results-pv
+      persistentVolumeClaim:
+        claimName: nosqlbench-pvc
