@@ -179,17 +179,16 @@ spec:
       - name: secret
       - name: hostname
     container:
-      image: nosqlbench/nosqlbench:4.15.45
+      image: nosqlbench/nosqlbench:4.17.6
       args: [
         "--show-stacktraces",
         "--report-csv-to=/results_{{`{{inputs.parameters.job}}`}}",
         "--report-graphite-to=graphite-service:9109",
-        "yaml=graphs",
-        "type=dsegraph",
+        "/nosqlbench/graph_workload.yaml",
         "hosts={{`{{inputs.parameters.hostname}}`}}",
         "username={{`{{inputs.parameters.username}}`}}",
         "passfile=/secret/password",
-        "driver=dsegraph"
+        "localdc=dc1"
       ]
       dnsConfig:
         options:
@@ -203,6 +202,8 @@ spec:
         mountPath: /workspace
       - name: results-pv
         mountPath: /results
+      - name: nosqlbench-graph
+        mountPath: /nosqlbench
     volumes:
     - name: secret-volume
       secret:
@@ -215,3 +216,6 @@ spec:
     - name: results-pv
       persistentVolumeClaim:
         claimName: nosqlbench-pvc
+    - name: nosqlbench-graph
+      configMap:
+        name: nosqlbench-graph-configmap

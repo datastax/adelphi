@@ -25,6 +25,10 @@ target:
 gemini_test_duration: 1m
 nosqlbench_cycles: 1000
 
+nosqlbench:
+  graph:
+    workload:
+
 cassandra_diff_config:
   # This is how many parts we split the full token range in.
   # Each of these splits is then compared between the clusters
