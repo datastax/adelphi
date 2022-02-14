@@ -1,0 +1,94 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: cloudgate-proxy-template
+  namespace: {{ .Values.namespace }}
+  annotations:
+    "helm.sh/hook": pre-install
+spec:
+  templates:
+  - name: start-cloudgate-proxy
+    resource:
+      action: create
+      manifest: |
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: cloudgate-deployment
+          ownerReferences:
+          - apiVersion: argoproj.io/v1alpha1
+            blockOwnerDeletion: true
+            kind: Workflow
+            name: "{{`{{workflow.name}}`}}"
+            uid: "{{`{{workflow.uid}}`}}"
+        spec:
+          replicas: 3
+          selector:
+            matchLabels:
+              app: cloudgate-proxy
+          template:
+            metadata:
+              labels:
+                app: cloudgate-proxy
+            spec:
+              serviceAccountName: cass-operator
+              initContainers:
+              - name: get-ips
+                image: gcr.io/cloud-builders/kubectl:latest
+                command: ["sh", "-c", "-e"]
+                args:
+                  - get_ips()
+                    {
+                      ips=`kubectl get pods -n cass-operator -l app=cloudgate-proxy -o=wide | awk '{print $6}' | grep -Ev "none|IP"`;
+                    };
+                    count_replicas()
+                    {
+                      count=`echo $ips | wc -w`;
+                    };
+                    get_ips;
+                    count_replicas;
+                    while [ $count -ne 3 ]; do sleep 1 && get_ips && count_replicas; done;
+                    echo $ips;
+                    join_ips=`echo $ips | sed "s/ /,/g"`;
+                    kubectl create configmap zdm-proxy-ips -n {{ .Values.namespace }} --from-literal=PROXY_ADDRESSES=$join_ips --dry-run=client -o yaml | kubectl apply -f -;
+              containers:
+              - name: cloudgate
+                image: datastax/cloudgate-proxy
+                ports:
+                - containerPort: 9042
+                  hostPort: 9042
+                  protocol: TCP
+                env:
+                  - name: PROXY_ADDRESSES
+                    valueFrom:
+                      configMapKeyRef:
+                        name: zdm-proxy-ips
+                        key: PROXY_ADDRESSES
+                  - name: ORIGIN_CASSANDRA_USERNAME
+                    value: "{{ .Values.source.clusterName }}-superuser"
+                  - name: ORIGIN_CASSANDRA_PASSWORD
+                    valueFrom:
+                      secretKeyRef:
+                        name: {{ .Values.source.clusterName }}-superuser
+                        key: password
+                  - name: TARGET_CASSANDRA_USERNAME
+                    value: "{{ .Values.target.clusterName }}-superuser"
+                  - name: TARGET_CASSANDRA_PASSWORD
+                    valueFrom:
+                      secretKeyRef:
+                        name: {{ .Values.target.clusterName }}-superuser
+                        key: password
+                  - name: ORIGIN_CASSANDRA_CONTACT_POINTS
+                    value: "{{ .Values.source.clusterName }}-{{ .Values.source.dc }}-service"
+                  - name: ORIGIN_CASSANDRA_PORT
+                    value: "9042"
+                  - name: TARGET_CASSANDRA_CONTACT_POINTS
+                    value: "{{ .Values.target.clusterName }}-{{ .Values.target.dc }}-service"
+                  - name: TARGET_CASSANDRA_PORT
+                    value: "9042"
+                  - name: PROXY_QUERY_ADDRESS
+                    value: "0.0.0.0"
+                  - name: PROXY_QUERY_PORT
+                    value: "9042"
+                  - name: LOG_LEVEL
+                    value: "DEBUG"

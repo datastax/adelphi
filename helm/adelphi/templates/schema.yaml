@@ -1,0 +1,35 @@
+apiVersion: argoproj.io/v1alpha1
+kind: WorkflowTemplate
+metadata:
+  name: schema-job
+  namespace: {{ .Values.namespace }}
+  annotations:
+    "helm.sh/hook": pre-install
+spec:
+  templates:
+  - name: configure-schema
+    inputs:
+      parameters:
+      - name: username
+      - name: secret
+      - name: hostname
+      - name: schema
+    retryStrategy:
+      limit: 10
+    container:
+      image: ubuntu:20.04
+      env:
+      - name: password
+        valueFrom:
+          secretKeyRef:
+            name: "{{`{{inputs.parameters.secret}}`}}"
+            key: password
+      command: ["sh", "-c", "-e"]
+      args:
+        - apt update;
+          apt install python3-pip -y;
+          pip3 install -U cqlsh;
+          echo "Configuring schema on the source cluster...";
+          echo "{{`{{inputs.parameters.schema}}`}}";
+          echo "{{`{{inputs.parameters.schema}}`}}" | cqlsh --protocol-version=4 -u {{`{{inputs.parameters.username}}`}} -p $password {{`{{inputs.parameters.hostname}}`}};
+          echo "Done";

@@ -1,21 +1,24 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Workflow
 metadata:
-  name: workflow-adelphi-{{ .Release.Revision }}
+  name: workflow-zdm-{{ .Release.Revision }}
 spec:
   entrypoint: execute
   serviceAccountName: cass-operator
-  {{- if ne .Values.workflow "cassandra" }}
+  {{- if ne .Values.workflow "zdm" }}
   suspend: {}
   {{- end }}
   templates:
   - name: execute
     dag:
       tasks:
+      # START DOCKER REGISTRY
       - name: start-registry
         templateRef:                  
           name: registry
           template: registry-template
+
+      # BUILD CASSANDRA FROM SOURCE
       - name: build-cassandra
         depends: "start-registry"
         when: "{{ not (empty .Values.target.git_identifier) }}"
@@ -26,43 +29,79 @@ spec:
         templateRef:
           name: cassandra-image
           template: cassandra-image-template
+
+      # BUILD CASSANDRA MANAGEMENT API
       - name: build-cassandra-mgmt-api
         depends: "build-cassandra"
         when: "{{ not (empty .Values.target.git_identifier) }}"
         templateRef:
           name: cassandra-mgmt-image
           template: cassandra-mgmt-image-template
+
+      # START SOURCE CASSANDRA CLUSTER
       - name: cassandra-source
         templateRef:
           name: cassandra-clusters
           template: start-source-cluster
+
+      # START TARGET CASSANDRA CLUSTER
       - name: cassandra-target
         depends: "build-cassandra-mgmt-api"
         templateRef:
           name: cassandra-clusters
           template: start-target-cluster
+
+      # WAIT FOR CASSANDRA CLUSTERS
       - name: cassandra-ready
         depends: "cassandra-source && cassandra-target"
         templateRef:                  
           name: cassandra-status
           template: ready
-      - name: configure-schema
+
+      # START CLOUDGATE PROXY
+      - name: start-cloudgate
         depends: "cassandra-ready"
+        templateRef:
+          name: cloudgate-proxy-template
+          template: start-cloudgate-proxy
+
+      # CREATE SCHEMA
+      - name: configure-schema
+        arguments:
+          parameters:
+          - name: username
+            value: "{{ .Values.target.clusterName }}-superuser"
+          - name: secret
+            value: "{{ .Values.target.clusterName }}-superuser"
+          - name: hostname
+            value: "cloudgate-proxy-svc.{{ .Values.namespace }}.svc.cluster.local"
+          - name: schema
+            value: "{{ .Values.cql_schema }}"
+        depends: "start-cloudgate"
         templateRef:
           name: schema-job
           template: configure-schema
-      - name: nosqlbench-source
+
+      # RUN NOSQLBENCH WORKLOAD THROUGH THE ZDM PROXY
+      - name: nosqlbench
+        arguments:
+          parameters:
+          - name: job
+            value: "zdm"
+          - name: username
+            value: "{{ .Values.target.clusterName }}-superuser"
+          - name: secret
+            value: "{{ .Values.target.clusterName }}-superuser"
+          - name: hostname
+            value: "cloudgate-proxy-svc.{{ .Values.namespace }}.svc.cluster.local"
         depends: "configure-schema"
         templateRef:
           name: nosqlbench-job
-          template: nosqlbench-source
-      - name: nosqlbench-target
-        depends: "configure-schema"
-        templateRef:
-          name: nosqlbench-job
-          template: nosqlbench-target
+          template: nosqlbench
+      
+      # COMPARE CLUSTERS DATA WITH CASSANDRA-DIFF
       - name: run-diff
-        depends: "nosqlbench-source && nosqlbench-target"
+        depends: "nosqlbench"
         templateRef:
           name: spark-job
           template: spark-job-template
@@ -71,18 +110,18 @@ spec:
         templateRef:
           name: cassandra-diff
           template: collect-results
-      - name: gemini-oracle-sut
-        depends: "collect-diff-results"
-        templateRef:
-          name: gemini-job
-          template: gemini-oracle-sut
-      - name: gemini-results
-        depends: "gemini-oracle-sut"
-        templateRef:
-          name: gemini-results
-          template: collect-results
+      # - name: gemini-oracle-sut
+      #   depends: "collect-diff-results"
+      #   templateRef:
+      #     name: gemini-job
+      #     template: gemini-oracle-sut
+      # - name: gemini-results
+      #   depends: "gemini-oracle-sut"
+      #   templateRef:
+      #     name: gemini-results
+      #     template: collect-results
       - name: start-results-server
-        depends: "gemini-results"
+        depends: "collect-diff-results"
         templateRef:
           name: results
           template: results-server
